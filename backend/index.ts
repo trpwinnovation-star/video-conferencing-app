@@ -24,7 +24,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin.replace(/\/$/, "")) || (process.env.NODE_ENV !== 'production' && (origin.endsWith(".ngrok-free.app") || origin.endsWith(".ngrok-free.dev")))) {
       callback(null, true);
     } else {
-      console.warn(`CORS Blocked: Origin ${origin} not in ${allowedOrigins}`);
+      console.warn(`CORS REJECTED! Website URL: "${origin}" | Allowed URLs: ${JSON.stringify(allowedOrigins)}`);
       callback(new Error("Not allowed by CORS"));
     }
   },

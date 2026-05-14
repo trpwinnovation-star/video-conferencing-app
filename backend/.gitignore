@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Environment Variables
+.env
+
+# Build Output
+dist/
+
+# Local Recordings (Ignore to save space and privacy)
+uploads/
+
+# TypeScript
+tsconfig.tsbuildinfo
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Files
+.DS_Store
+
+# Prisma
+/prisma/*.db
+/prisma/*.db-journal

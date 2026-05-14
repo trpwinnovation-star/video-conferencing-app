@@ -11,23 +11,13 @@ console.log("Starting server...");
 const app = express();
 const port = process.env.PORT || 3001;
 
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url} from ${req.headers.origin}`);
+  next();
+});
+
 app.use(cors({
-  origin: (origin, callback) => {
-    const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, "");
-    const allowedOrigins = [
-      frontendUrl,
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-    ].filter(Boolean);
-    
-    // Allow if origin is in list or is undefined (for tools like Postman)
-    if (!origin || allowedOrigins.includes(origin.replace(/\/$/, "")) || (process.env.NODE_ENV !== 'production' && (origin.endsWith(".ngrok-free.app") || origin.endsWith(".ngrok-free.dev")))) {
-      callback(null, true);
-    } else {
-      console.warn(`CORS REJECTED! Website URL: "${origin}" | Allowed URLs: ${JSON.stringify(allowedOrigins)}`);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
+  origin: true, // Temporarily allow ALL origins for debugging
   credentials: true
 }));
 app.use(express.json());

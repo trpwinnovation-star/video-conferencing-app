@@ -22,10 +22,13 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "livekit-server-sdk": "^2.15.2",
-    "multer": "^2.1.1"
+    "multer": "^2.1.1",
+    "@prisma/client": "^6.0.0",
+    "prisma": "^6.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
-    "@prisma/client": "^6.0.0",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
@@ -33,9 +36,6 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^20.0.0",
-    "nodemon": "^3.1.14",
-    "prisma": "^6.0.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.0.0"
+    "nodemon": "^3.1.14"
   }
 }

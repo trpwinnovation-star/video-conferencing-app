@@ -13,16 +13,18 @@ const port = process.env.PORT || 3001;
 
 app.use(cors({
   origin: (origin, callback) => {
+    const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, "");
     const allowedOrigins = [
-      process.env.FRONTEND_URL,
+      frontendUrl,
       "http://localhost:3000",
       "http://127.0.0.1:3000",
-    ];
+    ].filter(Boolean);
     
     // Allow if origin is in list or is undefined (for tools like Postman)
-    if (!origin || allowedOrigins.includes(origin) || (process.env.NODE_ENV !== 'production' && (origin.endsWith(".ngrok-free.app") || origin.endsWith(".ngrok-free.dev")))) {
+    if (!origin || allowedOrigins.includes(origin.replace(/\/$/, "")) || (process.env.NODE_ENV !== 'production' && (origin.endsWith(".ngrok-free.app") || origin.endsWith(".ngrok-free.dev")))) {
       callback(null, true);
     } else {
+      console.warn(`CORS Blocked: Origin ${origin} not in ${allowedOrigins}`);
       callback(new Error("Not allowed by CORS"));
     }
   },

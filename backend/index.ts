@@ -44,6 +44,15 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+// Error handler
+app.use((err, req, res, next) => {
+  console.error("Backend Error:", err);
+  res.status(500).json({ 
+    error: "Internal Server Error",
+    message: process.env.NODE_ENV === 'production' ? "Something went wrong" : err.message
+  });
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });

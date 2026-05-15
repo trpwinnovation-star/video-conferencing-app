@@ -17,7 +17,9 @@ const egressClient = new EgressClient(
  */
 export async function startRoomRecording(roomName: string) {
   try {
-    console.log(`Starting Egress recording for room: ${roomName}`);
+    console.log(`Starting Egress recording for room: "${roomName}"`);
+    console.log(`Targeting LiveKit Egress URL: ${egressUrl}`);
+    
     // Dual-Compatible Request Strategy:
     // We provide the output in multiple formats to satisfy both old and new LiveKit servers.
     const outputConfig = {

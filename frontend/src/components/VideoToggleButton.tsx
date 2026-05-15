@@ -12,14 +12,14 @@ export function VideoToggleButton() {
     <button
       onClick={() => toggle()}
       className={cn(
-        "p-4 rounded-full flex items-center justify-center transition-all",
+        "p-2.5 md:p-4 rounded-full flex items-center justify-center transition-all",
         enabled 
           ? "bg-slate-800 hover:bg-slate-700 text-white" 
           : "bg-red-500 hover:bg-red-600 text-white"
       )}
       title={enabled ? "Turn off Camera" : "Turn on Camera"}
     >
-      {enabled ? <Video size={24} /> : <VideoOff size={24} />}
+      {enabled ? <Video size={20} className="md:w-6 md:h-6" /> : <VideoOff size={20} className="md:w-6 md:h-6" />}
     </button>
   );
 }

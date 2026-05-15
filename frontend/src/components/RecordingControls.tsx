@@ -71,17 +71,17 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
 
       {/* Recording Info */}
       {isRecording && (
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-red-500/30">
-          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-xs font-mono text-red-500 font-bold">{formatDuration(duration)}</span>
+        <div className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-md px-2 py-0.5 md:px-3 md:py-1 rounded-full border border-red-500/30">
+          <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-[10px] md:text-xs font-mono text-red-500 font-bold">{formatDuration(duration)}</span>
         </div>
       )}
 
       {/* Uploading Status */}
       {isUploading && (
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-blue-600/80 backdrop-blur-md px-3 py-1 rounded-full text-white">
+        <div className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-blue-600/80 backdrop-blur-md px-3 py-1 rounded-full text-white">
           <Loader2 size={14} className="animate-spin" />
-          <span className="text-xs font-bold">Uploading...</span>
+          <span className="text-[10px] md:text-xs font-bold">Uploading...</span>
         </div>
       )}
 
@@ -89,7 +89,7 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
         onClick={toggleRecording}
         disabled={isUploading}
         className={cn(
-          "h-12 w-12 rounded-2xl flex items-center justify-center transition-all shadow-lg active:scale-95",
+          "h-10 w-10 md:h-12 md:w-12 rounded-2xl flex items-center justify-center transition-all shadow-lg active:scale-95",
           isRecording
             ? "bg-red-600 hover:bg-red-500 text-white animate-pulse"
             : "bg-slate-700 hover:bg-slate-600 text-slate-300",
@@ -98,11 +98,11 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
         title={isRecording ? "Stop Recording" : "Start Recording"}
       >
         {isUploading ? (
-          <Loader2 size={24} className="animate-spin" />
+          <Loader2 size={20} className="animate-spin md:w-6 md:h-6" />
         ) : isRecording ? (
-          <Square size={20} className="fill-current" />
+          <Square size={18} className="fill-current md:w-5 md:h-5" />
         ) : (
-          <Circle size={20} className="fill-current" />
+          <Circle size={18} className="fill-current md:w-5 md:h-5" />
         )}
       </button>
     </div>

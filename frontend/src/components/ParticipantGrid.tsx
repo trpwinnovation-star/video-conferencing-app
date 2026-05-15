@@ -56,10 +56,10 @@ export function ParticipantGrid() {
       <div className="w-full h-full flex flex-col bg-slate-950 overflow-hidden relative">
         {/* Filmstrip (Top) */}
         {showFilmstrip && (
-          <div className="h-32 md:h-40 flex-shrink-0 p-4 transition-all duration-300">
-            <div className="flex gap-4 h-full overflow-x-auto no-scrollbar justify-center">
+          <div className="h-24 md:h-40 flex-shrink-0 p-2 md:p-4 transition-all duration-300">
+            <div className="flex gap-2 md:gap-4 h-full overflow-x-auto no-scrollbar justify-center">
               {otherTracks.map((track) => (
-                <div key={`${track.participant.identity}_${track.source}`} className="h-full aspect-video flex-shrink-0 shadow-xl rounded-xl overflow-hidden border border-white/5">
+                <div key={`${track.participant.identity}_${track.source}`} className="h-full aspect-video flex-shrink-0 shadow-xl rounded-lg md:rounded-xl overflow-hidden border border-white/5">
                   <VideoTile trackRef={track} />
                 </div>
               ))}
@@ -68,18 +68,18 @@ export function ParticipantGrid() {
         )}
 
         {/* Main Stage */}
-        <div className="flex-1 min-h-0 p-4 pt-0 relative flex items-center justify-center overflow-hidden group">
-          <div className="w-full h-full rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl bg-slate-900/50 border border-white/5">
+        <div className="flex-1 min-h-0 p-2 md:p-4 pt-0 relative flex items-center justify-center overflow-hidden group">
+          <div className="w-full h-full rounded-xl md:rounded-3xl overflow-hidden shadow-2xl bg-slate-900/50 border border-white/5">
             <VideoTile trackRef={mainTrack} />
           </div>
           
           {/* Filmstrip Toggle */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-2 md:top-4 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => setShowFilmstrip(!showFilmstrip)}
-              className="p-1.5 rounded-full bg-slate-900/80 text-slate-400 hover:text-white border border-white/10 backdrop-blur-md"
+              className="p-1 rounded-full bg-slate-900/80 text-slate-400 hover:text-white border border-white/10 backdrop-blur-md"
             >
-              {showFilmstrip ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              {showFilmstrip ? <ChevronUp size={14} className="md:w-4 md:h-4" /> : <ChevronDown size={14} className="md:w-4 md:h-4" />}
             </button>
           </div>
         </div>
@@ -90,7 +90,7 @@ export function ParticipantGrid() {
   return (
     <div className="h-full w-full bg-slate-950 flex flex-col overflow-hidden">
       <div className={cn(
-        "flex-1 grid gap-2 md:gap-4 p-2 md:p-4",
+        "flex-1 grid gap-1.5 md:gap-4 p-1.5 md:p-4",
         tracks.length === 1 ? "grid-cols-1 grid-rows-1" :
         tracks.length === 2 ? "grid-cols-1 md:grid-cols-2 grid-rows-2 md:grid-rows-1" :
         tracks.length <= 4 ? "grid-cols-2 grid-rows-2" :

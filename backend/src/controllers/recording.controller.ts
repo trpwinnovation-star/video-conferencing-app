@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 
 export const uploadRecording = async (req: Request, res: Response) => {
   try {
+    console.log("Uploaded file metadata:", req.file);
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }

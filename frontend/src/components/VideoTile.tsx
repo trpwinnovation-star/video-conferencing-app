@@ -76,30 +76,30 @@ export function VideoTile({ trackRef }: VideoTileProps) {
       )}
 
       {/* Glassmorphic Overlays */}
-      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-        <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-xl flex items-center gap-2 border border-white/10 shadow-lg transition-transform duration-300 group-hover:translate-x-1">
-          {isScreenShare && <Monitor size={14} className="text-blue-400" />}
+      <div className="absolute bottom-2 md:bottom-4 left-2 md:left-4 right-2 md:right-4 flex items-center justify-between pointer-events-none">
+        <div className="bg-black/40 backdrop-blur-md px-2 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl flex items-center gap-1.5 md:gap-2 border border-white/10 shadow-lg transition-transform duration-300 group-hover:translate-x-1">
+          {isScreenShare && <Monitor size={12} className="text-blue-400 md:w-[14px] md:h-[14px]" />}
           <ParticipantName 
             participant={participant} 
-            className="text-white text-[13px] font-semibold truncate"
+            className="text-white text-[11px] md:text-[13px] font-semibold truncate max-w-[80px] md:max-w-none"
           />
-          {participant.isLocal && <span className="text-[10px] text-blue-400 font-bold ml-1">(You)</span>}
-          {isScreenShare && <span className="text-[10px] text-slate-400 font-medium ml-1">Screen</span>}
+          {participant.isLocal && <span className="text-[9px] md:text-[10px] text-blue-400 font-bold ml-1">(You)</span>}
+          {isScreenShare && <span className="text-[9px] md:text-[10px] text-slate-400 font-medium ml-1">Screen</span>}
         </div>
         
         {!isScreenShare && (
           <div className={cn(
-            "p-2 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10 transition-all duration-300 group-hover:-translate-x-1",
+            "p-1.5 md:p-2 rounded-lg md:rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10 transition-all duration-300 group-hover:-translate-x-1",
             isAudioMuted ? "bg-red-500/80 text-white" : "bg-black/40 text-slate-300"
           )}>
-            {isAudioMuted ? <MicOff size={14} /> : <Mic size={14} />}
+            {isAudioMuted ? <MicOff size={12} className="md:w-3.5 md:h-3.5" /> : <Mic size={12} className="md:w-3.5 md:h-3.5" />}
           </div>
         )}
       </div>
 
       {/* Speaking Indicator Pulse (Top Right) */}
       {isSpeaking && !isScreenShare && (
-        <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,1)] animate-pulse" />
+        <div className="absolute top-2 md:top-4 right-2 md:right-4 h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,1)] animate-pulse" />
       )}
     </div>
   );

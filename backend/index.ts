@@ -29,7 +29,7 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/recordings", recordingRoutes);
 
 // Static files for recordings
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check
 app.get("/api/health", (req, res) => {

@@ -4,12 +4,15 @@ import { useState, useEffect } from "react";
 import { Circle, Square, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRecording } from "@/hooks/useRecording";
+import { useLocalParticipant } from "@livekit/components-react";
+import { Track } from "livekit-client";
 
 interface RecordingControlsProps {
   roomName: string;
 }
 
 export function RecordingControls({ roomName }: RecordingControlsProps) {
+  const { localParticipant } = useLocalParticipant();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
@@ -52,7 +55,10 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
     if (isRecording) {
       stopRecording();
     } else {
-      startRecording();
+      // Get the local microphone track publication
+      const micPublication = localParticipant.getTrack(Track.Source.Microphone);
+      const micTrack = micPublication?.track?.mediaStreamTrack;
+      startRecording(micTrack);
     }
   };
 

@@ -32,45 +32,51 @@ export function useRecording({ roomName, onSuccess, onError }: UseRecordingOptio
     }
   };
 
-  const startRecording = async () => {
+  const startRecording = async (userAudioTrack?: MediaStreamTrack | null) => {
     try {
       setError(null);
       
       // Request screen capture (display media)
-      // videoBitsPerSecond: 500000, frameRate: 15 requested by user
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           frameRate: 15,
         },
-        audio: true // Important for capturing tab audio
+        audio: true // Captures tab audio (other participants)
       });
 
       streamRef.current = stream;
 
-      // Check if user has microphone and add it to the stream if possible
-      // to record both system audio and user voice
+      // Add user's voice (microphone)
       try {
-        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const audioContext = new AudioContext();
-        const destination = audioContext.createMediaStreamDestination();
+        let micTrack = userAudioTrack;
+        let internalMicStream: MediaStream | null = null;
 
-        // Add display audio
-        if (stream.getAudioTracks().length > 0) {
-          const displaySource = audioContext.createMediaStreamSource(new MediaStream([stream.getAudioTracks()[0]]));
-          displaySource.connect(destination);
+        // If no track provided, request it (fallback)
+        if (!micTrack) {
+          internalMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          micTrack = internalMicStream.getAudioTracks()[0];
         }
 
-        // Add mic audio
-        const micSource = audioContext.createMediaStreamSource(micStream);
-        micSource.connect(destination);
+        if (micTrack) {
+          const audioContext = new AudioContext();
+          const destination = audioContext.createMediaStreamDestination();
 
-        // Replace stream audio tracks with mixed audio
-        const mixedTracks = destination.stream.getAudioTracks();
-        if (mixedTracks.length > 0) {
-          // Remove old audio tracks
-          stream.getAudioTracks().forEach(track => stream.removeTrack(track));
-          // Add new mixed track
-          stream.addTrack(mixedTracks[0]);
+          // Add display/tab audio (Others)
+          if (stream.getAudioTracks().length > 0) {
+            const displaySource = audioContext.createMediaStreamSource(new MediaStream([stream.getAudioTracks()[0]]));
+            displaySource.connect(destination);
+          }
+
+          // Add user voice (Me)
+          const micSource = audioContext.createMediaStreamSource(new MediaStream([micTrack]));
+          micSource.connect(destination);
+
+          // Replace stream audio tracks with mixed audio
+          const mixedTracks = destination.stream.getAudioTracks();
+          if (mixedTracks.length > 0) {
+            stream.getAudioTracks().forEach(track => stream.removeTrack(track));
+            stream.addTrack(mixedTracks[0]);
+          }
         }
       } catch (e) {
         console.warn("Could not merge microphone audio, recording only tab audio", e);
@@ -106,11 +112,13 @@ export function useRecording({ roomName, onSuccess, onError }: UseRecordingOptio
       startTimer();
 
       // Handle user stopping the share via browser UI
-      stream.getVideoTracks()[0].onended = () => {
-        if (mediaRecorder.state !== 'inactive') {
-          mediaRecorder.stop();
-        }
-      };
+      if (stream.getVideoTracks()[0]) {
+        stream.getVideoTracks()[0].onended = () => {
+          if (mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+          }
+        };
+      }
 
     } catch (err: any) {
       console.error("Error starting recording:", err);

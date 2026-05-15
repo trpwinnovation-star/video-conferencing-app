@@ -16,6 +16,8 @@ const egressClient = new EgressClient(
  * This captures all participants and screen shares in a grid layout.
  */
 export async function startRoomRecording(roomName: string) {
+  try {
+    console.log(`Starting Egress recording for room: ${roomName}`);
     // Using the most stable positional argument signature
     // (roomName, output, layout)
     // 2 = EncodedFileType.MP4

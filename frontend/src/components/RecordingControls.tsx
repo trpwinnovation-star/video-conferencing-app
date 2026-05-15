@@ -73,7 +73,7 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
     if (localRecorder.isRecording) {
       localRecorder.stopRecording();
     } else {
-      const micPublication = localParticipant.getTrack(Track.Source.Microphone);
+      const micPublication = localParticipant.getTrackPublication(Track.Source.Microphone);
       const micTrack = micPublication?.track?.mediaStreamTrack;
       localRecorder.startRecording(micTrack);
     }

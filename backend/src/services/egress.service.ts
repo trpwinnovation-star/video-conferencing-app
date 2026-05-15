@@ -29,7 +29,9 @@ export async function startRoomRecording(roomName: string) {
 
     const info = await egressClient.startRoomCompositeEgress(
       roomName,
-      fileOutput,
+      {
+        file: fileOutput,
+      },
       {
         layout: 'grid',
       }

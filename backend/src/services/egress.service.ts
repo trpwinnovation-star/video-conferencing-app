@@ -16,27 +16,22 @@ const egressClient = new EgressClient(
  * This captures all participants and screen shares in a grid layout.
  */
 export async function startRoomRecording(roomName: string) {
-  try {
-    console.log(`Starting Egress recording for room: ${roomName}`);
-
-    // In livekit-server-sdk v2.x, startRoomCompositeEgress takes multiple arguments:
-    // (roomName, output, options)
-    // We pass the output config directly to ensure legacy 'output' field is also set.
+    // Using the most stable positional argument signature
+    // (roomName, output, layout)
+    // 2 = EncodedFileType.MP4
     const info = await egressClient.startRoomCompositeEgress(
       roomName,
       {
-        fileType: EncodedFileType.MP4,
-        filepath: `${roomName}-${Date.now()}.mp4`,
+        fileType: 2,
+        filepath: `recording-${roomName}-${Date.now()}.mp4`,
       } as any,
-      {
-        layout: 'grid',
-      }
+      'grid'
     );
 
     console.log(`Egress started with ID: ${info.egressId}`);
     return info;
-  } catch (error) {
-    console.error('Failed to start egress recording:', error);
+  } catch (error: any) {
+    console.error('Failed to start egress recording. Full error:', JSON.stringify(error, null, 2));
     throw error;
   }
 }

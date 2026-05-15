@@ -41,24 +41,30 @@ export async function getToken(roomName: string, participantName: string) {
 }
 
 export async function startRecording(roomName: string) {
-  const response = await fetch(`${ROOMS_URL}/recording/start`, {
+  const response = await fetch(`${API_BASE}/egress/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify({ roomName }),
   });
-  if (!response.ok) throw new Error('Failed to start recording');
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || 'Failed to start recording');
+  }
   return await response.json();
 }
 
 export async function stopRecording(egressId: string) {
-  const response = await fetch(`${ROOMS_URL}/recording/stop`, {
+  const response = await fetch(`${API_BASE}/egress/stop`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify({ egressId }),
   });
-  if (!response.ok) throw new Error('Failed to stop recording');
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || 'Failed to stop recording');
+  }
   return await response.json();
 }
 

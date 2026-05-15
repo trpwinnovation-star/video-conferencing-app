@@ -5,6 +5,7 @@ import "dotenv/config";
 import roomRoutes from "./src/routes/room.routes";
 import authRoutes from "./src/routes/auth.routes";
 import recordingRoutes from "./src/routes/recording.routes";
+import egressRoutes from "./src/routes/egress.routes";
 import path from "path";
 
 console.log("Starting server...");
@@ -27,6 +28,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/recordings", recordingRoutes);
+app.use("/api/egress", egressRoutes);
 
 // Static files for recordings
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

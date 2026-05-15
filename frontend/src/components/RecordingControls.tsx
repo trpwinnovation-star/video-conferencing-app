@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Circle, Square, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useRecording } from "@/hooks/useRecording";
+import { startRecording, stopRecording } from "@/lib/api";
 import { useLocalParticipant } from "@livekit/components-react";
 import { Track } from "livekit-client";
 
@@ -16,26 +16,25 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
+  
+  // State for server-side recording
+  const [isRecording, setIsRecording] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [egressId, setEgressId] = useState<string | null>(null);
 
-  const {
-    isRecording,
-    isUploading,
-    duration,
-    startRecording,
-    stopRecording
-  } = useRecording({
-    roomName,
-    onSuccess: (path) => {
-      setToastMessage("Recording uploaded successfully!");
-      setToastType("success");
-      setShowToast(true);
-    },
-    onError: (err) => {
-      setToastMessage(err);
-      setToastType("error");
-      setShowToast(true);
+  // Timer logic for recording duration
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isRecording) {
+      interval = setInterval(() => {
+        setDuration((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setDuration(0);
     }
-  });
+    return () => clearInterval(interval);
+  }, [isRecording]);
 
   // Auto-hide toast
   useEffect(() => {
@@ -51,14 +50,35 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const toggleRecording = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      // Get the local microphone track publication
-      const micPublication = localParticipant.getTrack(Track.Source.Microphone);
-      const micTrack = micPublication?.track?.mediaStreamTrack;
-      startRecording(micTrack);
+  const toggleRecording = async () => {
+    try {
+      setIsUploading(true);
+      if (isRecording && egressId) {
+        // Stop Egress recording
+        await stopRecording(egressId);
+        setIsRecording(false);
+        setEgressId(null);
+        setToastMessage("Recording stopped. File is being processed on server.");
+        setToastType("success");
+        setShowToast(true);
+      } else {
+        // Start Egress recording
+        const res = await startRecording(roomName);
+        if (res.egressId) {
+          setEgressId(res.egressId);
+          setIsRecording(true);
+          setToastMessage("Server-side recording started!");
+          setToastType("success");
+          setShowToast(true);
+        }
+      }
+    } catch (error: any) {
+      console.error("Recording error:", error);
+      setToastMessage(error.message || "Recording operation failed");
+      setToastType("error");
+      setShowToast(true);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -83,11 +103,11 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
         </div>
       )}
 
-      {/* Uploading Status */}
+      {/* Processing Status */}
       {isUploading && (
         <div className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-blue-600/80 backdrop-blur-md px-3 py-1 rounded-full text-white">
           <Loader2 size={14} className="animate-spin" />
-          <span className="text-[10px] md:text-xs font-bold">Uploading...</span>
+          <span className="text-[10px] md:text-xs font-bold">Processing...</span>
         </div>
       )}
 

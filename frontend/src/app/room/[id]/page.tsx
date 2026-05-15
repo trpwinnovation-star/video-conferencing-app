@@ -74,8 +74,8 @@ export default function RoomPage() {
   return (
     <div className="h-screen w-screen bg-slate-950 overflow-hidden relative">
       <LiveKitRoom
-        video={true}
-        audio={true}
+        video={false}
+        audio={false}
         token={token}
         serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || "ws://localhost:7880"}
         className="h-full w-full relative"

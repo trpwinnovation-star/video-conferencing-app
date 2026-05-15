@@ -23,11 +23,8 @@ export function RecordingButton({ roomName }: RecordingButtonProps) {
         setEgressId(null);
       } else {
         const res = await startRecording(roomName);
-        if (res.info && res.info.egressId) {
-          setEgressId(res.info.egressId);
-          setIsRecording(true);
-        } else {
-          // Mock successful state if egress is not properly configured but API doesn't fail
+        if (res.egressId) {
+          setEgressId(res.egressId);
           setIsRecording(true);
         }
       }

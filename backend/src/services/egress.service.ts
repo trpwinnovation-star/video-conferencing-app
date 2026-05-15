@@ -21,17 +21,13 @@ export async function startRoomRecording(roomName: string) {
 
     // In livekit-server-sdk v2.x, startRoomCompositeEgress takes multiple arguments:
     // (roomName, output, options)
-    // The SDK expects a full EncodedFileOutput instance rather than a plain object.
-    const fileOutput = new EncodedFileOutput({
-      fileType: EncodedFileType.MP4,
-      filepath: `recordings/${roomName}-${Date.now()}.mp4`,
-    });
-
+    // We pass the output config directly to ensure legacy 'output' field is also set.
     const info = await egressClient.startRoomCompositeEgress(
       roomName,
       {
-        file: fileOutput,
-      },
+        fileType: EncodedFileType.MP4,
+        filepath: `${roomName}-${Date.now()}.mp4`,
+      } as any,
       {
         layout: 'grid',
       }

@@ -18,14 +18,24 @@ const egressClient = new EgressClient(
 export async function startRoomRecording(roomName: string) {
   try {
     console.log(`Starting Egress recording for room: ${roomName}`);
-    // Using the most stable positional argument signature
-    // (roomName, output, layout)
-    // 2 = EncodedFileType.MP4
+    // Dual-Compatible Request Strategy:
+    // We provide the output in multiple formats to satisfy both old and new LiveKit servers.
+    const outputConfig = {
+      fileType: 2, // MP4
+      filepath: `rec-${roomName}-${Date.now()}.mp4`,
+    };
+
     const info = await egressClient.startRoomCompositeEgress(
       roomName,
       {
-        fileType: 2,
-        filepath: `recording-${roomName}-${Date.now()}.mp4`,
+        ...outputConfig,
+        file: outputConfig,
+        fileOutputs: [outputConfig],
+        // Legacy 'output' wrapper required by some server versions
+        output: {
+          case: 'file',
+          value: outputConfig
+        }
       } as any,
       'grid'
     );

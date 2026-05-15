@@ -8,6 +8,7 @@ export const startRecording = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'roomName is required' });
     }
 
+    console.log(`Controller: Starting Egress for room: "${roomName}"`);
     const info = await egressService.startRoomRecording(roomName);
     return res.status(200).json({
       message: 'Recording started',
@@ -18,7 +19,9 @@ export const startRecording = async (req: Request, res: Response) => {
     console.error('Error in startRecording controller:', error);
     return res.status(500).json({ 
       error: 'Failed to start recording',
-      details: error.message 
+      details: error.message || 'No error message',
+      fullError: error,
+      help: 'Check your LIVEKIT_URL and API keys in Render dashboard'
     });
   }
 };

@@ -51,12 +51,6 @@ export function useRecording({ roomName, onSuccess, onError }: UseRecordingOptio
         let micTrack = userAudioTrack;
         let internalMicStream: MediaStream | null = null;
 
-        // If no track provided, request it (fallback)
-        if (!micTrack) {
-          internalMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          micTrack = internalMicStream.getAudioTracks()[0];
-        }
-
         if (micTrack) {
           const audioContext = new AudioContext();
           const destination = audioContext.createMediaStreamDestination();

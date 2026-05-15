@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { Circle, Square, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { startRecording, stopRecording } from "@/lib/api";
+import { startEgressRecording, stopEgressRecording } from "@/lib/api";
+import { useRecording } from "@/hooks/useRecording";
 import { useLocalParticipant } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import { ChevronDown, Monitor, Cloud } from "lucide-react";
 
 interface RecordingControlsProps {
   roomName: string;
@@ -16,25 +18,42 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
+  const [showModeMenu, setShowModeMenu] = useState(false);
+  const [recordingMode, setRecordingMode] = useState<"local" | "cloud">("cloud");
   
-  // State for server-side recording
-  const [isRecording, setIsRecording] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [duration, setDuration] = useState(0);
+  // --- Local (Browser) Recording Logic ---
+  const localRecorder = useRecording({
+    roomName,
+    onSuccess: (path) => {
+      setToastMessage("Local recording saved successfully!");
+      setToastType("success");
+      setShowToast(true);
+    },
+    onError: (err) => {
+      setToastMessage(err);
+      setToastType("error");
+      setShowToast(true);
+    }
+  });
+
+  // --- Cloud (Server/Egress) Recording Logic ---
+  const [isCloudRecording, setIsCloudRecording] = useState(false);
+  const [isCloudProcessing, setIsCloudProcessing] = useState(false);
+  const [cloudDuration, setCloudDuration] = useState(0);
   const [egressId, setEgressId] = useState<string | null>(null);
 
-  // Timer logic for recording duration
+  // Cloud Timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isRecording) {
+    if (isCloudRecording) {
       interval = setInterval(() => {
-        setDuration((prev) => prev + 1);
+        setCloudDuration((prev) => prev + 1);
       }, 1000);
     } else {
-      setDuration(0);
+      setCloudDuration(0);
     }
     return () => clearInterval(interval);
-  }, [isRecording]);
+  }, [isCloudRecording]);
 
   // Auto-hide toast
   useEffect(() => {
@@ -50,37 +69,49 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const toggleRecording = async () => {
+  const toggleLocalRecording = () => {
+    if (localRecorder.isRecording) {
+      localRecorder.stopRecording();
+    } else {
+      const micPublication = localParticipant.getTrack(Track.Source.Microphone);
+      const micTrack = micPublication?.track?.mediaStreamTrack;
+      localRecorder.startRecording(micTrack);
+    }
+  };
+
+  const toggleCloudRecording = async () => {
     try {
-      setIsUploading(true);
-      if (isRecording && egressId) {
-        // Stop Egress recording
-        await stopRecording(egressId);
-        setIsRecording(false);
+      setIsCloudProcessing(true);
+      if (isCloudRecording && egressId) {
+        await stopEgressRecording(egressId);
+        setIsCloudRecording(false);
         setEgressId(null);
-        setToastMessage("Recording stopped. File is being processed on server.");
+        setToastMessage("Cloud recording stopped. Processing on server...");
         setToastType("success");
         setShowToast(true);
       } else {
-        // Start Egress recording
-        const res = await startRecording(roomName);
+        const res = await startEgressRecording(roomName);
         if (res.egressId) {
           setEgressId(res.egressId);
-          setIsRecording(true);
-          setToastMessage("Server-side recording started!");
+          setIsCloudRecording(true);
+          setToastMessage("Server-side cloud recording started!");
           setToastType("success");
           setShowToast(true);
         }
       }
     } catch (error: any) {
-      console.error("Recording error:", error);
-      setToastMessage(error.message || "Recording operation failed");
+      console.error("Cloud recording error:", error);
+      setToastMessage(error.message || "Cloud recording failed");
       setToastType("error");
       setShowToast(true);
     } finally {
-      setIsUploading(false);
+      setIsCloudProcessing(false);
     }
   };
+
+  const isAnyRecording = localRecorder.isRecording || isCloudRecording;
+  const isAnyProcessing = localRecorder.isUploading || isCloudProcessing;
+  const currentDuration = localRecorder.isRecording ? localRecorder.duration : cloudDuration;
 
   return (
     <div className="relative flex flex-col items-center">
@@ -96,41 +127,96 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
       )}
 
       {/* Recording Info */}
-      {isRecording && (
+      {isAnyRecording && (
         <div className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-md px-2 py-0.5 md:px-3 md:py-1 rounded-full border border-red-500/30">
           <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-[10px] md:text-xs font-mono text-red-500 font-bold">{formatDuration(duration)}</span>
+          <span className="text-[10px] md:text-xs font-mono text-red-500 font-bold">
+            {recordingMode === 'cloud' ? 'CLOUD' : 'LOCAL'} {formatDuration(currentDuration)}
+          </span>
         </div>
       )}
 
       {/* Processing Status */}
-      {isUploading && (
+      {isAnyProcessing && (
         <div className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-blue-600/80 backdrop-blur-md px-3 py-1 rounded-full text-white">
           <Loader2 size={14} className="animate-spin" />
           <span className="text-[10px] md:text-xs font-bold">Processing...</span>
         </div>
       )}
 
-      <button
-        onClick={toggleRecording}
-        disabled={isUploading}
-        className={cn(
-          "h-10 w-10 md:h-12 md:w-12 rounded-2xl flex items-center justify-center transition-all shadow-lg active:scale-95",
-          isRecording
-            ? "bg-red-600 hover:bg-red-500 text-white animate-pulse"
-            : "bg-slate-700 hover:bg-slate-600 text-slate-300",
-          isUploading && "opacity-50 cursor-not-allowed"
-        )}
-        title={isRecording ? "Stop Recording" : "Start Recording"}
-      >
-        {isUploading ? (
-          <Loader2 size={20} className="animate-spin md:w-6 md:h-6" />
-        ) : isRecording ? (
-          <Square size={18} className="fill-current md:w-5 md:h-5" />
-        ) : (
-          <Circle size={18} className="fill-current md:w-5 md:h-5" />
-        )}
-      </button>
+      <div className="flex items-center">
+        <button
+          onClick={() => {
+            if (recordingMode === 'local') {
+              toggleLocalRecording();
+            } else {
+              toggleCloudRecording();
+            }
+          }}
+          disabled={isAnyProcessing}
+          className={cn(
+            "h-10 w-10 md:h-12 md:w-12 rounded-l-2xl flex items-center justify-center transition-all shadow-lg active:scale-95",
+            isAnyRecording
+              ? "bg-red-600 hover:bg-red-500 text-white animate-pulse"
+              : "bg-slate-700 hover:bg-slate-600 text-slate-300",
+            isAnyProcessing && "opacity-50 cursor-not-allowed"
+          )}
+          title={isAnyRecording ? "Stop Recording" : `Start ${recordingMode === 'cloud' ? 'Cloud' : 'Local'} Recording`}
+        >
+          {isAnyProcessing ? (
+            <Loader2 size={20} className="animate-spin md:w-6 md:h-6" />
+          ) : isAnyRecording ? (
+            <Square size={18} className="fill-current md:w-5 md:h-5" />
+          ) : (
+            <Circle size={18} className="fill-current md:w-5 md:h-5" />
+          )}
+        </button>
+
+        {/* Mode Selector Toggle */}
+        <div className="relative">
+          <button
+            onClick={() => !isAnyRecording && setShowModeMenu(!showModeMenu)}
+            disabled={isAnyRecording || isAnyProcessing}
+            className={cn(
+              "h-10 w-6 md:h-12 md:w-8 rounded-r-2xl flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-400 border-l border-white/5 transition-all",
+              isAnyRecording && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <ChevronDown size={14} className={cn("transition-transform", showModeMenu && "rotate-180")} />
+          </button>
+
+          {showModeMenu && (
+            <div className="absolute bottom-full mb-2 right-0 bg-slate-900 border border-white/10 rounded-xl p-1 shadow-2xl min-w-[140px] animate-in fade-in slide-in-from-bottom-2 duration-200 z-[100]">
+              <button
+                onClick={() => {
+                  setRecordingMode("cloud");
+                  setShowModeMenu(false);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors",
+                  recordingMode === "cloud" ? "bg-blue-600 text-white" : "text-slate-300 hover:bg-white/5"
+                )}
+              >
+                <Cloud size={16} />
+                <span>Cloud (Server)</span>
+              </button>
+              <button
+                onClick={() => {
+                  setRecordingMode("local");
+                  setShowModeMenu(false);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors",
+                  recordingMode === "local" ? "bg-amber-600 text-white" : "text-slate-300 hover:bg-white/5"
+                )}
+              >
+                <Monitor size={16} />
+                <span>Local (Browser)</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

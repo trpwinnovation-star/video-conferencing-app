@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Circle, Square, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { startRecording, stopRecording } from "@/lib/api";
+import { startEgressRecording, stopEgressRecording } from "@/lib/api";
 
 interface RecordingButtonProps {
   roomName: string;
@@ -18,11 +18,11 @@ export function RecordingButton({ roomName }: RecordingButtonProps) {
     try {
       setIsLoading(true);
       if (isRecording && egressId) {
-        await stopRecording(egressId);
+        await stopEgressRecording(egressId);
         setIsRecording(false);
         setEgressId(null);
       } else {
-        const res = await startRecording(roomName);
+        const res = await startEgressRecording(roomName);
         if (res.egressId) {
           setEgressId(res.egressId);
           setIsRecording(true);

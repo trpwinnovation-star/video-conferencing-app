@@ -1,4 +1,4 @@
-import { EgressClient, EncodedFileOutput, EncodedFileType, RoomCompositeEgressRequest } from 'livekit-server-sdk';
+import { EgressClient, EncodedFileType, EncodedFileOutput } from 'livekit-server-sdk';
 import path from 'path';
 
 const livekitUrl = process.env.LIVEKIT_URL || '';
@@ -18,19 +18,23 @@ const egressClient = new EgressClient(
 export async function startRoomRecording(roomName: string) {
   try {
     console.log(`Starting Egress recording for room: ${roomName}`);
-    
-    const output = new EncodedFileOutput({
+
+    // In livekit-server-sdk v2.x, startRoomCompositeEgress takes multiple arguments:
+    // (roomName, output, options)
+    // The SDK expects a full EncodedFileOutput instance rather than a plain object.
+    const fileOutput = new EncodedFileOutput({
       fileType: EncodedFileType.MP4,
       filepath: `recordings/${roomName}-${Date.now()}.mp4`,
     });
 
-    const request = new RoomCompositeEgressRequest({
+    const info = await egressClient.startRoomCompositeEgress(
       roomName,
-      layout: 'grid',
-      file: output,
-    });
+      fileOutput,
+      {
+        layout: 'grid',
+      }
+    );
 
-    const info = await egressClient.startRoomCompositeEgress(request);
     console.log(`Egress started with ID: ${info.egressId}`);
     return info;
   } catch (error) {

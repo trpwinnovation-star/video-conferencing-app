@@ -40,7 +40,7 @@ export async function getToken(roomName: string, participantName: string) {
   return data.token;
 }
 
-export async function startRecording(roomName: string) {
+export async function startEgressRecording(roomName: string) {
   const response = await fetch(`${API_BASE}/egress/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -49,12 +49,12 @@ export async function startRecording(roomName: string) {
   });
   if (!response.ok) {
     const err = await response.json();
-    throw new Error(err.error || 'Failed to start recording');
+    throw new Error(err.error || 'Failed to start egress recording');
   }
   return await response.json();
 }
 
-export async function stopRecording(egressId: string) {
+export async function stopEgressRecording(egressId: string) {
   const response = await fetch(`${API_BASE}/egress/stop`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -63,9 +63,20 @@ export async function stopRecording(egressId: string) {
   });
   if (!response.ok) {
     const err = await response.json();
-    throw new Error(err.error || 'Failed to stop recording');
+    throw new Error(err.error || 'Failed to stop egress recording');
   }
   return await response.json();
+}
+
+// ---- Legacy/Mock Recording APIs (Local only) ----
+export async function startRecording(roomName: string) {
+  console.log('Local recording started for room:', roomName);
+  return { status: 'mock_started' };
+}
+
+export async function stopRecording(id?: string) {
+  console.log('Local recording stopped');
+  return { status: 'mock_stopped' };
 }
 
 // ---- Auth APIs ----

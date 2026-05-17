@@ -17,6 +17,7 @@ export function useRecording({ roomName, onSuccess, onError }: UseRecordingOptio
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const startTimer = () => {
     setDuration(0);
@@ -32,48 +33,43 @@ export function useRecording({ roomName, onSuccess, onError }: UseRecordingOptio
     }
   };
 
-  const startRecording = async (userAudioTrack?: MediaStreamTrack | null) => {
+  const startRecording = async (audioTracks: MediaStreamTrack[] = []) => {
     try {
       setError(null);
       
-      // Request screen capture (display media)
+      // Request screen capture (display media) - ONLY video
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           frameRate: 15,
         },
-        audio: true // Captures tab audio (other participants)
+        audio: false // We capture all audio from LiveKit tracks directly
       });
 
       streamRef.current = stream;
 
-      // Add user's voice (microphone)
-      try {
-        let micTrack = userAudioTrack;
-        let internalMicStream: MediaStream | null = null;
-
-        if (micTrack) {
+      // Mix all provided audio tracks using Web Audio API
+      if (audioTracks.length > 0) {
+        try {
           const audioContext = new AudioContext();
+          audioContextRef.current = audioContext;
           const destination = audioContext.createMediaStreamDestination();
 
-          // Add display/tab audio (Others)
-          if (stream.getAudioTracks().length > 0) {
-            const displaySource = audioContext.createMediaStreamSource(new MediaStream([stream.getAudioTracks()[0]]));
-            displaySource.connect(destination);
-          }
+          // Connect every provided track to the destination
+          audioTracks.forEach(track => {
+            if (track.readyState === 'live') {
+              const source = audioContext.createMediaStreamSource(new MediaStream([track]));
+              source.connect(destination);
+            }
+          });
 
-          // Add user voice (Me)
-          const micSource = audioContext.createMediaStreamSource(new MediaStream([micTrack]));
-          micSource.connect(destination);
-
-          // Replace stream audio tracks with mixed audio
+          // Add the mixed audio track to the main recording stream
           const mixedTracks = destination.stream.getAudioTracks();
           if (mixedTracks.length > 0) {
-            stream.getAudioTracks().forEach(track => stream.removeTrack(track));
             stream.addTrack(mixedTracks[0]);
           }
+        } catch (e) {
+          console.warn("Could not mix audio tracks, proceeding without mixed audio", e);
         }
-      } catch (e) {
-        console.warn("Could not merge microphone audio, recording only tab audio", e);
       }
 
       const options = { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 500000 };
@@ -92,8 +88,14 @@ export function useRecording({ roomName, onSuccess, onError }: UseRecordingOptio
         setIsRecording(false);
         stopTimer();
         
-        // Stop all tracks in the stream
+        // Stop all tracks in the recording stream
         stream.getTracks().forEach(track => track.stop());
+        
+        // Close AudioContext
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+          audioContextRef.current.close().catch(console.error);
+          audioContextRef.current = null;
+        }
         
         const blob = new Blob(chunksRef.current, { type: 'video/webm' });
         const fileName = `recording-${roomName}-${new Date().toISOString().replace(/:/g, '-')}.webm`;
@@ -150,6 +152,9 @@ export function useRecording({ roomName, onSuccess, onError }: UseRecordingOptio
       stopTimer();
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(console.error);
       }
     };
   }, []);

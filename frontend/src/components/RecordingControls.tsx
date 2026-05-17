@@ -5,22 +5,28 @@ import { Circle, Square, Loader2, CheckCircle2, AlertCircle } from "lucide-react
 import { cn } from "@/lib/utils";
 import { startEgressRecording, stopEgressRecording } from "@/lib/api";
 import { useRecording } from "@/hooks/useRecording";
-import { useLocalParticipant } from "@livekit/components-react";
+import { useLocalParticipant, useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
-import { ChevronDown, Monitor, Cloud } from "lucide-react";
+import { ChevronDown, Monitor, Cloud, Mic, MicOff } from "lucide-react";
 
 interface RecordingControlsProps {
   roomName: string;
 }
 
 export function RecordingControls({ roomName }: RecordingControlsProps) {
-  const { localParticipant } = useLocalParticipant();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [showModeMenu, setShowModeMenu] = useState(false);
-  const [recordingMode, setRecordingMode] = useState<"local" | "cloud">("cloud");
   
+  // Changed default to 'local'
+  const [recordingMode, setRecordingMode] = useState<"local" | "cloud">("local");
+  // New state to toggle audio recording
+  const [recordAudio, setRecordAudio] = useState(true);
+  
+  // Get all active audio tracks in the room (microphones and screen share audio)
+  const audioTracks = useTracks([Track.Source.Microphone, Track.Source.ScreenShareAudio]);
+
   // --- Local (Browser) Recording Logic ---
   const localRecorder = useRecording({
     roomName,
@@ -73,9 +79,16 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
     if (localRecorder.isRecording) {
       localRecorder.stopRecording();
     } else {
-      const micPublication = localParticipant.getTrackPublication(Track.Source.Microphone);
-      const micTrack = micPublication?.track?.mediaStreamTrack;
-      localRecorder.startRecording(micTrack);
+      // Extract all underlying MediaStreamTracks
+      let mediaStreamTracks: MediaStreamTrack[] = [];
+      
+      if (recordAudio) {
+        mediaStreamTracks = audioTracks
+          .map(t => t.track?.mediaStreamTrack)
+          .filter((t): t is MediaStreamTrack => t !== undefined);
+      }
+      
+      localRecorder.startRecording(mediaStreamTracks);
     }
   };
 
@@ -186,7 +199,23 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
           </button>
 
           {showModeMenu && (
-            <div className="absolute bottom-full mb-2 right-0 bg-slate-900 border border-white/10 rounded-xl p-1 shadow-2xl min-w-[140px] animate-in fade-in slide-in-from-bottom-2 duration-200 z-[100]">
+            <div className="absolute bottom-full mb-2 right-0 bg-slate-900 border border-white/10 rounded-xl p-1 shadow-2xl min-w-[160px] animate-in fade-in slide-in-from-bottom-2 duration-200 z-[100]">
+              <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Recording Mode
+              </div>
+              <button
+                onClick={() => {
+                  setRecordingMode("local");
+                  setShowModeMenu(false);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors mb-1",
+                  recordingMode === "local" ? "bg-amber-600 text-white" : "text-slate-300 hover:bg-white/5"
+                )}
+              >
+                <Monitor size={16} />
+                <span>Local (Browser)</span>
+              </button>
               <button
                 onClick={() => {
                   setRecordingMode("cloud");
@@ -200,18 +229,19 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
                 <Cloud size={16} />
                 <span>Cloud (Server)</span>
               </button>
+              
+              <div className="h-px bg-white/10 my-2" />
+              
+              <div className="px-3 py-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Options
+              </div>
               <button
-                onClick={() => {
-                  setRecordingMode("local");
-                  setShowModeMenu(false);
-                }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors",
-                  recordingMode === "local" ? "bg-amber-600 text-white" : "text-slate-300 hover:bg-white/5"
-                )}
+                onClick={() => setRecordAudio(!recordAudio)}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors text-slate-300 hover:bg-white/5"
+                title="Toggle audio recording"
               >
-                <Monitor size={16} />
-                <span>Local (Browser)</span>
+                {recordAudio ? <Mic size={16} className="text-green-500" /> : <MicOff size={16} className="text-red-500" />}
+                <span>{recordAudio ? "Audio Included" : "No Audio"}</span>
               </button>
             </div>
           )}

@@ -84,7 +84,7 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
       
       if (recordAudio) {
         mediaStreamTracks = audioTracks
-          .map(t => t.track?.mediaStreamTrack)
+          .map(t => t.publication?.track?.mediaStreamTrack)
           .filter((t): t is MediaStreamTrack => t !== undefined);
       }
       

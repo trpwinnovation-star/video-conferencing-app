@@ -1,9 +1,12 @@
 import { Router } from 'express';
-import { uploadRecording } from '../controllers/recording.controller';
+import { startRecording, uploadChunk, finishRecording, getRecording } from '../controllers/recording.controller';
 import { upload } from '../middleware/upload.middleware';
 
 const router = Router();
 
-router.post('/upload', upload.single('recording'), uploadRecording);
+router.post('/start', startRecording);
+router.post('/upload-chunk', upload.single('chunk'), uploadChunk);
+router.post('/finish', finishRecording);
+router.get('/:recordingId', getRecording);
 
 export default router;

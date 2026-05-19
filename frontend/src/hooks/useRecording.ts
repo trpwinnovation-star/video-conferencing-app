@@ -1,23 +1,31 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { uploadRecording } from '@/lib/api';
 
 interface UseRecordingOptions {
   roomName: string;
+  userEmail: string;
+  userName?: string;
   onSuccess?: (filePath: string) => void;
   onError?: (error: string) => void;
 }
 
-export function useRecording({ roomName, onSuccess, onError }: UseRecordingOptions) {
+export function useRecording({ roomName, userEmail, userName = 'local-user', onSuccess, onError }: UseRecordingOptions) {
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  
+  // Track continuous recording session
+  const recordingSessionRef = useRef<{
+    recordingId: string;
+    meetingId: string;
+    chunkIndex: number;
+    totalChunks: number;
+  } | null>(null);
 
   const startTimer = () => {
     setDuration(0);
@@ -30,6 +38,26 @@ export function useRecording({ roomName, onSuccess, onError }: UseRecordingOptio
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+  };
+
+  const uploadChunk = async (blob: Blob, chunkIndex: number, meetingId: string) => {
+    try {
+      const formData = new FormData();
+      formData.append('chunk', blob);
+      formData.append('meetingId', meetingId);
+      formData.append('chunkIndex', chunkIndex.toString());
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/recording/upload-chunk`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to upload chunk');
+      }
+    } catch (err) {
+      console.error('Upload chunk error:', err);
     }
   };
 
@@ -72,21 +100,43 @@ export function useRecording({ roomName, onSuccess, onError }: UseRecordingOptio
         }
       }
 
+      // Initialize recording session on backend
+      const initRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/recording/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: roomName, createdBy: userName })
+      });
+      
+      if (!initRes.ok) throw new Error('Failed to start recording session');
+      
+      const { recordingId, meetingId } = await initRes.json();
+      
+      recordingSessionRef.current = {
+        recordingId,
+        meetingId,
+        chunkIndex: 0,
+        totalChunks: 0
+      };
+
       const options = { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 500000 };
       const mediaRecorder = new MediaRecorder(stream, options);
       
       mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data);
+      mediaRecorder.ondataavailable = async (event) => {
+        if (event.data.size > 0 && recordingSessionRef.current) {
+          const currentIndex = recordingSessionRef.current.chunkIndex;
+          recordingSessionRef.current.chunkIndex++;
+          recordingSessionRef.current.totalChunks++;
+          
+          await uploadChunk(event.data, currentIndex, recordingSessionRef.current.meetingId);
         }
       };
 
       mediaRecorder.onstop = async () => {
         setIsRecording(false);
         stopTimer();
+        setIsUploading(true);
         
         // Stop all tracks in the recording stream
         stream.getTracks().forEach(track => track.stop());
@@ -96,14 +146,34 @@ export function useRecording({ roomName, onSuccess, onError }: UseRecordingOptio
           audioContextRef.current.close().catch(console.error);
           audioContextRef.current = null;
         }
+
+        // Notify backend that recording is finished
+        if (recordingSessionRef.current) {
+          try {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/recording/finish`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                recordingId: recordingSessionRef.current.recordingId,
+                roomId: roomName,
+                meetingId: recordingSessionRef.current.meetingId,
+                totalChunks: recordingSessionRef.current.totalChunks,
+                email: userEmail
+              })
+            });
+            onSuccess?.('Recording processing started on server');
+          } catch (err) {
+            console.error('Failed to finish recording:', err);
+            onError?.('Failed to finalize recording');
+          }
+        }
         
-        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-        const fileName = `recording-${roomName}-${new Date().toISOString().replace(/:/g, '-')}.webm`;
-        
-        await handleUpload(blob, fileName);
+        setIsUploading(false);
+        recordingSessionRef.current = null;
       };
 
-      mediaRecorder.start();
+      // Output chunks every 5 seconds (5000ms)
+      mediaRecorder.start(5000);
       setIsRecording(true);
       startTimer();
 
@@ -131,21 +201,6 @@ export function useRecording({ roomName, onSuccess, onError }: UseRecordingOptio
       mediaRecorderRef.current.stop();
     }
   }, []);
-
-  const handleUpload = async (blob: Blob, fileName: string) => {
-    setIsUploading(true);
-    try {
-      const result = await uploadRecording(blob, fileName);
-      onSuccess?.(result.filePath);
-    } catch (err: any) {
-      console.error("Upload failed:", err);
-      const errorMessage = err.message || 'Failed to upload recording';
-      setError(errorMessage);
-      onError?.(errorMessage);
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   useEffect(() => {
     return () => {

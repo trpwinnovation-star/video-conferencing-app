@@ -11,9 +11,11 @@ import { ChevronDown, Monitor, Cloud, Mic, MicOff } from "lucide-react";
 
 interface RecordingControlsProps {
   roomName: string;
+  userEmail?: string;
+  userName?: string;
 }
 
-export function RecordingControls({ roomName }: RecordingControlsProps) {
+export function RecordingControls({ roomName, userEmail, userName }: RecordingControlsProps) {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
@@ -30,6 +32,9 @@ export function RecordingControls({ roomName }: RecordingControlsProps) {
   // --- Local (Browser) Recording Logic ---
   const localRecorder = useRecording({
     roomName,
+    // Use fallback values if not provided by parent component yet
+    userEmail: userEmail || 'user@example.com',
+    userName: userName || 'Local User',
     onSuccess: (path) => {
       setToastMessage("Local recording saved successfully!");
       setToastType("success");

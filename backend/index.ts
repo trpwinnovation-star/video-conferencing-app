@@ -27,7 +27,7 @@ app.use(cookieParser());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/rooms", roomRoutes);
-app.use("/api/recordings", recordingRoutes);
+app.use("/api/recording", recordingRoutes);
 app.use("/api/egress", egressRoutes);
 
 // Static files for recordings

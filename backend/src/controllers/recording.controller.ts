@@ -74,7 +74,7 @@ export const finishRecording = async (req: Request, res: Response) => {
 
 export const getRecording = async (req: Request, res: Response) => {
   try {
-    const { recordingId } = req.params;
+    const recordingId = req.params.recordingId as string;
 
     const recording = await prisma.recording.findUnique({
       where: { id: recordingId },

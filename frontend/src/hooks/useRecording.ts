@@ -41,6 +41,13 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
     }
   };
 
+  const getApiUrl = (endpoint: string) => {
+    let baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+    if (baseUrl.endsWith('/api')) baseUrl = baseUrl.slice(0, -4);
+    return `${baseUrl}${endpoint}`;
+  };
+
   const uploadChunk = async (blob: Blob, chunkIndex: number, meetingId: string) => {
     try {
       const formData = new FormData();
@@ -48,7 +55,7 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
       formData.append('meetingId', meetingId);
       formData.append('chunkIndex', chunkIndex.toString());
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/recording/upload-chunk`, {
+      const res = await fetch(getApiUrl('/api/recording/upload-chunk'), {
         method: 'POST',
         body: formData,
       });
@@ -101,7 +108,7 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
       }
 
       // Initialize recording session on backend
-      const initRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/recording/start`, {
+      const initRes = await fetch(getApiUrl('/api/recording/start'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomId: roomName, createdBy: userName })
@@ -150,7 +157,7 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
         // Notify backend that recording is finished
         if (recordingSessionRef.current) {
           try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/recording/finish`, {
+            await fetch(getApiUrl('/api/recording/finish'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

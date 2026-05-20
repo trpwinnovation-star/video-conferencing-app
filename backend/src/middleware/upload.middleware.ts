@@ -19,10 +19,13 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  if (file.mimetype === 'video/webm' || file.mimetype === 'video/mp4') {
+  // Browsers often send variations like video/webm;codecs=vp8
+  // We allow anything starting with video/ or octet-stream for blobs
+  if (file.mimetype.startsWith('video/') || file.mimetype === 'application/octet-stream') {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only WebM and MP4 are allowed.') as any, false);
+    console.error(`[UPLOAD] Rejected invalid mimetype: ${file.mimetype}`);
+    cb(new Error(`Invalid file type: ${file.mimetype}. Only video files are allowed.`) as any, false);
   }
 };
 

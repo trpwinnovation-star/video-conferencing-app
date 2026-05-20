@@ -27,9 +27,22 @@ export default function RecordingPage() {
     const fetchRecording = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/recording/${recordingId}`);
+        
         if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Failed to load recording");
+          let errMsg = `Failed to load recording (HTTP ${res.status})`;
+          try {
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const data = await res.json();
+              errMsg = data.error || errMsg;
+            } else {
+              const text = await res.text();
+              console.error("Non-JSON error response:", text);
+            }
+          } catch (e) {
+            console.error("Failed to parse error response", e);
+          }
+          throw new Error(errMsg);
         }
         
         const data = await res.json();

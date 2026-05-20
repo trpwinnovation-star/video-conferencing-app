@@ -62,20 +62,31 @@ export const processRecording = async (
     // 2. Merge chunks
     console.log(`[RECORDING] Merging ${totalChunks} chunks for meeting ${meetingId}...`);
     const mergedFilePath = await mergeChunks(meetingId, totalChunks);
+    
+    if (!fs.existsSync(mergedFilePath)) {
+      throw new Error(`Critical Error: Merged file was not created at ${mergedFilePath}`);
+    }
+
     const stats = fs.statSync(mergedFilePath);
+    if (stats.size === 0) {
+      throw new Error('Critical Error: Merged file is empty (0 bytes). Check if chunks were uploaded correctly.');
+    }
+    
     console.log(`[RECORDING] Merged file size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
     // 3. Upload to S3
     const s3Key = `meeting-recordings/${roomId}/${meetingId}.webm`;
-    console.log(`[RECORDING] S3 Config - Bucket: ${process.env.AWS_S3_BUCKET_NAME || 'NOT SET'}, Region: ${process.env.AWS_REGION || 'us-east-1'}`);
-    console.log(`[RECORDING] Uploading merged file to S3: ${s3Key}`);
+    console.log(`[RECORDING] S3 Upload Attempt - Key: ${s3Key}, Bucket: ${process.env.AWS_S3_BUCKET_NAME || 'meeting-recordings'}`);
     
     try {
       await uploadFileToS3(mergedFilePath, s3Key);
-      console.log(`[RECORDING] Successfully uploaded to S3`);
-    } catch (s3Error) {
-      console.error(`[RECORDING] S3 Upload Error:`, s3Error);
-      throw new Error(`S3 upload failed: ${s3Error instanceof Error ? s3Error.message : String(s3Error)}`);
+      console.log(`[RECORDING] S3 Upload SUCCESS`);
+    } catch (s3Error: any) {
+      console.error(`[RECORDING] S3 Upload FAILURE:`, s3Error.message);
+      if (process.env.MINIO_ENDPOINT?.includes('192.168.')) {
+        console.error(`[RECORDING] TIP: You are using a local IP (${process.env.MINIO_ENDPOINT}) from a cloud environment (Render). This WILL NOT work.`);
+      }
+      throw s3Error;
     }
 
     // 4. Generate a signed URL for email (valid for 24h)
@@ -83,6 +94,7 @@ export const processRecording = async (
     const signedUrl = await generateSignedUrl(s3Key);
 
     // 5. Update DB
+    console.log(`[RECORDING] Updating database status to 'completed'...`);
     await prisma.recording.update({
       where: { id: recordingId },
       data: {
@@ -91,32 +103,42 @@ export const processRecording = async (
         s3Key: s3Key,
       },
     });
-    console.log(`[RECORDING] Database updated with status 'completed'`);
+    console.log(`[RECORDING] Database updated successfully.`);
 
     // 6. Send Email
     if (email) {
-      console.log(`[RECORDING] Sending email to ${email}...`);
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const recordingLink = `${frontendUrl}/recordings/${recordingId}`;
+      console.log(`[RECORDING] Sending notification email to: ${email}`);
       try {
         await sendRecordingReadyEmail(email, roomId, recordingLink);
-        console.log(`[RECORDING] Email sent successfully`);
+        console.log(`[RECORDING] Email sent.`);
       } catch (emailError) {
-        console.error(`[RECORDING] Email sending failed (non-critical):`, emailError);
+        console.error(`[RECORDING] Email failed (non-blocking):`, emailError);
       }
     }
 
-    // 7. Cleanup chunks and local merged file to save space
-    fs.rmSync(path.join(CHUNKS_DIR, meetingId), { recursive: true, force: true });
-    fs.rmSync(mergedFilePath, { force: true });
+    // 7. Cleanup chunks and local merged file
+    console.log(`[RECORDING] Cleaning up temporary files...`);
+    try {
+      fs.rmSync(path.join(CHUNKS_DIR, meetingId), { recursive: true, force: true });
+      fs.rmSync(mergedFilePath, { force: true });
+      console.log(`[RECORDING] Cleanup complete.`);
+    } catch (cleanupError) {
+      console.warn(`[RECORDING] Cleanup warning:`, cleanupError);
+    }
 
-    console.log(`[RECORDING] ✅ Successfully processed recording for ${meetingId}`);
-  } catch (error) {
-    console.error(`[RECORDING] ❌ Failed to process recording ${meetingId}:`, error instanceof Error ? error.message : error);
-    console.error(`[RECORDING] Full error:`, error);
-    await prisma.recording.update({
-      where: { id: recordingId },
-      data: { status: 'failed' },
-    });
+    console.log(`[RECORDING] ✅ Final Process Finish for ${meetingId}`);
+  } catch (error: any) {
+    console.error(`[RECORDING] ❌ FATAL ERROR processing ${meetingId}:`, error.message);
+    try {
+      await prisma.recording.update({
+        where: { id: recordingId },
+        data: { status: 'failed' },
+      });
+      console.log(`[RECORDING] Status updated to 'failed' in database.`);
+    } catch (dbError) {
+      console.error(`[RECORDING] Could not update status to 'failed':`, dbError);
+    }
   }
 };

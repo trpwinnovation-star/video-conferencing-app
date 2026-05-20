@@ -1,7 +1,15 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const getApiBase = () => {
+  let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+  if (url.endsWith('/')) url = url.slice(0, -1);
+  if (url.endsWith('/api')) url = url.slice(0, -4);
+  return url;
+};
+
+const API_ROOT = getApiBase();
+const API_BASE = `${API_ROOT}/api`;
 const ROOMS_URL = `${API_BASE}/rooms`;
 const AUTH_URL = `${API_BASE}/auth`;
-const RECORDINGS_URL = `${API_BASE}/recordings`;
+const RECORDINGS_URL = `${API_BASE}/recording`;
 
 // ---- Recording APIs ----
 export async function uploadRecording(blob: Blob, fileName: string) {

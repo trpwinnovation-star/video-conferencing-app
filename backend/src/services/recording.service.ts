@@ -134,7 +134,10 @@ export const processRecording = async (
     try {
       await prisma.recording.update({
         where: { id: recordingId },
-        data: { status: 'failed' },
+        data: { 
+          status: 'failed',
+          failureReason: error.message || String(error)
+        },
       });
       console.log(`[RECORDING] Status updated to 'failed' in database.`);
     } catch (dbError) {

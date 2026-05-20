@@ -87,7 +87,7 @@ export const getRecording = async (req: Request, res: Response) => {
     if (recording.status === 'failed') {
       return res.status(400).json({ 
         error: 'Recording failed to process',
-        details: 'The recording upload or processing encountered an error. Please try again or contact support.',
+        details: recording.failureReason || 'The recording upload or processing encountered an error.',
         status: recording.status
       });
     }

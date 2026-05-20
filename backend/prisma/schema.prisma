@@ -26,7 +26,8 @@ model Recording {
   fileSize  Int?
   s3Key     String?
   signedUrl String?
-  status    String   // 'processing', 'completed', 'failed'
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status        String   // 'processing', 'completed', 'failed'
+  failureReason String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

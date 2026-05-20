@@ -32,7 +32,7 @@ const mergeChunks = async (meetingId: string, totalChunks: number): Promise<stri
         // Use manual chunking to avoid closing the writeStream prematurely
         for await (const chunk of readStream) {
           if (!writeStream.write(chunk)) {
-            await new Promise(resolve => writeStream.once('drain', resolve));
+            await new Promise<void>(resolve => writeStream.once('drain', resolve));
           }
         }
       } else {
@@ -41,7 +41,7 @@ const mergeChunks = async (meetingId: string, totalChunks: number): Promise<stri
     }
   } finally {
     writeStream.end();
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       writeStream.on('finish', resolve);
       writeStream.on('error', reject);
     });

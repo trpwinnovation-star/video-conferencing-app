@@ -19,6 +19,8 @@ const mergeChunks = async (meetingId: string, totalChunks: number): Promise<stri
   const mergedFilePath = path.join(MERGED_DIR, `${meetingId}.webm`);
   const writeStream = fs.createWriteStream(mergedFilePath);
 
+  console.log(`[RECORDING] Merging chunks for ${meetingId}. Expected: ${totalChunks}`);
+
   for (let i = 0; i < totalChunks; i++) {
     const chunkPath = path.join(CHUNKS_DIR, meetingId, `${i}.webm`);
     if (fs.existsSync(chunkPath)) {
@@ -29,14 +31,20 @@ const mergeChunks = async (meetingId: string, totalChunks: number): Promise<stri
         readStream.on('error', reject);
       });
     } else {
-      console.warn(`Chunk ${i} missing for meeting ${meetingId}`);
+      console.warn(`[RECORDING] Chunk ${i} missing for meeting ${meetingId}. Skipping...`);
     }
   }
 
-  writeStream.end();
   return new Promise((resolve, reject) => {
-    writeStream.on('finish', () => resolve(mergedFilePath));
-    writeStream.on('error', reject);
+    writeStream.on('finish', () => {
+      console.log(`[RECORDING] WriteStream finished for ${meetingId}`);
+      resolve(mergedFilePath);
+    });
+    writeStream.on('error', (err) => {
+      console.error(`[RECORDING] WriteStream error for ${meetingId}:`, err);
+      reject(err);
+    });
+    writeStream.end();
   });
 };
 

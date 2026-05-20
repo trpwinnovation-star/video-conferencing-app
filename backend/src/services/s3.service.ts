@@ -30,7 +30,18 @@ console.log(`  Secret Key Set: ${!!s3Config.credentials.secretAccessKey}`);
 
 const s3Client = new S3Client(s3Config);
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || 'meeting-recordings';
+// Add middleware to bypass ngrok's interstitial warning page
+s3Client.middlewareStack.add(
+  (next) => (args: any) => {
+    args.request.headers["ngrok-skip-browser-warning"] = "true";
+    return next(args);
+  },
+  {
+    step: "build",
+  }
+);
+
+const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || process.env.AWS_S3_BUCKET_NAME || 'meeting-recordings';
 
 /**
  * Upload a local file to S3
@@ -43,9 +54,6 @@ export const uploadFileToS3 = async (localFilePath: string, s3Key: string): Prom
     Key: s3Key,
     Body: fileStream,
     ContentType: 'video/webm',
-    Metadata: {
-      'ngrok-skip-browser-warning': 'true'
-    }
   };
 
   console.log(`[S3] Uploading to bucket: ${BUCKET_NAME}, key: ${s3Key}`);

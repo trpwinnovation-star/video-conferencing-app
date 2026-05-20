@@ -11,8 +11,8 @@ const s3Config = {
   endpoint: process.env.MINIO_ENDPOINT || process.env.AWS_ENDPOINT || undefined, 
   forcePathStyle: true, 
   requestHandler: new NodeHttpHandler({
-    connectionTimeout: 5000, // 5 seconds timeout for unreachable endpoints
-    socketTimeout: 5000,
+    connectionTimeout: 300000, // 5 minutes for large file uploads
+    socketTimeout: 300000,
   }),
   credentials: {
     accessKeyId: process.env.MINIO_ACCESS_KEY || process.env.AWS_ACCESS_KEY_ID || '',

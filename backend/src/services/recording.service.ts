@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
+import { pipeline } from 'stream/promises';
 import { uploadFileToS3, generateSignedUrl } from './s3.service';
 import { sendRecordingReadyEmail } from './email.service';
 import { PrismaClient } from '@prisma/client';
-
-import os from 'os';
 
 const prisma = new PrismaClient();
 const CHUNKS_DIR = path.join(os.tmpdir(), 'video-app-chunks');
@@ -15,39 +15,39 @@ if (!fs.existsSync(CHUNKS_DIR)) fs.mkdirSync(CHUNKS_DIR, { recursive: true });
 if (!fs.existsSync(MERGED_DIR)) fs.mkdirSync(MERGED_DIR, { recursive: true });
 
 /**
- * Merge chunks sequentially into a single file
+ * Merge chunks sequentially into a single file with production-level stream stability
  */
 const mergeChunks = async (meetingId: string, totalChunks: number): Promise<string> => {
   const mergedFilePath = path.join(MERGED_DIR, `${meetingId}.webm`);
   const writeStream = fs.createWriteStream(mergedFilePath);
 
-  console.log(`[RECORDING] Merging chunks for ${meetingId}. Expected: ${totalChunks}`);
+  console.log(`[RECORDING] Starting stream-pipeline merge for ${meetingId}. Total expected: ${totalChunks}`);
 
-  for (let i = 0; i < totalChunks; i++) {
-    const chunkPath = path.join(CHUNKS_DIR, meetingId, `${i}.webm`);
-    if (fs.existsSync(chunkPath)) {
-      await new Promise<void>((resolve, reject) => {
+  try {
+    for (let i = 0; i < totalChunks; i++) {
+      const chunkPath = path.join(CHUNKS_DIR, meetingId, `${i}.webm`);
+      if (fs.existsSync(chunkPath)) {
+        console.log(`[RECORDING] Merging chunk ${i}...`);
         const readStream = fs.createReadStream(chunkPath);
-        readStream.pipe(writeStream, { end: false });
-        readStream.on('end', resolve);
-        readStream.on('error', reject);
-      });
-    } else {
-      console.warn(`[RECORDING] Chunk ${i} missing for meeting ${meetingId}. Skipping...`);
+        // Use manual chunking to avoid closing the writeStream prematurely
+        for await (const chunk of readStream) {
+          if (!writeStream.write(chunk)) {
+            await new Promise(resolve => writeStream.once('drain', resolve));
+          }
+        }
+      } else {
+        console.warn(`[RECORDING] Skipping missing chunk ${i} for meeting ${meetingId}`);
+      }
     }
+  } finally {
+    writeStream.end();
+    await new Promise((resolve, reject) => {
+      writeStream.on('finish', resolve);
+      writeStream.on('error', reject);
+    });
   }
 
-  return new Promise((resolve, reject) => {
-    writeStream.on('finish', () => {
-      console.log(`[RECORDING] WriteStream finished for ${meetingId}`);
-      resolve(mergedFilePath);
-    });
-    writeStream.on('error', (err) => {
-      console.error(`[RECORDING] WriteStream error for ${meetingId}:`, err);
-      reject(err);
-    });
-    writeStream.end();
-  });
+  return mergedFilePath;
 };
 
 /**
@@ -62,50 +62,37 @@ export const processRecording = async (
 ) => {
   try {
     // 1. Update status to processing
-    await prisma.recording.update({
+    await (prisma as any).recording.update({
       where: { id: recordingId },
       data: { status: 'processing' },
     });
 
-    console.log(`[RECORDING] Starting processing for recordingId: ${recordingId}, meetingId: ${meetingId}`);
+    console.log(`[RECORDING] Processing session ${recordingId} (${totalChunks} chunks)`);
 
     // 2. Merge chunks
-    console.log(`[RECORDING] Merging ${totalChunks} chunks for meeting ${meetingId}...`);
     const mergedFilePath = await mergeChunks(meetingId, totalChunks);
     
     if (!fs.existsSync(mergedFilePath)) {
-      throw new Error(`Critical Error: Merged file was not created at ${mergedFilePath}`);
+      throw new Error(`Critical Error: Merged file was not created.`);
     }
 
     const stats = fs.statSync(mergedFilePath);
     if (stats.size === 0) {
-      throw new Error('Critical Error: Merged file is empty (0 bytes). Check if chunks were uploaded correctly.');
+      throw new Error('Critical Error: Merged file is empty (0 bytes).');
     }
     
-    console.log(`[RECORDING] Merged file size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`[RECORDING] Final video size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
     // 3. Upload to S3
     const s3Key = `meeting-recordings/${roomId}/${meetingId}.webm`;
-    console.log(`[RECORDING] S3 Upload Attempt - Key: ${s3Key}, Bucket: ${process.env.AWS_S3_BUCKET_NAME || 'meeting-recordings'}`);
-    
-    try {
-      await uploadFileToS3(mergedFilePath, s3Key);
-      console.log(`[RECORDING] S3 Upload SUCCESS`);
-    } catch (s3Error: any) {
-      console.error(`[RECORDING] S3 Upload FAILURE:`, s3Error.message);
-      if (process.env.MINIO_ENDPOINT?.includes('192.168.')) {
-        console.error(`[RECORDING] TIP: You are using a local IP (${process.env.MINIO_ENDPOINT}) from a cloud environment (Render). This WILL NOT work.`);
-      }
-      throw s3Error;
-    }
+    await uploadFileToS3(mergedFilePath, s3Key);
+    console.log(`[RECORDING] S3 Upload Success`);
 
-    // 4. Generate a signed URL for email (valid for 24h)
-    console.log(`[RECORDING] Generating signed URL...`);
+    // 4. Generate a signed URL for email
     const signedUrl = await generateSignedUrl(s3Key);
 
     // 5. Update DB
-    console.log(`[RECORDING] Updating database status to 'completed'...`);
-    await prisma.recording.update({
+    await (prisma as any).recording.update({
       where: { id: recordingId },
       data: {
         status: 'completed',
@@ -113,45 +100,36 @@ export const processRecording = async (
         s3Key: s3Key,
       },
     });
-    console.log(`[RECORDING] Database updated successfully.`);
 
     // 6. Send Email
     if (email) {
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const frontendUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
       const recordingLink = `${frontendUrl}/recordings/${recordingId}`;
-      console.log(`[RECORDING] Sending notification email to: ${email}`);
       try {
         await sendRecordingReadyEmail(email, roomId, recordingLink);
-        console.log(`[RECORDING] Email sent.`);
-      } catch (emailError) {
-        console.error(`[RECORDING] Email failed (non-blocking):`, emailError);
+        console.log(`[RECORDING] Notification sent to ${email}`);
+      } catch (e) {
+        console.warn(`[RECORDING] Email failed (non-blocking)`);
       }
     }
 
-    // 7. Cleanup chunks and local merged file
+    // 7. Final Cleanup
     console.log(`[RECORDING] Cleaning up temporary files...`);
-    try {
-      fs.rmSync(path.join(CHUNKS_DIR, meetingId), { recursive: true, force: true });
-      fs.rmSync(mergedFilePath, { force: true });
-      console.log(`[RECORDING] Cleanup complete.`);
-    } catch (cleanupError) {
-      console.warn(`[RECORDING] Cleanup warning:`, cleanupError);
-    }
+    fs.rmSync(path.join(CHUNKS_DIR, meetingId), { recursive: true, force: true });
+    fs.rmSync(mergedFilePath, { force: true });
 
-    console.log(`[RECORDING] ✅ Final Process Finish for ${meetingId}`);
   } catch (error: any) {
-    console.error(`[RECORDING] ❌ FATAL ERROR processing ${meetingId}:`, error.message);
+    console.error(`[RECORDING] FATAL ERROR:`, error.message);
     try {
-      await prisma.recording.update({
+      await (prisma as any).recording.update({
         where: { id: recordingId },
         data: { 
           status: 'failed',
           failureReason: error.message || String(error)
         },
       });
-      console.log(`[RECORDING] Status updated to 'failed' in database.`);
     } catch (dbError) {
-      console.error(`[RECORDING] Could not update status to 'failed':`, dbError);
+      console.error(`[RECORDING] Could not record failure in DB`);
     }
   }
 };

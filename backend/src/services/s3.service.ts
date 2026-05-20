@@ -1,18 +1,17 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadBucketCommand, CreateBucketCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import fs from 'fs';
 import path from 'path';
 
-import { NodeHttpHandler } from "@smithy/node-http-handler";
-
-// Configure S3 Client
-const s3Config = {
+// Configure S3 Client for Production
+const s3Config: any = {
   region: process.env.AWS_REGION || 'us-east-1',
   endpoint: process.env.MINIO_ENDPOINT || process.env.AWS_ENDPOINT || undefined, 
   forcePathStyle: true, 
   requestHandler: new NodeHttpHandler({
-    connectionTimeout: 300000, // 5 minutes for large file uploads
-    socketTimeout: 300000,
+    connectionTimeout: 600000, // 10 minutes for large file uploads
+    socketTimeout: 600000,
   }),
   credentials: {
     accessKeyId: process.env.MINIO_ACCESS_KEY || process.env.AWS_ACCESS_KEY_ID || '',
@@ -20,17 +19,9 @@ const s3Config = {
   },
 };
 
-// Log S3 configuration on startup
-console.log('[S3] Initializing S3 Client with config:');
-console.log(`  Bucket: ${process.env.AWS_S3_BUCKET_NAME || 'NOT SET'}`);
-console.log(`  Region: ${s3Config.region}`);
-console.log(`  Endpoint: ${s3Config.endpoint || 'AWS default'}`);
-console.log(`  Access Key Set: ${!!s3Config.credentials.accessKeyId}`);
-console.log(`  Secret Key Set: ${!!s3Config.credentials.secretAccessKey}`);
-
 const s3Client = new S3Client(s3Config);
 
-// Add middleware to bypass ngrok's interstitial warning page
+// Production Middleware: Inject ngrok bypass header into EVERY request
 s3Client.middlewareStack.add(
   (next, context) => (args: any) => {
     args.request.headers["ngrok-skip-browser-warning"] = "true";
@@ -44,9 +35,33 @@ s3Client.middlewareStack.add(
 const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || process.env.AWS_S3_BUCKET_NAME || 'meeting-recordings';
 
 /**
+ * Ensures the target bucket exists, creating it if necessary (MinIO compatible)
+ */
+export const ensureBucketExists = async () => {
+  try {
+    await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }));
+    console.log(`[S3] Bucket '${BUCKET_NAME}' already exists.`);
+  } catch (error: any) {
+    if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+      console.log(`[S3] Bucket '${BUCKET_NAME}' not found. Creating...`);
+      try {
+        await s3Client.send(new CreateBucketCommand({ Bucket: BUCKET_NAME }));
+        console.log(`[S3] Bucket '${BUCKET_NAME}' created successfully.`);
+      } catch (createError: any) {
+        console.error(`[S3] Failed to create bucket: ${createError.message}`);
+      }
+    } else {
+      console.error(`[S3] Error checking bucket existence:`, error.message);
+    }
+  }
+};
+
+/**
  * Upload a local file to S3
  */
 export const uploadFileToS3 = async (localFilePath: string, s3Key: string): Promise<string> => {
+  await ensureBucketExists();
+  
   const fileStream = fs.createReadStream(localFilePath);
   
   const uploadParams = {
@@ -77,6 +92,5 @@ export const generateSignedUrl = async (s3Key: string, expiresInSeconds: number 
     Key: s3Key,
   });
 
-  console.log(`[S3] Generating signed URL for key: ${s3Key}`);
   return await getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
 };

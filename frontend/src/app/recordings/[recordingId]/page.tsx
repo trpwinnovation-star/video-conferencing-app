@@ -39,6 +39,7 @@ export default function RecordingPage() {
             if (contentType && contentType.includes("application/json")) {
               const data = await res.json();
               errMsg = data.error || errMsg;
+              if (data.details) errMsg = `${errMsg}: ${data.details}`;
             } else {
               const text = await res.text();
               console.error("Non-JSON error response:", text);
@@ -53,6 +54,10 @@ export default function RecordingPage() {
         setRecording(data);
       } catch (err: any) {
         setError(err.message);
+        // Try to extract technical details if available
+        if (err.details) {
+          setError(`${err.message}: ${err.details}`);
+        }
       } finally {
         setLoading(false);
       }

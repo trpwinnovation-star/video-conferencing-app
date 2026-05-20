@@ -42,7 +42,10 @@ export const uploadFileToS3 = async (localFilePath: string, s3Key: string): Prom
     Bucket: BUCKET_NAME,
     Key: s3Key,
     Body: fileStream,
-    ContentType: 'video/webm', // Or dynamically determined
+    ContentType: 'video/webm',
+    Metadata: {
+      'ngrok-skip-browser-warning': 'true'
+    }
   };
 
   console.log(`[S3] Uploading to bucket: ${BUCKET_NAME}, key: ${s3Key}`);

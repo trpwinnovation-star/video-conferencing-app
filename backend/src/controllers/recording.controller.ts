@@ -43,9 +43,11 @@ export const uploadChunk = async (req: Request, res: Response) => {
       fs.mkdirSync(meetingChunksDir, { recursive: true });
     }
 
-    // Move file from general uploads to chunks directory
     const chunkPath = path.join(meetingChunksDir, `${chunkIndex}.webm`);
-    fs.renameSync(req.file.path, chunkPath);
+    
+    // Move file using copy + unlink to support cross-device moves on Render
+    fs.copyFileSync(req.file.path, chunkPath);
+    fs.unlinkSync(req.file.path);
 
     res.status(200).json({ message: 'Chunk uploaded successfully' });
   } catch (error) {

@@ -57,17 +57,29 @@ export const processRecording = async (
       data: { status: 'processing' },
     });
 
+    console.log(`[RECORDING] Starting processing for recordingId: ${recordingId}, meetingId: ${meetingId}`);
+
     // 2. Merge chunks
-    console.log(`Merging ${totalChunks} chunks for meeting ${meetingId}...`);
+    console.log(`[RECORDING] Merging ${totalChunks} chunks for meeting ${meetingId}...`);
     const mergedFilePath = await mergeChunks(meetingId, totalChunks);
     const stats = fs.statSync(mergedFilePath);
+    console.log(`[RECORDING] Merged file size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
     // 3. Upload to S3
     const s3Key = `meeting-recordings/${roomId}/${meetingId}.webm`;
-    console.log(`Uploading merged file to S3: ${s3Key}`);
-    await uploadFileToS3(mergedFilePath, s3Key);
+    console.log(`[RECORDING] S3 Config - Bucket: ${process.env.AWS_S3_BUCKET_NAME || 'NOT SET'}, Region: ${process.env.AWS_REGION || 'us-east-1'}`);
+    console.log(`[RECORDING] Uploading merged file to S3: ${s3Key}`);
+    
+    try {
+      await uploadFileToS3(mergedFilePath, s3Key);
+      console.log(`[RECORDING] Successfully uploaded to S3`);
+    } catch (s3Error) {
+      console.error(`[RECORDING] S3 Upload Error:`, s3Error);
+      throw new Error(`S3 upload failed: ${s3Error instanceof Error ? s3Error.message : String(s3Error)}`);
+    }
 
     // 4. Generate a signed URL for email (valid for 24h)
+    console.log(`[RECORDING] Generating signed URL...`);
     const signedUrl = await generateSignedUrl(s3Key);
 
     // 5. Update DB
@@ -77,28 +89,31 @@ export const processRecording = async (
         status: 'completed',
         fileSize: stats.size,
         s3Key: s3Key,
-        // We don't necessarily store the 24h signed URL in the DB permanently, 
-        // because it expires. The access page will generate a new one on demand.
-        // But we can store it or leave it empty.
       },
     });
+    console.log(`[RECORDING] Database updated with status 'completed'`);
 
     // 6. Send Email
     if (email) {
-      console.log(`Sending email to ${email}...`);
-      // Use the frontend URL to view the recording, not the raw S3 URL directly
+      console.log(`[RECORDING] Sending email to ${email}...`);
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const recordingLink = `${frontendUrl}/recordings/${recordingId}`;
-      await sendRecordingReadyEmail(email, roomId, recordingLink);
+      try {
+        await sendRecordingReadyEmail(email, roomId, recordingLink);
+        console.log(`[RECORDING] Email sent successfully`);
+      } catch (emailError) {
+        console.error(`[RECORDING] Email sending failed (non-critical):`, emailError);
+      }
     }
 
     // 7. Cleanup chunks and local merged file to save space
     fs.rmSync(path.join(CHUNKS_DIR, meetingId), { recursive: true, force: true });
     fs.rmSync(mergedFilePath, { force: true });
 
-    console.log(`Successfully processed recording for ${meetingId}`);
+    console.log(`[RECORDING] ✅ Successfully processed recording for ${meetingId}`);
   } catch (error) {
-    console.error(`Failed to process recording ${meetingId}:`, error);
+    console.error(`[RECORDING] ❌ Failed to process recording ${meetingId}:`, error instanceof Error ? error.message : error);
+    console.error(`[RECORDING] Full error:`, error);
     await prisma.recording.update({
       where: { id: recordingId },
       data: { status: 'failed' },

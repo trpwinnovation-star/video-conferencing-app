@@ -84,8 +84,20 @@ export const getRecording = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Recording not found' });
     }
 
+    if (recording.status === 'failed') {
+      return res.status(400).json({ 
+        error: 'Recording failed to process',
+        details: 'The recording upload or processing encountered an error. Please try again or contact support.',
+        status: recording.status
+      });
+    }
+
     if (recording.status !== 'completed' || !recording.s3Key) {
-      return res.status(400).json({ error: `Recording is ${recording.status}` });
+      return res.status(202).json({ 
+        error: `Recording is ${recording.status}`,
+        details: `Current status: ${recording.status}. Please check back in a few moments.`,
+        status: recording.status
+      });
     }
 
     // Generate a fresh signed URL valid for 1 hour

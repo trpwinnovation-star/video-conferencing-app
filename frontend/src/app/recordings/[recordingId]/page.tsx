@@ -26,7 +26,11 @@ export default function RecordingPage() {
 
     const fetchRecording = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/recording/${recordingId}`);
+        let baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+        if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+        if (baseUrl.endsWith('/api')) baseUrl = baseUrl.slice(0, -4);
+        
+        const res = await fetch(`${baseUrl}/api/recording/${recordingId}`);
         
         if (!res.ok) {
           let errMsg = `Failed to load recording (HTTP ${res.status})`;

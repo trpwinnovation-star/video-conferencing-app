@@ -4,9 +4,11 @@ import { uploadFileToS3, generateSignedUrl } from './s3.service';
 import { sendRecordingReadyEmail } from './email.service';
 import { PrismaClient } from '@prisma/client';
 
+import os from 'os';
+
 const prisma = new PrismaClient();
-const CHUNKS_DIR = path.join(__dirname, '../../uploads/chunks');
-const MERGED_DIR = path.join(__dirname, '../../uploads/merged');
+const CHUNKS_DIR = path.join(os.tmpdir(), 'video-app-chunks');
+const MERGED_DIR = path.join(os.tmpdir(), 'video-app-merged');
 
 // Ensure directories exist
 if (!fs.existsSync(CHUNKS_DIR)) fs.mkdirSync(CHUNKS_DIR, { recursive: true });

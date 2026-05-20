@@ -2,12 +2,13 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { processRecording } from '../services/recording.service';
 import { generateSignedUrl } from '../services/s3.service';
 
 const prisma = new PrismaClient();
-const CHUNKS_DIR = path.join(__dirname, '../../uploads/chunks');
+const CHUNKS_DIR = path.join(os.tmpdir(), 'video-app-chunks');
 
 export const startRecording = async (req: Request, res: Response) => {
   try {

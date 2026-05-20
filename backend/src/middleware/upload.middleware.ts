@@ -1,9 +1,10 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 
-// Ensure uploads directory exists
-const uploadDir = path.join(process.cwd(), 'uploads');
+// Use system temp directory for more reliable writing on cloud platforms
+const uploadDir = path.join(os.tmpdir(), 'video-app-uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

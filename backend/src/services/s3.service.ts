@@ -32,7 +32,7 @@ const s3Client = new S3Client(s3Config);
 
 // Add middleware to bypass ngrok's interstitial warning page
 s3Client.middlewareStack.add(
-  (next) => (args: any) => {
+  (next, context) => (args: any) => {
     args.request.headers["ngrok-skip-browser-warning"] = "true";
     return next(args);
   },

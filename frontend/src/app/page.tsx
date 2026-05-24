@@ -62,7 +62,7 @@ export default function HomePage() {
           </div>
           <span className="text-stone-900 font-bold text-xl tracking-tight">MeetSpace</span>
         </div>
-        
+
         <div className="flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-3">
@@ -103,12 +103,12 @@ export default function HomePage() {
             <div className="w-2 h-2 bg-[#c16d18] rounded-full animate-pulse" />
             <span className="text-[#c16d18] text-xs font-bold uppercase tracking-wider">Powered by LiveKit</span>
           </div>
-          
+
           <h1 className="text-4xl md:text-5.5xl font-extrabold mb-6 tracking-tight text-stone-900 leading-tight">
             Premium video meetings.{" "}
             <span className="text-[#c16d18] block mt-1">Now free for everyone.</span>
           </h1>
-          
+
           <p className="text-lg text-stone-600 mb-10 max-w-xl leading-relaxed">
             Secure, real-time video conferencing with screen sharing, recording, and more.
           </p>
@@ -136,10 +136,10 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 border-t border-stone-200/80 pt-6">
             <button
               onClick={handleCreateRoom}
-              className="flex items-center justify-center gap-2 bg-[#c16d18] hover:bg-[#a0560e] text-white px-6 py-3.5 rounded-xl font-bold transition-all w-full sm:w-auto shadow-lg shadow-[#c16d18]/20 active:scale-95"
+              className="flex items-center justify-center gap-2 bg-[#c16d18] hover:bg-[#a0560e] text-white px-6 py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-[#c16d18]/20 active:scale-95 whitespace-nowrap"
             >
-              <Video size={20} />
-              New meeting
+              <Video size={20} className="shrink-0" />
+              <span>New Meeting</span>
             </button>
 
             <form onSubmit={handleJoinRoom} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
@@ -160,8 +160,8 @@ export default function HomePage() {
                 disabled={!roomCode.trim()}
                 className={cn(
                   "px-5 py-3.5 rounded-xl font-bold transition-all border-2 w-full sm:w-auto text-center active:scale-95 cursor-pointer",
-                  roomCode.trim() 
-                    ? "border-[#c16d18] text-[#c16d18] hover:bg-[#c16d18]/5" 
+                  roomCode.trim()
+                    ? "border-[#c16d18] text-[#c16d18] hover:bg-[#c16d18]/5"
                     : "border-stone-200 text-stone-400 cursor-not-allowed"
                 )}
               >

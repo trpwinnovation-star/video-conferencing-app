@@ -12,10 +12,10 @@ export function VideoToggleButton() {
     <button
       onClick={() => toggle()}
       className={cn(
-        "p-2.5 md:p-4 rounded-full flex items-center justify-center transition-all",
-        enabled 
-          ? "bg-slate-800 hover:bg-slate-700 text-white" 
-          : "bg-red-500 hover:bg-red-600 text-white"
+        "p-2.5 md:p-4 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer border",
+        enabled
+          ? "bg-white hover:bg-stone-50 text-[#c16d18] border-stone-200"
+          : "bg-red-500 hover:bg-red-600 text-white border-red-400"
       )}
       title={enabled ? "Turn off Camera" : "Turn on Camera"}
     >

@@ -48,7 +48,8 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
     return `${baseUrl}${endpoint}`;
   };
 
-  const uploadChunk = async (blob: Blob, chunkIndex: number, meetingId: string) => {
+  // Improved uploadChunk with 3x Retry logic for production reliability
+  const uploadChunk = async (blob: Blob, chunkIndex: number, meetingId: string, retryCount = 0) => {
     try {
       const formData = new FormData();
       formData.append('chunk', blob);
@@ -61,10 +62,17 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
       });
 
       if (!res.ok) {
-        throw new Error('Failed to upload chunk');
+        throw new Error(`Upload failed with status ${res.status}`);
       }
+      console.log(`[RECORDING] Chunk ${chunkIndex} uploaded successfully`);
     } catch (err) {
-      console.error('Upload chunk error:', err);
+      console.warn(`[RECORDING] Chunk ${chunkIndex} upload failed (Attempt ${retryCount + 1}):`, err);
+      if (retryCount < 2) {
+        // Wait 1s and retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return uploadChunk(blob, chunkIndex, meetingId, retryCount + 1);
+      }
+      console.error(`[RECORDING] Chunk ${chunkIndex} permanently failed after 3 attempts.`);
     }
   };
 
@@ -77,7 +85,7 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
         video: {
           frameRate: 15,
         },
-        audio: false // We capture all audio from LiveKit tracks directly
+        audio: false 
       });
 
       streamRef.current = stream;
@@ -89,7 +97,6 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
           audioContextRef.current = audioContext;
           const destination = audioContext.createMediaStreamDestination();
 
-          // Connect every provided track to the destination
           audioTracks.forEach(track => {
             if (track.readyState === 'live') {
               const source = audioContext.createMediaStreamSource(new MediaStream([track]));
@@ -97,24 +104,23 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
             }
           });
 
-          // Add the mixed audio track to the main recording stream
           const mixedTracks = destination.stream.getAudioTracks();
           if (mixedTracks.length > 0) {
             stream.addTrack(mixedTracks[0]);
           }
         } catch (e) {
-          console.warn("Could not mix audio tracks, proceeding without mixed audio", e);
+          console.warn("[RECORDING] Could not mix audio, proceeding without audio", e);
         }
       }
 
-      // Initialize recording session on backend
+      // Initialize session on backend
       const initRes = await fetch(getApiUrl('/api/recording/start'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomId: roomName, createdBy: userName })
       });
       
-      if (!initRes.ok) throw new Error('Failed to start recording session');
+      if (!initRes.ok) throw new Error('Could not establish server session');
       
       const { recordingId, meetingId } = await initRes.json();
       
@@ -125,7 +131,8 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
         totalChunks: 0
       };
 
-      const options = { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 500000 };
+      // Use modern mimeTypes
+      const options = { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 1000000 };
       const mediaRecorder = new MediaRecorder(stream, options);
       
       mediaRecorderRef.current = mediaRecorder;
@@ -145,16 +152,13 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
         stopTimer();
         setIsUploading(true);
         
-        // Stop all tracks in the recording stream
         stream.getTracks().forEach(track => track.stop());
         
-        // Close AudioContext
         if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
           audioContextRef.current.close().catch(console.error);
           audioContextRef.current = null;
         }
 
-        // Notify backend that recording is finished
         if (recordingSessionRef.current) {
           try {
             await fetch(getApiUrl('/api/recording/finish'), {
@@ -168,10 +172,10 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
                 email: userEmail
               })
             });
-            onSuccess?.('Recording processing started on server');
+            onSuccess?.('Recording successfully sent for processing');
           } catch (err) {
-            console.error('Failed to finish recording:', err);
-            onError?.('Failed to finalize recording');
+            console.error('[RECORDING] Finalize failed:', err);
+            onError?.('Server failed to receive recording final signal');
           }
         }
         
@@ -179,12 +183,11 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
         recordingSessionRef.current = null;
       };
 
-      // Output chunks every 5 seconds (5000ms)
+      // 5-second increments for chunks
       mediaRecorder.start(5000);
       setIsRecording(true);
       startTimer();
 
-      // Handle user stopping the share via browser UI
       if (stream.getVideoTracks()[0]) {
         stream.getVideoTracks()[0].onended = () => {
           if (mediaRecorder.state !== 'inactive') {
@@ -194,9 +197,9 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
       }
 
     } catch (err: any) {
-      console.error("Error starting recording:", err);
+      console.error("[RECORDING] Startup Error:", err);
       const errorMessage = err.name === 'NotAllowedError' 
-        ? 'Permission denied. Please allow screen sharing to record.' 
+        ? 'Permission denied. Please allow screen sharing.' 
         : (err.message || 'Failed to start recording');
       setError(errorMessage);
       onError?.(errorMessage);

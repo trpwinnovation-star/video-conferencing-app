@@ -51,10 +51,10 @@ export default function RoomPage() {
 
   if (error) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">{error}</p>
-          <a href="/" className="text-blue-500 hover:underline">Return to Home</a>
+      <div className="flex h-screen items-center justify-center bg-[#FBF9FA] text-stone-900">
+        <div className="text-center p-8 bg-white border border-stone-200/80 rounded-2xl shadow-xl max-w-md">
+          <p className="text-red-600 mb-4 font-semibold">{error}</p>
+          <a href="/" className="text-[#c16d18] hover:underline font-bold">Return to Home</a>
         </div>
       </div>
     );
@@ -62,17 +62,17 @@ export default function RoomPage() {
 
   if (token === "") {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
+      <div className="flex h-screen items-center justify-center bg-[#FBF9FA] text-stone-900">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="animate-spin text-blue-500" size={32} />
-          <p>Joining room...</p>
+          <Loader2 className="animate-spin text-[#c16d18]" size={32} />
+          <p className="font-bold">Joining room...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-screen bg-slate-950 overflow-hidden relative">
+    <div className="h-screen w-screen bg-[#FBF9FA] overflow-hidden relative text-stone-900">
       <LiveKitRoom
         video={false}
         audio={false}

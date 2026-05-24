@@ -136,19 +136,21 @@ export function RecordingControls({ roomName, userEmail, userName }: RecordingCo
       {/* Toast Notification */}
       {showToast && (
         <div className={cn(
-          "absolute -top-16 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 duration-300",
-          toastType === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"
+          "absolute -top-16 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl shadow-xl flex items-center gap-2 whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 duration-300 border",
+          toastType === "success"
+            ? "bg-green-50 text-green-800 border-green-200"
+            : "bg-red-50 text-red-800 border-red-200"
         )}>
-          {toastType === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-          <span className="text-sm font-medium">{toastMessage}</span>
+          {toastType === "success" ? <CheckCircle2 size={16} className="text-green-600" /> : <AlertCircle size={16} className="text-red-600" />}
+          <span className="text-xs font-bold">{toastMessage}</span>
         </div>
       )}
 
-      {/* Recording Info */}
+      {/* Recording Timer Badge */}
       {isAnyRecording && (
-        <div className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-md px-2 py-0.5 md:px-3 md:py-1 rounded-full border border-red-500/30">
-          <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-[10px] md:text-xs font-mono text-red-500 font-bold">
+        <div className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-white border border-stone-200 shadow-md px-2 py-0.5 md:px-3 md:py-1 rounded-full">
+          <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[#c16d18] animate-pulse" />
+          <span className="text-[10px] md:text-xs font-mono text-[#c16d18] font-extrabold">
             {recordingMode === 'cloud' ? 'CLOUD' : 'LOCAL'} {formatDuration(currentDuration)}
           </span>
         </div>
@@ -156,13 +158,14 @@ export function RecordingControls({ roomName, userEmail, userName }: RecordingCo
 
       {/* Processing Status */}
       {isAnyProcessing && (
-        <div className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-blue-600/80 backdrop-blur-md px-3 py-1 rounded-full text-white">
-          <Loader2 size={14} className="animate-spin" />
+        <div className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[#c16d18]/10 border border-[#c16d18]/20 px-3 py-1 rounded-full text-[#c16d18]">
+          <Loader2 size={13} className="animate-spin" />
           <span className="text-[10px] md:text-xs font-bold">Processing...</span>
         </div>
       )}
 
       <div className="flex items-center">
+        {/* Main Record Toggle Button */}
         <button
           onClick={() => {
             if (recordingMode === 'local') {
@@ -173,80 +176,108 @@ export function RecordingControls({ roomName, userEmail, userName }: RecordingCo
           }}
           disabled={isAnyProcessing}
           className={cn(
-            "h-10 w-10 md:h-12 md:w-12 rounded-l-2xl flex items-center justify-center transition-all shadow-lg active:scale-95",
+            "h-10 w-10 md:h-12 md:w-12 rounded-l-2xl flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer border",
             isAnyRecording
-              ? "bg-red-600 hover:bg-red-500 text-white animate-pulse"
-              : "bg-slate-700 hover:bg-slate-600 text-slate-300",
+              ? "bg-[#c16d18] hover:bg-[#a0560e] text-white border-[#c16d18] animate-pulse"
+              : "bg-white hover:bg-stone-50 text-[#c16d18] border-stone-200",
             isAnyProcessing && "opacity-50 cursor-not-allowed"
           )}
           title={isAnyRecording ? "Stop Recording" : `Start ${recordingMode === 'cloud' ? 'Cloud' : 'Local'} Recording`}
         >
           {isAnyProcessing ? (
-            <Loader2 size={20} className="animate-spin md:w-6 md:h-6" />
+            <Loader2 size={18} className="animate-spin md:w-5 md:h-5" />
           ) : isAnyRecording ? (
-            <Square size={18} className="fill-current md:w-5 md:h-5" />
+            <Square size={16} className="fill-current md:w-[18px] md:h-[18px]" />
           ) : (
-            <Circle size={18} className="fill-current md:w-5 md:h-5" />
+            <Circle size={16} className="fill-current md:w-[18px] md:h-[18px]" />
           )}
         </button>
 
-        {/* Mode Selector Toggle */}
+        {/* Mode Selector Chevron */}
         <div className="relative">
           <button
             onClick={() => !isAnyRecording && setShowModeMenu(!showModeMenu)}
             disabled={isAnyRecording || isAnyProcessing}
             className={cn(
-              "h-10 w-6 md:h-12 md:w-8 rounded-r-2xl flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-400 border-l border-white/5 transition-all",
-              isAnyRecording && "opacity-50 cursor-not-allowed"
+              "h-10 w-6 md:h-12 md:w-8 rounded-r-2xl flex items-center justify-center bg-stone-100 hover:bg-stone-200 text-stone-500 border-l border-stone-200 border-t border-b border-r border-stone-200 transition-all cursor-pointer",
+              isAnyRecording && "opacity-40 cursor-not-allowed"
             )}
           >
-            <ChevronDown size={14} className={cn("transition-transform", showModeMenu && "rotate-180")} />
+            <ChevronDown size={13} className={cn("transition-transform duration-200", showModeMenu && "rotate-180")} />
           </button>
 
+          {/* Dropdown Menu */}
           {showModeMenu && (
-            <div className="absolute bottom-full mb-2 right-0 bg-slate-900 border border-white/10 rounded-xl p-1 shadow-2xl min-w-[160px] animate-in fade-in slide-in-from-bottom-2 duration-200 z-[100]">
-              <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <div className="absolute bottom-full mb-2 right-0 bg-white border border-stone-200/80 rounded-2xl p-1.5 shadow-2xl shadow-stone-200/60 min-w-[170px] animate-in fade-in slide-in-from-bottom-2 duration-200 z-[100]">
+              <div className="px-3 py-2 text-[10px] font-black text-stone-400 uppercase tracking-widest">
                 Recording Mode
               </div>
+
+              {/* Local Mode Option */}
               <button
                 onClick={() => {
                   setRecordingMode("local");
                   setShowModeMenu(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors mb-1",
-                  recordingMode === "local" ? "bg-amber-600 text-white" : "text-slate-300 hover:bg-white/5"
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all mb-1 cursor-pointer",
+                  recordingMode === "local"
+                    ? "bg-[#c16d18]/10 text-[#c16d18] border border-[#c16d18]/20"
+                    : "text-stone-600 hover:bg-stone-50"
                 )}
               >
-                <Monitor size={16} />
+                <Monitor size={15} className={recordingMode === "local" ? "text-[#c16d18]" : "text-stone-400"} />
                 <span>Local (Browser)</span>
+                {recordingMode === "local" && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#c16d18]" />
+                )}
               </button>
+
+              {/* Cloud Mode Option */}
               <button
                 onClick={() => {
                   setRecordingMode("cloud");
                   setShowModeMenu(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors",
-                  recordingMode === "cloud" ? "bg-blue-600 text-white" : "text-slate-300 hover:bg-white/5"
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                  recordingMode === "cloud"
+                    ? "bg-stone-100 text-stone-800 border border-stone-200"
+                    : "text-stone-600 hover:bg-stone-50"
                 )}
               >
-                <Cloud size={16} />
+                <Cloud size={15} className={recordingMode === "cloud" ? "text-stone-600" : "text-stone-400"} />
                 <span>Cloud (Server)</span>
+                {recordingMode === "cloud" && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-stone-500" />
+                )}
               </button>
-              
-              <div className="h-px bg-white/10 my-2" />
-              
-              <div className="px-3 py-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+
+              {/* Divider */}
+              <div className="h-px bg-stone-100 my-2 mx-2" />
+
+              {/* Audio Options */}
+              <div className="px-3 py-1 text-[10px] font-black text-stone-400 uppercase tracking-widest">
                 Options
               </div>
               <button
                 onClick={() => setRecordAudio(!recordAudio)}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors text-slate-300 hover:bg-white/5"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-stone-600 hover:bg-stone-50 cursor-pointer"
                 title="Toggle audio recording"
               >
-                {recordAudio ? <Mic size={16} className="text-green-500" /> : <MicOff size={16} className="text-red-500" />}
+                {recordAudio
+                  ? <Mic size={15} className="text-green-600" />
+                  : <MicOff size={15} className="text-red-500" />}
                 <span>{recordAudio ? "Audio Included" : "No Audio"}</span>
+                <div className={cn(
+                  "ml-auto w-8 h-4 rounded-full transition-colors flex items-center px-0.5",
+                  recordAudio ? "bg-green-500" : "bg-stone-200"
+                )}>
+                  <div className={cn(
+                    "w-3 h-3 rounded-full bg-white shadow-sm transition-transform",
+                    recordAudio ? "translate-x-4" : "translate-x-0"
+                  )} />
+                </div>
               </button>
             </div>
           )}

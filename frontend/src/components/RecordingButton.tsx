@@ -41,10 +41,10 @@ export function RecordingButton({ roomName }: RecordingButtonProps) {
       onClick={toggleRecording}
       disabled={isLoading}
       className={cn(
-        "p-4 rounded-full flex items-center justify-center transition-all",
+        "p-4 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer border",
         isRecording 
-          ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" 
-          : "bg-slate-800 hover:bg-slate-700 text-slate-300",
+          ? "bg-[#c16d18]/10 text-[#c16d18] hover:bg-[#c16d18]/15 border-[#c16d18]/30 animate-pulse" 
+          : "bg-white hover:bg-stone-50 text-[#c16d18] border-stone-200",
         isLoading && "opacity-50 cursor-not-allowed"
       )}
       title={isRecording ? "Stop Recording" : "Start Recording"}

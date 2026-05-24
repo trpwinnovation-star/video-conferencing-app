@@ -40,9 +40,9 @@ export function ParticipantGrid() {
 
   if (tracks.length === 0) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 font-medium animate-pulse">
-        <Monitor size={48} className="mb-4 opacity-20" />
-        <p>Connecting to room...</p>
+      <div className="w-full h-full flex flex-col items-center justify-center text-stone-400 font-medium animate-pulse">
+        <Monitor size={48} className="mb-4 text-[#c16d18] opacity-35" />
+        <p className="font-semibold text-stone-600">Connecting to room...</p>
       </div>
     );
   }
@@ -53,13 +53,13 @@ export function ParticipantGrid() {
     const otherTracks = cameraTracks;
 
     return (
-      <div className="w-full h-full flex flex-col bg-slate-950 overflow-hidden relative">
+      <div className="w-full h-full flex flex-col bg-[#FBF9FA] overflow-hidden relative">
         {/* Filmstrip (Top) */}
         {showFilmstrip && (
           <div className="h-24 md:h-40 flex-shrink-0 p-2 md:p-4 transition-all duration-300">
             <div className="flex gap-2 md:gap-4 h-full overflow-x-auto no-scrollbar justify-center">
               {otherTracks.map((track) => (
-                <div key={`${track.participant.identity}_${track.source}`} className="h-full aspect-video flex-shrink-0 shadow-xl rounded-lg md:rounded-xl overflow-hidden border border-white/5">
+                <div key={`${track.participant.identity}_${track.source}`} className="h-full aspect-video flex-shrink-0 shadow-lg rounded-xl overflow-hidden border border-stone-200/80 bg-white">
                   <VideoTile trackRef={track} />
                 </div>
               ))}
@@ -69,7 +69,7 @@ export function ParticipantGrid() {
 
         {/* Main Stage */}
         <div className="flex-1 min-h-0 p-2 md:p-4 pt-0 relative flex items-center justify-center overflow-hidden group">
-          <div className="w-full h-full rounded-xl md:rounded-3xl overflow-hidden shadow-2xl bg-slate-900/50 border border-white/5">
+          <div className="w-full h-full rounded-2xl md:rounded-3xl overflow-hidden shadow-xl bg-white border border-stone-200/80">
             <VideoTile trackRef={mainTrack} />
           </div>
           
@@ -77,7 +77,7 @@ export function ParticipantGrid() {
           <div className="absolute top-2 md:top-4 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => setShowFilmstrip(!showFilmstrip)}
-              className="p-1 rounded-full bg-slate-900/80 text-slate-400 hover:text-white border border-white/10 backdrop-blur-md"
+              className="p-1 rounded-full bg-white/90 text-stone-500 hover:text-stone-800 border border-stone-200 shadow-md backdrop-blur-md cursor-pointer"
             >
               {showFilmstrip ? <ChevronUp size={14} className="md:w-4 md:h-4" /> : <ChevronDown size={14} className="md:w-4 md:h-4" />}
             </button>
@@ -88,7 +88,7 @@ export function ParticipantGrid() {
   }
 
   return (
-    <div className="h-full w-full bg-slate-950 flex flex-col overflow-hidden">
+    <div className="h-full w-full bg-[#FBF9FA] flex flex-col overflow-hidden">
       <div className={cn(
         "flex-1 grid gap-1.5 md:gap-4 p-1.5 md:p-4",
         tracks.length === 1 ? "grid-cols-1 grid-rows-1" :
@@ -97,7 +97,7 @@ export function ParticipantGrid() {
         "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
       )}>
         {tracks.map((track) => (
-          <div key={`${track.participant.identity}_${track.source}`} className="w-full h-full relative overflow-hidden rounded-xl bg-slate-900 border border-white/5">
+          <div key={`${track.participant.identity}_${track.source}`} className="w-full h-full relative overflow-hidden rounded-2xl bg-white border border-stone-200/85 shadow-md">
             <VideoTile trackRef={track} />
           </div>
         ))}

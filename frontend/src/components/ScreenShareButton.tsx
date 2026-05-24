@@ -12,10 +12,10 @@ export function ScreenShareButton() {
     <button
       onClick={() => toggle()}
       className={cn(
-        "p-2.5 md:p-4 rounded-full flex items-center justify-center transition-all",
+        "p-2.5 md:p-4 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer border",
         enabled 
-          ? "bg-blue-600 hover:bg-blue-700 text-white" 
-          : "bg-slate-800 hover:bg-slate-700 text-white"
+          ? "bg-[#c16d18] hover:bg-[#a0560e] text-white border-[#c16d18]" 
+          : "bg-white hover:bg-stone-50 text-[#c16d18] border-stone-200"
       )}
       title={enabled ? "Stop Sharing" : "Share Screen"}
     >

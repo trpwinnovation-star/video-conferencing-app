@@ -1,29 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #0f172a;
-  --color-foreground: #f8fafc;
+  --color-background: #FBF9FA;
+  --color-foreground: #1c1917;
   
-  --color-card: #1e293b;
-  --color-card-foreground: #f8fafc;
+  --color-card: #ffffff;
+  --color-card-foreground: #1c1917;
   
-  --color-primary: #3b82f6;
+  --color-primary: #c16d18;
   --color-primary-foreground: #ffffff;
   
-  --color-secondary: #334155;
-  --color-secondary-foreground: #f8fafc;
+  --color-secondary: #f4f4f5;
+  --color-secondary-foreground: #27272a;
   
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
   
-  --radius-lg: 0.5rem;
-  --radius-md: calc(0.5rem - 2px);
-  --radius-sm: calc(0.5rem - 4px);
+  --radius-lg: 1rem;
+  --radius-md: 0.75rem;
+  --radius-sm: 0.5rem;
 }
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
   }
   body {
     background-color: var(--color-background);
@@ -32,7 +32,7 @@
   }
 }
 
-/* Custom scrollbar for better look in dark mode */
+/* Custom scrollbar matching clean light theme */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -41,14 +41,15 @@
   background: var(--color-background);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-secondary);
+  background: #e4e4e7;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #d4d4d8;
 }
 
 /* LiveKit default styles overrides if needed */
 .lk-room-container {
   background-color: var(--color-background) !important;
 }
+

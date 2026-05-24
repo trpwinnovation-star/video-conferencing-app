@@ -68,23 +68,23 @@ export default function RecordingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
-        <Loader2 className="w-10 h-10 animate-spin text-amber-500 mb-4" />
-        <h2 className="text-lg font-medium">Loading recording...</h2>
+      <div className="min-h-screen bg-[#FBF9FA] flex flex-col items-center justify-center text-stone-900">
+        <Loader2 className="w-10 h-10 animate-spin text-[#c16d18] mb-4" />
+        <h2 className="text-lg font-bold">Loading recording...</h2>
       </div>
     );
   }
 
   if (error || !recording) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center shadow-2xl">
-          <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+      <div className="min-h-screen bg-[#FBF9FA] flex flex-col items-center justify-center p-6 text-stone-900">
+        <div className="max-w-md w-full bg-white border border-stone-200/80 rounded-2xl p-8 text-center shadow-xl">
+          <div className="w-16 h-16 bg-red-500/10 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <AlertCircle size={32} />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Recording Unavailable</h1>
-          <p className="text-slate-400 mb-8">{error || "This recording does not exist or is still processing."}</p>
-          <a href="/" className="inline-block bg-amber-600 hover:bg-amber-500 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+          <h1 className="text-2xl font-bold text-stone-900 mb-2">Recording Unavailable</h1>
+          <p className="text-stone-500 mb-8">{error || "This recording does not exist or is still processing."}</p>
+          <a href="/" className="inline-block bg-[#c16d18] hover:bg-[#a0560e] text-white font-bold py-2.5 px-6 rounded-xl transition-all shadow-md shadow-[#c16d18]/25 active:scale-95 cursor-pointer">
             Return Home
           </a>
         </div>
@@ -93,43 +93,43 @@ export default function RecordingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 p-6 md:p-12">
+    <div className="min-h-screen bg-[#FBF9FA] text-stone-800 p-6 md:p-12">
       <div className="max-w-5xl mx-auto">
         <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Meeting Recording</h1>
-            <p className="text-slate-400 flex items-center gap-2">
-              <span className="bg-slate-800 px-2 py-1 rounded text-xs font-mono">Room: {recording.roomId}</span>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-stone-900 mb-2">Meeting Recording</h1>
+            <div className="text-stone-500 flex items-center gap-2 text-sm font-medium">
+              <span className="bg-[#c16d18]/10 text-[#c16d18] border border-[#c16d18]/20 px-2.5 py-1 rounded-lg font-bold">Room: {recording.roomId}</span>
               <span>•</span>
               <span>{new Date(recording.createdAt).toLocaleDateString(undefined, {
                 weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
               })}</span>
-            </p>
+            </div>
           </div>
           
           <a 
             href={recording.signedUrl} 
             download={`Recording-${recording.roomId}.webm`}
-            className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-5 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/25 active:scale-95"
+            className="flex items-center justify-center gap-2 bg-[#c16d18] hover:bg-[#a0560e] text-white font-bold py-2.5 px-5 rounded-xl transition-all shadow-lg hover:shadow-[#c16d18]/25 active:scale-95 cursor-pointer"
           >
             <Download size={18} />
             Download Video
           </a>
         </header>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative aspect-video group">
+        <div className="bg-white border border-stone-200/80 rounded-3xl overflow-hidden shadow-xl relative aspect-video group">
           <video 
             src={recording.signedUrl} 
             controls 
-            className="w-full h-full object-contain bg-black"
+            className="w-full h-full object-contain bg-stone-950"
             controlsList="nodownload"
             poster="/placeholder-video.jpg"
           />
         </div>
 
-        <div className="mt-12 bg-slate-900/50 border border-slate-800/50 rounded-2xl p-6 md:p-8">
-          <h3 className="text-lg font-semibold text-white mb-4">Security Information</h3>
-          <p className="text-sm text-slate-400 max-w-3xl leading-relaxed">
+        <div className="mt-12 bg-white/80 border border-stone-200/80 rounded-2xl p-6 md:p-8 shadow-sm">
+          <h3 className="text-lg font-bold text-stone-900 mb-4">Security Information</h3>
+          <p className="text-sm text-stone-600 max-w-3xl leading-relaxed">
             This recording is securely stored and accessed via a temporary, cryptographically signed URL. 
             The link embedded in the video player will expire for security purposes. If you need to access this 
             recording later, please retain the original link sent to your email or download a local copy using 

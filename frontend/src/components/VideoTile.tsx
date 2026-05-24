@@ -38,10 +38,10 @@ export function VideoTile({ trackRef }: VideoTileProps) {
   return (
     <div 
       className={cn(
-        "relative overflow-hidden bg-slate-900 transition-all duration-500 h-full w-full rounded-2xl group",
-        !isScreenShare && "border border-white/5",
-        isSpeaking && !isScreenShare ? "ring-2 ring-blue-500 ring-offset-4 ring-offset-slate-950" : "border-white/5",
-        isScreenShare && "border-none shadow-2xl"
+        "relative overflow-hidden bg-white transition-all duration-500 h-full w-full rounded-2xl group",
+        !isScreenShare && "border border-stone-200/80 shadow-sm",
+        isSpeaking && !isScreenShare ? "ring-2 ring-[#c16d18] ring-offset-4 ring-offset-[#FBF9FA]" : "border-stone-200/80",
+        isScreenShare && "border-none shadow-xl"
       )}
     >
       {/* Video/Screen Stream */}
@@ -50,21 +50,21 @@ export function VideoTile({ trackRef }: VideoTileProps) {
           trackRef={trackRef}
           className={cn(
             "absolute inset-0 w-full h-full transition-transform duration-700 group-hover:scale-[1.02]",
-            isScreenShare ? "object-contain bg-black/40" : "object-cover"
+            isScreenShare ? "object-contain bg-stone-950" : "object-cover"
           )}
         />
       ) : (
-        <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[#0F172A]">
+        <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[#FBF9FA]">
           {/* Vibrant Background Glow */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-purple-600/10" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#c16d18]/5 via-transparent to-[#c16d18]/5" />
           
-          <div className="relative w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-3xl font-bold mb-4 shadow-[0_0_40px_rgba(59,130,246,0.3)] border border-white/20 text-white animate-in zoom-in duration-500">
+          <div className="relative w-22 h-22 bg-gradient-to-br from-[#c16d18] to-[#965310] rounded-full flex items-center justify-center text-3xl font-extrabold mb-4 shadow-lg shadow-[#c16d18]/20 border border-white/20 text-white animate-in zoom-in duration-500">
             {participant.name?.[0]?.toUpperCase() || "?"}
           </div>
           
           {!isScreenShare && (
-            <div className="relative flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10">
-              <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">Waiting for Camera</span>
+            <div className="relative flex items-center gap-2 bg-white/80 border border-stone-200 px-4 py-1.5 rounded-xl shadow-sm">
+              <span className="text-[10px] font-bold tracking-widest uppercase text-stone-500">Waiting for Camera</span>
             </div>
           )}
         </div>
@@ -76,30 +76,32 @@ export function VideoTile({ trackRef }: VideoTileProps) {
       )}
 
       {/* Glassmorphic Overlays */}
-      <div className="absolute bottom-2 md:bottom-4 left-2 md:left-4 right-2 md:right-4 flex items-center justify-between pointer-events-none">
-        <div className="bg-black/40 backdrop-blur-md px-2 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl flex items-center gap-1.5 md:gap-2 border border-white/10 shadow-lg transition-transform duration-300 group-hover:translate-x-1">
-          {isScreenShare && <Monitor size={12} className="text-blue-400 md:w-[14px] md:h-[14px]" />}
+      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10">
+        <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl flex items-center gap-1.5 border border-stone-200 shadow-md text-stone-900 transition-transform duration-300 group-hover:translate-x-1 pointer-events-auto">
+          {isScreenShare && <Monitor size={13} className="text-[#c16d18]" />}
           <ParticipantName 
             participant={participant} 
-            className="text-white text-[11px] md:text-[13px] font-semibold truncate max-w-[80px] md:max-w-none"
+            className="text-stone-950 text-[11px] md:text-[12px] font-bold truncate max-w-[80px] md:max-w-none"
           />
-          {participant.isLocal && <span className="text-[9px] md:text-[10px] text-blue-400 font-bold ml-1">(You)</span>}
-          {isScreenShare && <span className="text-[9px] md:text-[10px] text-slate-400 font-medium ml-1">Screen</span>}
+          {participant.isLocal && <span className="text-[9px] md:text-[10px] text-[#c16d18] font-black ml-1 uppercase tracking-wider">(You)</span>}
+          {isScreenShare && <span className="text-[9px] md:text-[10px] text-stone-500 font-bold ml-1 uppercase tracking-wider">Screen</span>}
         </div>
         
         {!isScreenShare && (
           <div className={cn(
-            "p-1.5 md:p-2 rounded-lg md:rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10 transition-all duration-300 group-hover:-translate-x-1",
-            isAudioMuted ? "bg-red-500/80 text-white" : "bg-black/40 text-slate-300"
+            "p-2 rounded-xl flex items-center justify-center backdrop-blur-md border shadow-md transition-all duration-300 group-hover:-translate-x-1 pointer-events-auto",
+            isAudioMuted 
+              ? "bg-red-500 border-red-400 text-white" 
+              : "bg-white/95 border-stone-200 text-[#c16d18] hover:bg-stone-50"
           )}>
-            {isAudioMuted ? <MicOff size={12} className="md:w-3.5 md:h-3.5" /> : <Mic size={12} className="md:w-3.5 md:h-3.5" />}
+            {isAudioMuted ? <MicOff size={13} /> : <Mic size={13} />}
           </div>
         )}
       </div>
 
       {/* Speaking Indicator Pulse (Top Right) */}
       {isSpeaking && !isScreenShare && (
-        <div className="absolute top-2 md:top-4 right-2 md:right-4 h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,1)] animate-pulse" />
+        <div className="absolute top-3 right-3 h-2 w-2 rounded-full bg-[#c16d18] shadow-[0_0_12px_rgba(193,109,24,0.8)] animate-pulse z-10" />
       )}
     </div>
   );

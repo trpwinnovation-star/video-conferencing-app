@@ -1,8 +1,8 @@
-import nodemailer from 'nodemailer';
-
 import dns from "dns";
-
 dns.setDefaultResultOrder("ipv4first");
+
+
+import nodemailer from 'nodemailer';
 
 // Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({

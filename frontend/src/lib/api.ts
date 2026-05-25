@@ -33,12 +33,40 @@ export async function uploadRecording(blob: Blob, fileName: string) {
 }
 
 // ---- Room APIs ----
-export async function getToken(roomName: string, participantName: string) {
+export async function createProtectedRoom(roomId: string, password: string) {
+  const response = await fetch(`${ROOMS_URL}/create-protected`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ roomId, password }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Failed to create room');
+  return data.room as { roomId: string; createdAt: string };
+}
+
+export async function verifyRoomPassword(roomId: string, password: string) {
+  const response = await fetch(`${ROOMS_URL}/verify-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ roomId, password }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Incorrect password');
+  return true;
+}
+
+export async function getToken(
+  roomName: string,
+  participantName: string,
+  password: string
+) {
   const response = await fetch(`${ROOMS_URL}/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ roomName, participantName }),
+    body: JSON.stringify({ roomName, participantName, password }),
   });
   if (!response.ok) {
     const err = await response.json();

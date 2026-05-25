@@ -13,14 +13,17 @@ import {
   useTracks
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
-import { Mic, MicOff, Monitor } from "lucide-react";
+import { Mic, MicOff, Monitor, Pin, PinOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRoomPin } from "@/contexts/RoomPinContext";
 
 interface VideoTileProps {
   trackRef: TrackReferenceOrPlaceholder;
+  isPinned?: boolean;
 }
 
-export function VideoTile({ trackRef }: VideoTileProps) {
+export function VideoTile({ trackRef, isPinned = false }: VideoTileProps) {
+  const { pinnedIdentity, togglePin } = useRoomPin();
   const participant = trackRef.participant;
   const isSpeaking = useIsSpeaking(participant);
   const isScreenShare = trackRef.source === Track.Source.ScreenShare;
@@ -34,6 +37,9 @@ export function VideoTile({ trackRef }: VideoTileProps) {
   const isVideoMuted = trackRef.source === Track.Source.Camera && !participant.isCameraEnabled;
 
   const hasVideo = isTrackReference(trackRef) && !!trackRef.publication;
+  const isPinnedParticipant =
+    isPinned || pinnedIdentity === participant.identity;
+  const canPin = !isScreenShare;
 
   return (
     <div 
@@ -41,6 +47,7 @@ export function VideoTile({ trackRef }: VideoTileProps) {
         "relative overflow-hidden bg-white transition-all duration-500 h-full w-full rounded-2xl group",
         !isScreenShare && "border border-stone-200/80 shadow-sm",
         isSpeaking && !isScreenShare ? "ring-2 ring-[#c16d18] ring-offset-4 ring-offset-[#FBF9FA]" : "border-stone-200/80",
+        isPinnedParticipant && !isScreenShare && "ring-2 ring-[#c16d18]/60",
         isScreenShare && "border-none shadow-xl"
       )}
     >
@@ -73,6 +80,25 @@ export function VideoTile({ trackRef }: VideoTileProps) {
       {/* Audio Stream (Hidden) */}
       {micTrack && isTrackReference(micTrack) && !participant.isLocal && (
         <AudioTrack trackRef={micTrack} />
+      )}
+
+      {/* Pin control */}
+      {canPin && (
+        <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            type="button"
+            onClick={() => togglePin(participant.identity)}
+            title={isPinnedParticipant ? "Unpin participant" : "Pin to main screen"}
+            className={cn(
+              "p-2 rounded-xl flex items-center justify-center backdrop-blur-md border shadow-md cursor-pointer transition-colors",
+              isPinnedParticipant
+                ? "bg-[#c16d18] border-[#c16d18] text-white"
+                : "bg-white/95 border-stone-200 text-stone-600 hover:text-[#c16d18] hover:border-[#c16d18]/30"
+            )}
+          >
+            {isPinnedParticipant ? <PinOff size={14} /> : <Pin size={14} />}
+          </button>
+        </div>
       )}
 
       {/* Glassmorphic Overlays */}

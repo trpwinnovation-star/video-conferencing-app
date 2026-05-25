@@ -1,0 +1,73 @@
+import bcrypt from 'bcrypt';
+import { PrismaClient } from '@prisma/client';
+import { LivekitService } from './livekit.service';
+
+const prisma = new PrismaClient();
+const livekitService = new LivekitService();
+
+const ROOM_ID_REGEX = /^[a-zA-Z0-9_-]{3,64}$/;
+
+export function normalizeRoomId(roomId: string): string {
+  return roomId.trim();
+}
+
+export function isValidRoomId(roomId: string): boolean {
+  return ROOM_ID_REGEX.test(normalizeRoomId(roomId));
+}
+
+export async function createProtectedRoom(
+  roomId: string,
+  password: string,
+  createdBy?: string
+) {
+  const id = normalizeRoomId(roomId);
+  if (!isValidRoomId(id)) {
+    throw new Error('Room ID must be 3–64 characters (letters, numbers, _ or -)');
+  }
+  if (!password || password.length < 4) {
+    throw new Error('Password must be at least 4 characters');
+  }
+
+  const existing = await prisma.room.findUnique({ where: { roomId: id } });
+  if (existing) {
+    throw new Error('Room already exists. Choose a different code or join instead.');
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const room = await prisma.room.create({
+    data: {
+      roomId: id,
+      passwordHash,
+      createdBy: createdBy ?? null,
+    },
+  });
+
+  await livekitService.createRoom(id);
+  return room;
+}
+
+export async function verifyRoomPassword(roomId: string, password: string): Promise<boolean> {
+  const id = normalizeRoomId(roomId);
+  const room = await prisma.room.findUnique({ where: { roomId: id } });
+  if (!room) {
+    return false;
+  }
+  return bcrypt.compare(password, room.passwordHash);
+}
+
+export async function getRoomOrThrow(roomId: string) {
+  const id = normalizeRoomId(roomId);
+  const room = await prisma.room.findUnique({ where: { roomId: id } });
+  if (!room) {
+    throw new Error('Room not found. Check the code or create a new meeting.');
+  }
+  return room;
+}
+
+export async function ensureLivekitRoom(roomId: string) {
+  try {
+    await livekitService.createRoom(normalizeRoomId(roomId));
+  } catch {
+    // Room may already exist in LiveKit
+  }
+}

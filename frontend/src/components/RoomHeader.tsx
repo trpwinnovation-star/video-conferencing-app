@@ -2,6 +2,7 @@
 
 import { useParticipants } from "@livekit/components-react";
 import { Users } from "lucide-react";
+import { ShareRoomButton } from "./ShareRoomButton";
 
 interface RoomHeaderProps {
   roomName: string;
@@ -12,10 +13,11 @@ export function RoomHeader({ roomName }: RoomHeaderProps) {
 
   return (
     <div className="h-16 w-full flex items-center justify-between px-6 bg-white border-b border-stone-200/80 shadow-sm text-stone-900">
-      <div className="flex items-center gap-3">
-        <div className="bg-[#c16d18] text-white px-4.5 py-2 rounded-xl text-sm font-bold shadow-md shadow-[#c16d18]/20">
-          Room: {roomName}
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="bg-[#c16d18] text-white px-3 sm:px-4.5 py-2 rounded-xl text-sm font-bold shadow-md shadow-[#c16d18]/20 font-mono">
+          {roomName}
         </div>
+        <ShareRoomButton roomId={roomName} />
       </div>
       
       <div className="flex items-center gap-4">

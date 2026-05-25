@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Video, Keyboard, LogOut, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
+import { parseRoomInput } from "@/lib/roomAccess";
+import { CreateRoomModal } from "@/components/CreateRoomModal";
 
 export default function HomePage() {
   const router = useRouter();
@@ -13,6 +15,7 @@ export default function HomePage() {
   const [roomCode, setRoomCode] = useState("");
   const [guestName, setGuestName] = useState("");
   const [error, setError] = useState("");
+  const [pendingRoomId, setPendingRoomId] = useState<string | null>(null);
 
   const getDisplayName = () => user?.name || guestName;
 
@@ -23,7 +26,13 @@ export default function HomePage() {
       return;
     }
     const randomCode = Math.random().toString(36).substring(2, 11);
-    router.push(`/room/${randomCode}?name=${encodeURIComponent(name)}`);
+    setPendingRoomId(randomCode);
+  };
+
+  const handleRoomCreated = (roomId: string) => {
+    const name = getDisplayName();
+    setPendingRoomId(null);
+    router.push(`/room/${roomId}?name=${encodeURIComponent(name)}`);
   };
 
   const handleJoinRoom = (e: React.FormEvent) => {
@@ -33,11 +42,12 @@ export default function HomePage() {
       setError("Please enter your name to continue as guest, or sign in.");
       return;
     }
-    if (!roomCode.trim()) {
-      setError("Please enter a room code.");
+    const parsed = parseRoomInput(roomCode);
+    if (!parsed) {
+      setError("Please enter a room code or invite link.");
       return;
     }
-    router.push(`/room/${roomCode.trim()}?name=${encodeURIComponent(name)}`);
+    router.push(`/room/${encodeURIComponent(parsed)}?name=${encodeURIComponent(name)}`);
   };
 
   const handleLogout = async () => {
@@ -196,6 +206,14 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {pendingRoomId && (
+        <CreateRoomModal
+          roomId={pendingRoomId}
+          onClose={() => setPendingRoomId(null)}
+          onCreated={handleRoomCreated}
+        />
+      )}
     </div>
   );
 }

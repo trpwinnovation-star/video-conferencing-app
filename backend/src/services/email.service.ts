@@ -1,5 +1,6 @@
 import { Resend } from "resend";
-
+import path from 'path';
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendRecordingReadyEmail = async (

@@ -64,7 +64,7 @@ export function VideoTile({ trackRef }: VideoTileProps) {
           
           {!isScreenShare && (
             <div className="relative flex items-center gap-2 bg-white/80 border border-stone-200 px-4 py-1.5 rounded-xl shadow-sm">
-              <span className="text-[10px] font-bold tracking-widest uppercase text-stone-500">Waiting for Camera</span>
+              {/* <span className="text-[10px] font-bold tracking-widest uppercase text-stone-500">Waiting for Camera</span> */}
             </div>
           )}
         </div>

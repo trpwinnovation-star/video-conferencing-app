@@ -1,10 +1,7 @@
-import dns from "node:dns";
-dns.setDefaultResultOrder("ipv4first");
-
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "74.125.69.108",
   port: 587,
   secure: false,
 
@@ -15,13 +12,13 @@ const transporter = nodemailer.createTransport({
 
   tls: {
     rejectUnauthorized: false,
+    servername: "smtp.gmail.com",
   },
 
   connectionTimeout: 30000,
   greetingTimeout: 30000,
   socketTimeout: 30000,
 });
-
 export const sendRecordingReadyEmail = async (toEmail: string, roomName: string, recordingLink: string) => {
   const mailOptions = {
     from: `"Video Conference App" <${process.env.SMTP_USER || 'your-email@gmail.com'}>`,

@@ -39,7 +39,7 @@ export default function LoginPage() {
           <div className="p-2.5 bg-[#c16d18] rounded-xl shadow-md shadow-[#c16d18]/25 animate-pulse">
             <Video size={24} className="text-white" />
           </div>
-          <span className="text-stone-900 font-extrabold text-2xl tracking-tight">MeetSpace</span>
+          <span className="text-stone-900 font-extrabold text-2xl tracking-tight">BetelMeet</span>
         </div>
 
         <div className="bg-white border border-stone-200/80 rounded-2xl p-8 shadow-xl">

@@ -110,7 +110,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-lg text-stone-600 mb-10 max-w-xl leading-relaxed">
-            Secure, real-time video conferencing with screen sharing, recording, and more.
+            Secure real-time video conferencing with screen sharing recording and more.
           </p>
 
           {/* Guest name input if not logged in */}

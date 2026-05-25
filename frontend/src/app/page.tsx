@@ -60,7 +60,7 @@ export default function HomePage() {
           <div className="p-2 bg-[#c16d18] rounded-xl shadow-md shadow-[#c16d18]/25">
             <Video size={18} className="text-white" />
           </div>
-          <span className="text-stone-900 font-bold text-xl tracking-tight">MeetSpace</span>
+          <span className="text-stone-900 font-bold text-xl tracking-tight">BetelMeet</span>
         </div>
 
         <div className="flex items-center gap-4">

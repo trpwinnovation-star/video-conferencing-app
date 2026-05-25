@@ -38,16 +38,20 @@ export default function RoomPage() {
   }, [roomName]);
 
   useEffect(() => {
-    if (!accessPassword || token || connecting || error) return;
+    if (!accessPassword || token) return;
     if (!participantName.trim()) return;
 
     let cancelled = false;
 
     const connect = async () => {
       setConnecting(true);
+      setError("");
       try {
         const t = await getToken(roomName, participantName.trim(), accessPassword);
         if (!cancelled) {
+          if (!t) {
+            throw new Error("No token received from server");
+          }
           setToken(t);
           const url = new URL(window.location.href);
           url.searchParams.set("name", participantName.trim());
@@ -70,7 +74,8 @@ export default function RoomPage() {
     return () => {
       cancelled = true;
     };
-  }, [accessPassword, token, connecting, error, roomName, participantName, router]);
+    // Do not include `connecting` or `error` — updating them re-ran this effect and cancelled the token request mid-flight.
+  }, [accessPassword, token, roomName, participantName, router]);
 
   const handleVerified = (password: string) => {
     setError("");
@@ -123,12 +128,24 @@ export default function RoomPage() {
     );
   }
 
-  if (!token || connecting) {
+  if (!participantName.trim()) {
+    return (
+      <RoomJoinGate
+        roomId={roomName}
+        participantName={participantName}
+        onNameChange={setParticipantName}
+        onVerified={handleVerified}
+        initialPassword={accessPassword}
+      />
+    );
+  }
+
+  if (!token) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#FBF9FA] text-stone-900">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="animate-spin text-[#c16d18]" size={32} />
-          <p className="font-bold">Joining room...</p>
+          <p className="font-bold">{connecting ? "Joining room..." : "Preparing to join..."}</p>
         </div>
       </div>
     );

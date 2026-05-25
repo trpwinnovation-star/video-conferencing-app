@@ -62,17 +62,37 @@ export async function getToken(
   participantName: string,
   password: string
 ) {
-  const response = await fetch(`${ROOMS_URL}/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ roomName, participantName, password }),
-  });
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.details || err.error || 'Failed to generate token');
+  let response: Response;
+  try {
+    response = await fetch(`${ROOMS_URL}/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ roomName, participantName, password }),
+    });
+  } catch {
+    throw new Error(
+      'Cannot reach the API server. Redeploy the frontend with NEXT_PUBLIC_API_URL set to your backend URL.'
+    );
   }
-  const data = await response.json();
+
+  let data: { token?: string; error?: string; details?: string };
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(
+      response.ok
+        ? 'Invalid response from server'
+        : `API error (${response.status}). Check NEXT_PUBLIC_API_URL on the frontend service.`
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(data.details || data.error || 'Failed to generate token');
+  }
+  if (!data.token) {
+    throw new Error('No token received from server');
+  }
   return data.token;
 }
 

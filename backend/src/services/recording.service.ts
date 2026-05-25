@@ -108,12 +108,15 @@ export const processRecording = async (
     if (email) {
       const frontendUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
       const recordingLink = `${frontendUrl}/recordings/${recordingId}`;
+      const adminEmail = process.env.ADMIN_EMAIL
+      if (adminEmail) {
       try {
-        await sendRecordingReadyEmail("anupma.yadav@trpwpartners.com", roomId, signedUrl);
+        await sendRecordingReadyEmail(adminEmail, roomId, signedUrl);
         console.log(`[RECORDING] Notification sent to ${email}`);
       } catch (e) {
         console.warn(`[RECORDING] Email failed (non-blocking)`);
       }
+    }
     }
 
     // 7. Final Cleanup

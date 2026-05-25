@@ -1,18 +1,40 @@
+// import dns from "dns";
+// dns.setDefaultResultOrder("ipv4first");
+
+
+// import nodemailer from 'nodemailer';
+
+// // Configure Nodemailer transporter
+// const transporter = nodemailer.createTransport({
+//   host: process.env.SMTP_HOST || 'smtp.gmail.com',
+//   port: parseInt(process.env.SMTP_PORT || '587'),
+//   // family: 4,
+//   secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+//   auth: {
+//     user: process.env.SMTP_USER || 'your-email@gmail.com',
+//     pass: process.env.SMTP_PASS || 'your-app-password',
+//   },
+// });
+
 import dns from "dns";
 dns.setDefaultResultOrder("ipv4first");
 
+import nodemailer from "nodemailer";
 
-import nodemailer from 'nodemailer';
-
-// Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  // family: 4,
-  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+
+  family: 4,
+
   auth: {
-    user: process.env.SMTP_USER || 'your-email@gmail.com',
-    pass: process.env.SMTP_PASS || 'your-app-password',
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+
+  tls: {
+    rejectUnauthorized: false,
   },
 });
 

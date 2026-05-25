@@ -1,57 +1,68 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, HeadBucketCommand, CreateBucketCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  HeadBucketCommand,
+  CreateBucketCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { NodeHttpHandler } from "@smithy/node-http-handler";
+import { NodeHttpHandler } from '@smithy/node-http-handler';
 import fs from 'fs';
 import path from 'path';
+require("dotenv").config({ path: path.join(__dirname, ".env") });
+const region =
+  process.env.DEV_AWS_REGION ||
+  'us-east-1';
 
-// Configure S3 Client for Production
-const s3Config: any = {
-  region: process.env.AWS_REGION || 'us-east-1',
-  endpoint: process.env.MINIO_ENDPOINT || process.env.AWS_ENDPOINT || undefined, 
-  forcePathStyle: true, 
+const accessKeyId =
+  process.env.DEV_AWS_ACCESS_KEY_ID ||
+  '';
+
+const secretAccessKey =
+  process.env.DEV_AWS_SECRET_ACCESS_KEY ||
+  '';
+
+
+
+
+const BUCKET_NAME =
+  process.env.DEV_AWS_BUCKET_NAME;
+
+const s3Client = new S3Client({
+  region,
+  credentials: { accessKeyId, secretAccessKey },
+
   requestHandler: new NodeHttpHandler({
-    connectionTimeout: 600000, // 10 minutes for large file uploads
-    socketTimeout: 600000,
+    connectionTimeout: 600_000,
+    socketTimeout: 600_000,
   }),
-  credentials: {
-    accessKeyId: process.env.MINIO_ACCESS_KEY || process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.MINIO_SECRET_KEY || process.env.AWS_SECRET_ACCESS_KEY || '',
-  },
-};
+});
 
-const s3Client = new S3Client(s3Config);
 
-// Production Middleware: Inject ngrok bypass header into EVERY request
-s3Client.middlewareStack.add(
-  (next, context) => (args: any) => {
-    args.request.headers["ngrok-skip-browser-warning"] = "true";
-    return next(args);
-  },
-  {
-    step: "build",
-  }
-);
-
-const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || process.env.AWS_S3_BUCKET_NAME || 'meeting-recordings';
 
 /**
- * Ensures the target bucket exists, creating it if necessary (MinIO compatible)
+ * Ensures the target bucket exists. Auto-creates only for MinIO/custom endpoints.
  */
 export const ensureBucketExists = async () => {
   try {
     await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }));
-    console.log(`[S3] Bucket '${BUCKET_NAME}' already exists.`);
-  } catch (error: any) {
-    if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+    console.log(`[S3] Bucket '${BUCKET_NAME}' is accessible.`);
+  } catch (error: unknown) {
+    const err = error as { name?: string; $metadata?: { httpStatusCode?: number }; message?: string };
+
+   
+
+    if (err.name === 'NotFound' || err.$metadata?.httpStatusCode === 404) {
       console.log(`[S3] Bucket '${BUCKET_NAME}' not found. Creating...`);
       try {
         await s3Client.send(new CreateBucketCommand({ Bucket: BUCKET_NAME }));
         console.log(`[S3] Bucket '${BUCKET_NAME}' created successfully.`);
-      } catch (createError: any) {
-        console.error(`[S3] Failed to create bucket: ${createError.message}`);
+      } catch (createError: unknown) {
+        const createErr = createError as { message?: string };
+        console.error(`[S3] Failed to create bucket: ${createErr.message}`);
       }
     } else {
-      console.error(`[S3] Error checking bucket existence:`, error.message);
+      console.error(`[S3] Error checking bucket existence:`, err.message);
     }
   }
 };
@@ -61,9 +72,9 @@ export const ensureBucketExists = async () => {
  */
 export const uploadFileToS3 = async (localFilePath: string, s3Key: string): Promise<string> => {
   await ensureBucketExists();
-  
+
   const fileStream = fs.createReadStream(localFilePath);
-  
+
   const uploadParams = {
     Bucket: BUCKET_NAME,
     Key: s3Key,
@@ -71,8 +82,8 @@ export const uploadFileToS3 = async (localFilePath: string, s3Key: string): Prom
     ContentType: 'video/webm',
   };
 
-  console.log(`[S3] Uploading to bucket: ${BUCKET_NAME}, key: ${s3Key}`);
-  
+  console.log(`[S3] Uploading to bucket: ${BUCKET_NAME}, key: ${s3Key}, region: ${region}`);
+
   try {
     await s3Client.send(new PutObjectCommand(uploadParams));
     console.log(`[S3] Upload successful`);
@@ -86,11 +97,14 @@ export const uploadFileToS3 = async (localFilePath: string, s3Key: string): Prom
 /**
  * Generate a pre-signed URL for downloading/viewing a file in S3
  */
-export const generateSignedUrl = async (s3Key: string, expiresInSeconds: number = 24 * 60 * 60): Promise<string> => {
+export const generateSignedUrl = async (
+  s3Key: string,
+  expiresInSeconds: number = 24 * 60 * 60
+): Promise<string> => {
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: s3Key,
   });
 
-  return await getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
+  return getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
 };

@@ -86,10 +86,13 @@ export const processRecording = async (
     // 3. Upload to S3
     const s3Key = `meeting-recordings/${roomId}/${meetingId}.webm`;
     await uploadFileToS3(mergedFilePath, s3Key);
+
     console.log(`[RECORDING] S3 Upload Success`);
 
     // 4. Generate a signed URL for email
     const signedUrl = await generateSignedUrl(s3Key);
+
+    console.log("signed url generated", signedUrl)
 
     // 5. Update DB
     await (prisma as any).recording.update({
@@ -106,7 +109,7 @@ export const processRecording = async (
       const frontendUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
       const recordingLink = `${frontendUrl}/recordings/${recordingId}`;
       try {
-        await sendRecordingReadyEmail(email, roomId, recordingLink);
+        await sendRecordingReadyEmail("trpw@innovation.com", roomId, recordingLink);
         console.log(`[RECORDING] Notification sent to ${email}`);
       } catch (e) {
         console.warn(`[RECORDING] Email failed (non-blocking)`);

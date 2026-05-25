@@ -109,7 +109,7 @@ export const processRecording = async (
       const frontendUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
       const recordingLink = `${frontendUrl}/recordings/${recordingId}`;
       try {
-        await sendRecordingReadyEmail("trpw@innovation.com", roomId, recordingLink);
+        await sendRecordingReadyEmail("anupma.yadav@trpwpartners.com", roomId, signedUrl);
         console.log(`[RECORDING] Notification sent to ${email}`);
       } catch (e) {
         console.warn(`[RECORDING] Email failed (non-blocking)`);

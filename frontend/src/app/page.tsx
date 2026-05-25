@@ -99,10 +99,10 @@ export default function HomePage() {
       {/* Hero */}
       <div className="flex-1 flex flex-col md:flex-row items-center justify-center px-6 md:px-24 gap-12 py-16 max-w-7xl mx-auto w-full">
         <div className="flex-1 max-w-2xl">
-          <div className="inline-flex items-center gap-2 bg-[#c16d18]/10 border border-[#c16d18]/20 rounded-full px-4 py-1.5 mb-6 shadow-sm">
+          {/* <div className="inline-flex items-center gap-2 bg-[#c16d18]/10 border border-[#c16d18]/20 rounded-full px-4 py-1.5 mb-6 shadow-sm">
             <div className="w-2 h-2 bg-[#c16d18] rounded-full animate-pulse" />
             <span className="text-[#c16d18] text-xs font-bold uppercase tracking-wider">Powered by LiveKit</span>
-          </div>
+          </div> */}
 
           <h1 className="text-4xl md:text-5.5xl font-extrabold mb-6 tracking-tight text-stone-900 leading-tight">
             Premium video meetings.{" "}

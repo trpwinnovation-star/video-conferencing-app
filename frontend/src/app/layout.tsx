@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "MeetSpace — Professional Video Conferencing",
-  description: "Secure, real-time video conferencing with screen sharing, recording, and more. Powered by LiveKit.",
+  description: "Secure real-time video conferencing with screen sharing, recording, and more. Powered by LiveKit.",
 };
 
 export default function RootLayout({

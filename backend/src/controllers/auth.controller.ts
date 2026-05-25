@@ -7,6 +7,16 @@ import 'dotenv/config';
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+/** Cross-origin frontend (Render) requires SameSite=None + Secure for credentialed fetch. */
+const authCookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
@@ -32,12 +42,7 @@ export const register = async (req: Request, res: Response) => {
 
     const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie('token', token, authCookieOptions);
 
     return res.json({ user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {
@@ -66,12 +71,7 @@ export const login = async (req: Request, res: Response) => {
 
     const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie('token', token, authCookieOptions);
 
     return res.json({ user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {
@@ -81,7 +81,7 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const logout = (req: Request, res: Response) => {
-  res.clearCookie('token');
+  res.clearCookie('token', authCookieOptions);
   return res.json({ message: 'Logged out successfully' });
 };
 
@@ -97,7 +97,7 @@ export const getMe = async (req: Request, res: Response) => {
     // Optional: verify user still exists in DB
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!user) {
-      res.clearCookie('token');
+      res.clearCookie('token', authCookieOptions);
       return res.status(401).json({ error: 'User no longer exists' });
     }
 

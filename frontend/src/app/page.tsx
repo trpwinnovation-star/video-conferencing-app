@@ -22,7 +22,8 @@ export default function HomePage() {
 
   const handleCreateRoom = () => {
     if (!user) {
-      setError("You must be signed in to create a new meeting.");
+      // Redirect to login if not authenticated
+      router.push('/login');
       return;
     }
     const randomCode = Math.random().toString(36).substring(2, 11);
@@ -67,11 +68,11 @@ export default function HomePage() {
       {/* Navbar */}
       <nav className="flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <Image 
-            src="/logo_b.png" 
-            alt="BetelMeet Logo" 
-            width={28} 
-            height={28} 
+          <Image
+            src="/logo_b.png"
+            alt="BetelMeet Logo"
+            width={28}
+            height={28}
             className="object-contain"
             priority
           />

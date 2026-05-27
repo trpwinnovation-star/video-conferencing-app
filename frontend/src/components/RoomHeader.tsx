@@ -1,7 +1,8 @@
 "use client";
 
 import { useParticipants } from "@livekit/components-react";
-import { Users, ChevronDown } from "lucide-react";
+import { Users, ChevronDown, Copy, Check } from "lucide-react";
+
 import { ShareRoomButton } from "./ShareRoomButton";
 import { useState } from "react";
 
@@ -12,12 +13,26 @@ interface RoomHeaderProps {
 export function RoomHeader({ roomName }: RoomHeaderProps) {
   const participants = useParticipants();
   const [showParticipantsList, setShowParticipantsList] = useState(false);
+  const [copied, setCopied] = useState(false);
+
 
   return (
     <div className="h-16 w-full flex items-center justify-between px-6 bg-white border-b border-stone-200/80 shadow-sm text-stone-900">
       <div className="flex items-center gap-2 sm:gap-3">
-        <div className="bg-[#c16d18] text-white px-3 sm:px-4.5 py-2 rounded-xl text-sm font-bold shadow-md shadow-[#c16d18]/20 font-mono">
+        <div className="bg-[#c16d18] text-white px-3 sm:px-4.5 py-2 rounded-xl text-sm font-bold shadow-md shadow-[#c16d18]/20 font-mono flex items-center gap-2">
           {roomName}
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(roomName).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              });
+            }}
+            className={`ml-2 p-1 rounded transition-transform duration-200 ${copied ? "bg-green-600" : "bg-white/20 hover:bg-white/30"}`}
+            aria-label="Copy room ID"
+          >
+            {copied ? <Check size={14} className="text-white" /> : <Copy size={14} className="text-white" />}
+          </button>
         </div>
         <ShareRoomButton roomId={roomName} />
       </div>

@@ -20,7 +20,11 @@ export const createProtectedRoomHandler = async (req: Request, res: Response) =>
     }
 
     let createdBy: string | undefined;
-    const token = req.cookies?.token;
+    let token = req.cookies?.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.substring(7);
+    }
+    
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecret') as { id: string };
@@ -93,8 +97,12 @@ export const generateToken = async (req: Request, res: Response) => {
     }
 
     let isHost = false;
-    const jwtToken = req.cookies?.token;
-    console.log(`[Token] Room createdBy: ${room.createdBy}, JWT cookie present: ${!!jwtToken}`);
+    let jwtToken = req.cookies?.token;
+    if (!jwtToken && req.headers.authorization?.startsWith('Bearer ')) {
+      jwtToken = req.headers.authorization.substring(7);
+    }
+    
+    console.log(`[Token] Room createdBy: ${room.createdBy}, JWT token present: ${!!jwtToken}`);
     if (jwtToken) {
       try {
         const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET || 'supersecret') as { id: string };

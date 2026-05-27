@@ -44,7 +44,7 @@ export const register = async (req: Request, res: Response) => {
 
     res.cookie('token', token, authCookieOptions);
 
-    return res.json({ user: { id: user.id, email: user.email, name: user.name } });
+    return res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {
     console.error('Registration error:', error);
     return res.status(500).json({ error: 'Failed to register' });
@@ -73,7 +73,7 @@ export const login = async (req: Request, res: Response) => {
 
     res.cookie('token', token, authCookieOptions);
 
-    return res.json({ user: { id: user.id, email: user.email, name: user.name } });
+    return res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({ error: 'Failed to login' });
@@ -87,7 +87,11 @@ export const logout = (req: Request, res: Response) => {
 
 export const getMe = async (req: Request, res: Response) => {
   try {
-    const token = req.cookies.token;
+    let token = req.cookies?.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.substring(7);
+    }
+    
     if (!token) {
       return res.status(401).json({ error: 'Not authenticated' });
     }

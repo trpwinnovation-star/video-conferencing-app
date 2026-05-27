@@ -11,6 +11,15 @@ const ROOMS_URL = `${API_BASE}/rooms`;
 const AUTH_URL = `${API_BASE}/auth`;
 const RECORDINGS_URL = `${API_BASE}/recording`;
 
+const getAuthHeaders = (extraHeaders: Record<string, string> = {}) => {
+  const headers: Record<string, string> = { ...extraHeaders };
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('auth_token');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
 // ---- Recording APIs ----
 export async function uploadRecording(blob: Blob, fileName: string) {
   const formData = new FormData();
@@ -36,7 +45,7 @@ export async function uploadRecording(blob: Blob, fileName: string) {
 export async function createProtectedRoom(roomId: string, password: string) {
   const response = await fetch(`${ROOMS_URL}/create-protected`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     credentials: 'include',
     body: JSON.stringify({ roomId, password }),
   });
@@ -66,7 +75,7 @@ export async function getToken(
   try {
     response = await fetch(`${ROOMS_URL}/token`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',
       body: JSON.stringify({ roomName, participantName, password }),
     });
@@ -151,6 +160,7 @@ export async function apiRegister(name: string, email: string, password: string)
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Registration failed');
+  if (data.token && typeof window !== 'undefined') localStorage.setItem('auth_token', data.token);
   return data.user;
 }
 
@@ -163,16 +173,21 @@ export async function apiLogin(email: string, password: string): Promise<User> {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Login failed');
+  if (data.token && typeof window !== 'undefined') localStorage.setItem('auth_token', data.token);
   return data.user;
 }
 
 export async function apiLogout(): Promise<void> {
+  if (typeof window !== 'undefined') localStorage.removeItem('auth_token');
   await fetch(`${AUTH_URL}/logout`, { method: 'POST', credentials: 'include' });
 }
 
 export async function apiGetMe(): Promise<User | null> {
   try {
-    const res = await fetch(`${AUTH_URL}/me`, { credentials: 'include' });
+    const res = await fetch(`${AUTH_URL}/me`, { 
+      headers: getAuthHeaders(),
+      credentials: 'include' 
+    });
     if (!res.ok) return null;
     const data = await res.json();
     return data.user;

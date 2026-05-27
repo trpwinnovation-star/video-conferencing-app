@@ -176,7 +176,7 @@ export default function RoomPage() {
         className="h-full w-full relative"
       >
         <RoomPinProvider>
-          <div className="h-full w-full relative z-0">
+          <div className="h-full w-full relative z-0 pt-16 md:pt-20 pb-24 md:pb-28">
             <ParticipantGrid />
           </div>
 

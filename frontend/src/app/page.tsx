@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Video, Keyboard, LogOut, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -20,9 +21,8 @@ export default function HomePage() {
   const getDisplayName = () => user?.name || guestName;
 
   const handleCreateRoom = () => {
-    const name = getDisplayName();
-    if (!name.trim()) {
-      setError("Please enter your name to continue as guest, or sign in.");
+    if (!user) {
+      setError("You must be signed in to create a new meeting.");
       return;
     }
     const randomCode = Math.random().toString(36).substring(2, 11);
@@ -67,9 +67,14 @@ export default function HomePage() {
       {/* Navbar */}
       <nav className="flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-[#c16d18] rounded-xl shadow-md shadow-[#c16d18]/25">
-            <Video size={18} className="text-white" />
-          </div>
+          <Image 
+            src="/logo_b.png" 
+            alt="BetelMeet Logo" 
+            width={28} 
+            height={28} 
+            className="object-contain"
+            priority
+          />
           <span className="text-stone-900 font-bold text-xl tracking-tight">BetelMeet</span>
         </div>
 
@@ -115,8 +120,8 @@ export default function HomePage() {
           </div> */}
 
           <h1 className="text-4xl md:text-5.5xl font-extrabold mb-6 tracking-tight text-stone-900 leading-tight">
-            Premium video meetings.{" "}
-            <span className="text-[#c16d18] block mt-1">Now free for everyone.</span>
+            Designed for seamless communication{" "}
+            <span className="text-[#c16d18] block mt-1">Connect, Collaborate,Record</span>
           </h1>
 
           <p className="text-lg text-stone-600 mb-10 max-w-xl leading-relaxed">

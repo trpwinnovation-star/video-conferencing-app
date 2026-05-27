@@ -26,8 +26,12 @@ export const createProtectedRoomHandler = async (req: Request, res: Response) =>
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecret') as { id: string };
         createdBy = decoded.id;
       } catch {
-        // guest creator
+        // Invalid token
       }
+    }
+
+    if (!createdBy) {
+      return res.status(401).json({ error: 'You must be signed in to create a meeting.' });
     }
 
     const room = await createProtectedRoom(roomId, password, createdBy);
@@ -82,14 +86,33 @@ export const generateToken = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid room ID' });
     }
 
-    await getRoomOrThrow(roomId);
+    const room = await getRoomOrThrow(roomId);
     const valid = await verifyRoomPassword(roomId, password);
     if (!valid) {
       return res.status(401).json({ error: 'Incorrect password' });
     }
 
-    await ensureLivekitRoom(roomId);
-    const token = await livekitService.generateToken(roomId, participantName);
+    let isHost = false;
+    const jwtToken = req.cookies?.token;
+    console.log(`[Token] Room createdBy: ${room.createdBy}, JWT cookie present: ${!!jwtToken}`);
+    if (jwtToken) {
+      try {
+        const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET || 'supersecret') as { id: string };
+        console.log(`[Token] Decoded user ID: ${decoded.id}, room.createdBy: ${room.createdBy}, match: ${room.createdBy === decoded.id}`);
+        if (room.createdBy === decoded.id) {
+          isHost = true;
+        }
+      } catch (e) {
+        console.log(`[Token] JWT verification failed:`, e);
+      }
+    }
+    console.log(`[Token] Final isHost=${isHost} for participant ${participantName}`);
+
+    // Generate token with host flag
+    const token = await livekitService.generateToken(roomId, participantName, isHost);
+    console.log(`[Token] Generated token (first 100 chars): ${token?.substring(0, 100)}`);
+
+    // Respond with token
     return res.json({ token });
   } catch (error) {
     console.error('DETAILED Error generating token:', error);

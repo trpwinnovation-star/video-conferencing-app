@@ -3,26 +3,23 @@
 import { useState, useEffect } from "react";
 import { Circle, Square, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { startEgressRecording, stopEgressRecording } from "@/lib/api";
 import { useRecording } from "@/hooks/useRecording";
-import { useLocalParticipant, useTracks } from "@livekit/components-react";
+import { useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
-import { ChevronDown, Monitor, Cloud, Mic, MicOff } from "lucide-react";
+import { ChevronDown, Mic, MicOff } from "lucide-react";
 
 interface RecordingControlsProps {
   roomName: string;
   userEmail?: string;
   userName?: string;
+  onRecordStart?: () => void;
 }
 
-export function RecordingControls({ roomName, userEmail, userName }: RecordingControlsProps) {
+export function RecordingControls({ roomName, userEmail, userName, onRecordStart }: RecordingControlsProps) {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [showModeMenu, setShowModeMenu] = useState(false);
-  
-  // Changed default to 'local'
-  const [recordingMode, setRecordingMode] = useState<"local" | "cloud">("local");
   // New state to toggle audio recording
   const [recordAudio, setRecordAudio] = useState(true);
   
@@ -46,25 +43,6 @@ export function RecordingControls({ roomName, userEmail, userName }: RecordingCo
       setShowToast(true);
     }
   });
-
-  // --- Cloud (Server/Egress) Recording Logic ---
-  const [isCloudRecording, setIsCloudRecording] = useState(false);
-  const [isCloudProcessing, setIsCloudProcessing] = useState(false);
-  const [cloudDuration, setCloudDuration] = useState(0);
-  const [egressId, setEgressId] = useState<string | null>(null);
-
-  // Cloud Timer
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isCloudRecording) {
-      interval = setInterval(() => {
-        setCloudDuration((prev) => prev + 1);
-      }, 1000);
-    } else {
-      setCloudDuration(0);
-    }
-    return () => clearInterval(interval);
-  }, [isCloudRecording]);
 
   // Auto-hide toast
   useEffect(() => {
@@ -94,42 +72,13 @@ export function RecordingControls({ roomName, userEmail, userName }: RecordingCo
       }
       
       localRecorder.startRecording(mediaStreamTracks);
+      onRecordStart?.();
     }
   };
 
-  const toggleCloudRecording = async () => {
-    try {
-      setIsCloudProcessing(true);
-      if (isCloudRecording && egressId) {
-        await stopEgressRecording(egressId);
-        setIsCloudRecording(false);
-        setEgressId(null);
-        setToastMessage("Cloud recording stopped. Processing on server...");
-        setToastType("success");
-        setShowToast(true);
-      } else {
-        const res = await startEgressRecording(roomName);
-        if (res.egressId) {
-          setEgressId(res.egressId);
-          setIsCloudRecording(true);
-          setToastMessage("Server-side cloud recording started!");
-          setToastType("success");
-          setShowToast(true);
-        }
-      }
-    } catch (error: any) {
-      console.error("Cloud recording error:", error);
-      setToastMessage(error.message || "Cloud recording failed");
-      setToastType("error");
-      setShowToast(true);
-    } finally {
-      setIsCloudProcessing(false);
-    }
-  };
-
-  const isAnyRecording = localRecorder.isRecording || isCloudRecording;
-  const isAnyProcessing = localRecorder.isUploading || isCloudProcessing;
-  const currentDuration = localRecorder.isRecording ? localRecorder.duration : cloudDuration;
+  const isAnyRecording = localRecorder.isRecording;
+  const isAnyProcessing = localRecorder.isUploading;
+  const currentDuration = localRecorder.duration;
 
   return (
     <div className="relative flex flex-col items-center">
@@ -151,7 +100,7 @@ export function RecordingControls({ roomName, userEmail, userName }: RecordingCo
         <div className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-white border border-stone-200 shadow-md px-2 py-0.5 md:px-3 md:py-1 rounded-full">
           <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[#c16d18] animate-pulse" />
           <span className="text-[10px] md:text-xs font-mono text-[#c16d18] font-extrabold">
-            {recordingMode === 'cloud' ? 'CLOUD' : 'LOCAL'} {formatDuration(currentDuration)}
+            LOCAL {formatDuration(currentDuration)}
           </span>
         </div>
       )}
@@ -167,13 +116,7 @@ export function RecordingControls({ roomName, userEmail, userName }: RecordingCo
       <div className="flex items-center">
         {/* Main Record Toggle Button */}
         <button
-          onClick={() => {
-            if (recordingMode === 'local') {
-              toggleLocalRecording();
-            } else {
-              toggleCloudRecording();
-            }
-          }}
+          onClick={toggleLocalRecording}
           disabled={isAnyProcessing}
           className={cn(
             "h-10 w-10 md:h-12 md:w-12 rounded-l-2xl flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer border",
@@ -182,7 +125,7 @@ export function RecordingControls({ roomName, userEmail, userName }: RecordingCo
               : "bg-white hover:bg-stone-50 text-[#c16d18] border-stone-200",
             isAnyProcessing && "opacity-50 cursor-not-allowed"
           )}
-          title={isAnyRecording ? "Stop Recording" : `Start ${recordingMode === 'cloud' ? 'Cloud' : 'Local'} Recording`}
+          title={isAnyRecording ? "Stop Recording" : "Start Recording"}
         >
           {isAnyProcessing ? (
             <Loader2 size={18} className="animate-spin md:w-5 md:h-5" />
@@ -209,57 +152,7 @@ export function RecordingControls({ roomName, userEmail, userName }: RecordingCo
           {/* Dropdown Menu */}
           {showModeMenu && (
             <div className="absolute bottom-full mb-2 right-0 bg-white border border-stone-200/80 rounded-2xl p-1.5 shadow-2xl shadow-stone-200/60 min-w-[170px] animate-in fade-in slide-in-from-bottom-2 duration-200 z-[100]">
-              <div className="px-3 py-2 text-[10px] font-black text-stone-400 uppercase tracking-widest">
-                Recording Mode
-              </div>
-
-              {/* Local Mode Option */}
-              <button
-                onClick={() => {
-                  setRecordingMode("local");
-                  setShowModeMenu(false);
-                }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all mb-1 cursor-pointer",
-                  recordingMode === "local"
-                    ? "bg-[#c16d18]/10 text-[#c16d18] border border-[#c16d18]/20"
-                    : "text-stone-600 hover:bg-stone-50"
-                )}
-              >
-                <Monitor size={15} className={recordingMode === "local" ? "text-[#c16d18]" : "text-stone-400"} />
-                <span>Local (Browser)</span>
-                {recordingMode === "local" && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#c16d18]" />
-                )}
-              </button>
-
-              {/* Cloud Mode Option */}
-              <button
-                onClick={() => {
-                  setRecordingMode("cloud");
-                  setShowModeMenu(false);
-                }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
-                  recordingMode === "cloud"
-                    ? "bg-stone-100 text-stone-800 border border-stone-200"
-                    : "text-stone-600 hover:bg-stone-50"
-                )}
-              >
-                <Cloud size={15} className={recordingMode === "cloud" ? "text-stone-600" : "text-stone-400"} />
-                <span>Cloud (Server)</span>
-                {recordingMode === "cloud" && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-stone-500" />
-                )}
-              </button>
-
-              {/* Divider */}
-              <div className="h-px bg-stone-100 my-2 mx-2" />
-
               {/* Audio Options */}
-              <div className="px-3 py-1 text-[10px] font-black text-stone-400 uppercase tracking-widest">
-                Options
-              </div>
               <button
                 onClick={() => setRecordAudio(!recordAudio)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-stone-600 hover:bg-stone-50 cursor-pointer"

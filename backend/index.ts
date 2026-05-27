@@ -10,7 +10,7 @@ import path from "path";
 
 console.log("Starting server...");
 const app = express();
-const port = process.env.PORT || 3001;
+const port = Number(process.env.PORT || 3001);
 
 // Render terminates TLS at the edge; needed for secure cookies behind a proxy
 app.set("trust proxy", 1);
@@ -74,6 +74,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(port, () => {
+app.listen(port,  () => {
   console.log(`Server running on port ${port}`);
 });

@@ -1,7 +1,8 @@
 "use client";
 
-import { useRoomContext } from "@livekit/components-react";
-import { PhoneOff } from "lucide-react";
+import React from "react";
+import { useRoomContext, useLocalParticipant } from "@livekit/components-react";
+import { PhoneOff, X } from "lucide-react";
 import { AudioToggleButton } from "./AudioToggleButton";
 import { VideoToggleButton } from "./VideoToggleButton";
 import { ScreenShareButton } from "./ScreenShareButton";
@@ -16,6 +17,45 @@ interface MeetingControlsProps {
 export function MeetingControls({ roomName }: MeetingControlsProps) {
   const room = useRoomContext();
   const router = useRouter();
+  // Obtain the local participant object
+  // Obtain the local participant from the hook
+  const { localParticipant } = useLocalParticipant();
+  // Cast to any for metadata (LiveKit type may not include metadata)
+  const participantMeta = (localParticipant as any).metadata;
+
+
+  const isHost = React.useMemo(() => {
+    console.log('Local participant metadata:', participantMeta);
+    if (!participantMeta) return false;
+    try {
+      const meta = JSON.parse(participantMeta as string);
+      return meta.isHost === true;
+    } catch {
+      return false;
+    }
+  }, [participantMeta]);
+
+  // Force re‑render when metadata arrives (helps dev debugging)
+  const [, setRerender] = React.useState(0);
+  React.useEffect(() => {
+    if (participantMeta) {
+      setRerender(v => v + 1);
+    }
+  }, [participantMeta]);
+
+  // Record popup logic
+  const [showRecordPopup, setShowRecordPopup] = React.useState(false);
+  const [hasShownPopup, setHasShownPopup] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isHost && !hasShownPopup) {
+      setShowRecordPopup(true);
+      setHasShownPopup(true);
+      const timer = setTimeout(() => setShowRecordPopup(false), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [isHost, hasShownPopup]);
+
 
   const handleLeave = async () => {
     try {
@@ -30,12 +70,27 @@ export function MeetingControls({ roomName }: MeetingControlsProps) {
   };
 
   return (
-    <div className="flex items-center gap-1 md:gap-3 bg-white/95 backdrop-blur-xl border border-stone-200/80 p-2 md:p-3 md:px-6 rounded-2xl md:rounded-3xl shadow-xl shadow-stone-300/40">
+    <div className="relative flex items-center gap-1 md:gap-3 bg-white/95 backdrop-blur-xl border border-stone-200/80 p-2 md:p-3 md:px-6 rounded-2xl md:rounded-3xl shadow-xl shadow-stone-300/40">
+
+      {/* Record Reminder Popup */}
+      {showRecordPopup && (
+        <div className="absolute -top-16 md:-top-20 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-3 whitespace-nowrap animate-in fade-in zoom-in-95 duration-300 z-50">
+          <div className="w-2 h-2 rounded-full bg-[#c16d18] animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+          <span className="text-sm font-medium">Meeting started! Click the record button to record the meeting.</span>
+          <button onClick={() => setShowRecordPopup(false)} className="ml-1 p-1 text-stone-400 hover:text-white rounded-full hover:bg-stone-800 transition-colors cursor-pointer">
+            <X size={14} />
+          </button>
+          {/* Tooltip arrow pointing down */}
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-stone-900" />
+        </div>
+      )}
+
+
       <div className="flex flex-col items-center gap-1 group">
         <AudioToggleButton />
         <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Mute</span>
       </div>
-      
+
       <div className="flex flex-col items-center gap-1 group">
         <VideoToggleButton />
         <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Video</span>
@@ -47,14 +102,16 @@ export function MeetingControls({ roomName }: MeetingControlsProps) {
         <ScreenShareButton />
         <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Share</span>
       </div>
-      
-      <div className="flex flex-col items-center gap-1 group">
-        <RecordingControls roomName={roomName} />
-        <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Record</span>
-      </div>
-      
+
+      {isHost && (
+        <div className="flex flex-col items-center gap-1 group">
+          <RecordingControls roomName={roomName} onRecordStart={() => setShowRecordPopup(false)} />
+          <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Record</span>
+        </div>
+      )}
+
       <div className="hidden md:block w-px h-10 bg-stone-200 mx-1" />
-      
+
       <div className="flex flex-col items-center gap-1 group">
         <button
           onClick={handleLeave}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Video, Eye, EyeOff, Loader2 } from "lucide-react";
 import { apiLogin } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -36,9 +37,14 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-10">
-          <div className="p-2.5 bg-[#c16d18] rounded-xl shadow-md shadow-[#c16d18]/25 animate-pulse">
-            <Video size={24} className="text-white" />
-          </div>
+          <Image 
+            src="/logo_b.png" 
+            alt="BetelMeet Logo" 
+            width={36} 
+            height={36} 
+            className="object-contain"
+            priority
+          />
           <span className="text-stone-900 font-extrabold text-2xl tracking-tight">BetelMeet</span>
         </div>
 

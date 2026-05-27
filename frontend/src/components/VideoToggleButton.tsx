@@ -15,7 +15,7 @@ export function VideoToggleButton() {
         "p-2.5 md:p-4 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer border",
         enabled
           ? "bg-white hover:bg-stone-50 text-[#c16d18] border-stone-200"
-          : "bg-red-500 hover:bg-red-600 text-white border-red-400"
+          : "bg-[#c16d18] text-white"
       )}
       title={enabled ? "Turn off Camera" : "Turn on Camera"}
     >

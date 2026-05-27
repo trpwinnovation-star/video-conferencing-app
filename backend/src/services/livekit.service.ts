@@ -21,12 +21,16 @@ export class LivekitService {
   /**
    * Generate an access token for a participant
    */
-  public async generateToken(roomName: string, participantName: string): Promise<string> {
+  public async generateToken(roomName: string, participantName: string, isHost: boolean = false): Promise<string> {
     const config = getLivekitConfig();
+    console.log(`[LiveKit] Generating token for ${participantName} in room ${roomName}, isHost=${isHost}`);
     const at = new AccessToken(config.apiKey, config.apiSecret, {
       identity: participantName,
       name: participantName,
     });
+
+    // Set metadata explicitly (required in livekit-server-sdk v2+)
+    at.metadata = JSON.stringify({ isHost });
 
     at.addGrant({
       roomJoin: true,

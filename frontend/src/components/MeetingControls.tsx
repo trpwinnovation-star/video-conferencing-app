@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useRoomContext, useLocalParticipant } from "@livekit/components-react";
+import { ParticipantEvent } from "livekit-client";
 import { PhoneOff, X } from "lucide-react";
 import { AudioToggleButton } from "./AudioToggleButton";
 import { VideoToggleButton } from "./VideoToggleButton";
@@ -17,29 +18,39 @@ interface MeetingControlsProps {
 export function MeetingControls({ roomName }: MeetingControlsProps) {
   const room = useRoomContext();
   const router = useRouter();
-  // Obtain the local participant object
   // Obtain the local participant from the hook
   const { localParticipant } = useLocalParticipant();
-  // Cast to any for metadata (LiveKit type may not include metadata)
-  const participantMeta = (localParticipant as any).metadata;
+  
+  // Track metadata with React state so it re-renders when it arrives from the server
+  const [participantMeta, setParticipantMeta] = React.useState<string | undefined>(
+    localParticipant?.metadata
+  );
 
+  React.useEffect(() => {
+    if (!localParticipant) return;
+    
+    setParticipantMeta(localParticipant.metadata);
+    
+    const handleMetadataChanged = (prevMetadata: string | undefined) => {
+      // The event signature in livekit-client provides the previous metadata,
+      // but the current metadata is already updated on the object.
+      setParticipantMeta(localParticipant.metadata);
+    };
+
+    localParticipant.on(ParticipantEvent.ParticipantMetadataChanged, handleMetadataChanged);
+    return () => {
+      localParticipant.off(ParticipantEvent.ParticipantMetadataChanged, handleMetadataChanged);
+    };
+  }, [localParticipant]);
 
   const isHost = React.useMemo(() => {
     console.log('Local participant metadata:', participantMeta);
     if (!participantMeta) return false;
     try {
-      const meta = JSON.parse(participantMeta as string);
+      const meta = JSON.parse(participantMeta);
       return meta.isHost === true;
     } catch {
       return false;
-    }
-  }, [participantMeta]);
-
-  // Force re‑render when metadata arrives (helps dev debugging)
-  const [, setRerender] = React.useState(0);
-  React.useEffect(() => {
-    if (participantMeta) {
-      setRerender(v => v + 1);
     }
   }, [participantMeta]);
 

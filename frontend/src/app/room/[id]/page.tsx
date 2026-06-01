@@ -19,7 +19,7 @@ import { RoomJoinGate } from "@/components/RoomJoinGate";
 import { RoomPinProvider } from "@/contexts/RoomPinContext";
 import { Loader2 } from "lucide-react";
 
-function MeetingEndListener() {
+function MeetingEndListener({ onMeetingEnded }: { onMeetingEnded: () => void }) {
   const room = useRoomContext();
 
   useEffect(() => {
@@ -30,6 +30,7 @@ function MeetingEndListener() {
         const str = new TextDecoder().decode(payload);
         const msg = JSON.parse(str);
         if (msg?.type === "MEETING_ENDED") {
+          onMeetingEnded();
           room.disconnect(true);
         }
       } catch (e) {
@@ -41,7 +42,7 @@ function MeetingEndListener() {
     return () => {
       room.off(RoomEvent.DataReceived, handleDataReceived);
     };
-  }, [room]);
+  }, [room, onMeetingEnded]);
 
   return null;
 }
@@ -214,7 +215,10 @@ export default function RoomPage() {
           </div>
 
           <div className="absolute inset-0 pointer-events-none z-50">
-            <MeetingEndListener />
+            <MeetingEndListener onMeetingEnded={() => {
+              setError("The meeting has been ended by the host.");
+              setToken("");
+            }} />
             <div className="absolute top-0 left-0 right-0 h-16 pointer-events-auto">
               <RoomHeader roomName={roomName} />
             </div>

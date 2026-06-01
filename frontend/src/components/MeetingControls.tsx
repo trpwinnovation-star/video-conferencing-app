@@ -84,12 +84,14 @@ export function MeetingControls({ roomName }: MeetingControlsProps) {
           }
         }
 
-        // Host ends meeting for everyone
+        // Host ends meeting for everyone (run in background for instant UI response)
         try {
           const { apiEndMeeting } = await import("@/lib/api");
-          await apiEndMeeting(roomName);
+          apiEndMeeting(roomName).catch(e => {
+            console.warn("Failed to end meeting via API:", e);
+          });
         } catch (e) {
-          console.warn("Failed to end meeting via API, disconnecting locally:", e);
+          console.warn("Failed to import api module:", e);
         }
       }
       if (room && room.state !== "disconnected") {

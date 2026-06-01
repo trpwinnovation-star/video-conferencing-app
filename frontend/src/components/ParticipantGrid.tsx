@@ -107,6 +107,17 @@ export function ParticipantGrid() {
           <VideoTile trackRef={pinnedTrack} isPinned />
         </div>
 
+        {/* Explicit Unpin Button — always visible */}
+        <div className="absolute top-4 left-4 z-40">
+          <button
+            onClick={() => unpinParticipant()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 text-white text-xs font-bold backdrop-blur-md shadow-lg transition-all active:scale-95 cursor-pointer border border-white/10"
+          >
+            <PinOff size={14} />
+            <span>Unpin</span>
+          </button>
+        </div>
+
         {/* PIP Floating Filmstrip (Bottom Right) */}
         {showFilmstrip && filmstripTracks.length > 0 && (
           <div className="absolute bottom-4 right-4 z-20 flex gap-2 md:gap-3 max-w-[calc(100%-2rem)] overflow-x-auto no-scrollbar pointer-events-auto p-1">

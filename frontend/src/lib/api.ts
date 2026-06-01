@@ -133,10 +133,36 @@ export async function stopEgressRecording(egressId: string) {
   return await response.json();
 }
 
+export async function apiEndMeeting(roomName: string) {
+  const response = await fetch(`${ROOMS_URL}/end-meeting`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include',
+    body: JSON.stringify({ roomName }),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || 'Failed to end meeting');
+  }
+  return await response.json();
+}
+
 // ---- Legacy/Mock Recording APIs (Local only) ----
 export async function startRecording(roomName: string) {
   console.log('Local recording started for room:', roomName);
   return { status: 'mock_started' };
+}
+
+export async function apiGetMyRecordings() {
+  const response = await fetch(`${RECORDINGS_URL}/my`, {
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || 'Failed to fetch recordings');
+  }
+  return await response.json();
 }
 
 export async function stopRecording(id?: string) {
@@ -180,6 +206,41 @@ export async function apiLogin(email: string, password: string): Promise<User> {
 export async function apiLogout(): Promise<void> {
   if (typeof window !== 'undefined') localStorage.removeItem('auth_token');
   await fetch(`${AUTH_URL}/logout`, { method: 'POST', credentials: 'include' });
+}
+
+export async function apiChangePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const res = await fetch(`${AUTH_URL}/change-password`, {
+    method: 'PUT',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Failed to change password');
+  }
+}
+
+export async function apiForgotPassword(email: string): Promise<string> {
+  const res = await fetch(`${AUTH_URL}/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to process request');
+  return data.message;
+}
+
+export async function apiResetPassword(token: string, newPassword: string): Promise<string> {
+  const res = await fetch(`${AUTH_URL}/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to reset password');
+  return data.message;
 }
 
 export async function apiGetMe(): Promise<User | null> {

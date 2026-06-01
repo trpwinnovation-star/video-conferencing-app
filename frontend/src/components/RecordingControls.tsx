@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Circle, Square, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Circle, Square, Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRecording } from "@/hooks/useRecording";
 import { useTracks } from "@livekit/components-react";
@@ -26,7 +26,6 @@ export function RecordingControls({ roomName, userEmail, userName, onRecordStart
   // Get all active audio tracks in the room (microphones and screen share audio)
   const audioTracks = useTracks([Track.Source.Microphone, Track.Source.ScreenShareAudio]);
 
-  // --- Local (Browser) Recording Logic ---
   const localRecorder = useRecording({
     roomName,
     // Use fallback values if not provided by parent component yet
@@ -41,16 +40,25 @@ export function RecordingControls({ roomName, userEmail, userName, onRecordStart
       setToastMessage(err);
       setToastType("error");
       setShowToast(true);
+    },
+    onWarning: (msg) => {
+      setToastMessage(msg);
+      setToastType("error"); // use error styling for warning
+      setShowToast(true);
+      // Auto-hide warning after 10s
+      setTimeout(() => setShowToast(false), 10000);
     }
   });
 
   // Auto-hide toast
   useEffect(() => {
     if (showToast) {
-      const timer = setTimeout(() => setShowToast(false), 5000);
+      // 3 seconds for start message, 5 seconds for success, 10 seconds for warning/error
+      const duration = toastMessage === "Recording started!" ? 3000 : 5000;
+      const timer = setTimeout(() => setShowToast(false), duration);
       return () => clearTimeout(timer);
     }
-  }, [showToast]);
+  }, [showToast, toastMessage]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -72,6 +80,9 @@ export function RecordingControls({ roomName, userEmail, userName, onRecordStart
       }
       
       localRecorder.startRecording(mediaStreamTracks);
+      setToastMessage("Recording started!");
+      setToastType("success");
+      setShowToast(true);
       onRecordStart?.();
     }
   };
@@ -85,13 +96,19 @@ export function RecordingControls({ roomName, userEmail, userName, onRecordStart
       {/* Toast Notification */}
       {showToast && (
         <div className={cn(
-          "absolute -top-16 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl shadow-xl flex items-center gap-2 whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 duration-300 border",
+          "absolute -top-16 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl shadow-xl flex items-center gap-2 whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 duration-300 border z-[100]",
           toastType === "success"
             ? "bg-green-50 text-green-800 border-green-200"
             : "bg-red-50 text-red-800 border-red-200"
         )}>
           {toastType === "success" ? <CheckCircle2 size={16} className="text-green-600" /> : <AlertCircle size={16} className="text-red-600" />}
-          <span className="text-xs font-bold">{toastMessage}</span>
+          <span className="text-xs font-bold flex-1 pr-2">{toastMessage}</span>
+          <button 
+            onClick={() => setShowToast(false)}
+            className="p-0.5 rounded-full hover:bg-stone-200/50 transition-colors"
+          >
+            <X size={14} className="opacity-70 hover:opacity-100" />
+          </button>
         </div>
       )}
 

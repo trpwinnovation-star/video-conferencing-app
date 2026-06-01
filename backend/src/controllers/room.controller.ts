@@ -180,3 +180,37 @@ export const stopRecording = async (req: Request, res: Response) => {
     return res.status(500).json({ error: error.message || 'Failed to stop recording' });
   }
 };
+
+export const endMeeting = async (req: Request, res: Response) => {
+  try {
+    const { roomName } = req.body;
+    if (!roomName) {
+      return res.status(400).json({ error: 'roomName is required' });
+    }
+
+    let token = req.cookies?.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.substring(7);
+    }
+
+    if (!token) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecret') as { id: string };
+    
+    const roomId = normalizeRoomId(roomName);
+    const room = await getRoomOrThrow(roomId);
+    
+    if (room.createdBy !== decoded.id) {
+      return res.status(403).json({ error: 'Only the host can end the meeting' });
+    }
+
+    await livekitService.deleteRoom(roomId);
+    
+    return res.json({ message: 'Meeting ended successfully' });
+  } catch (error: any) {
+    console.error('Error ending meeting:', error);
+    return res.status(500).json({ error: error.message || 'Failed to end meeting' });
+  }
+};

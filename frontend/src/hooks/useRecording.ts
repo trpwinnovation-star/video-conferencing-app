@@ -6,9 +6,13 @@ interface UseRecordingOptions {
   userName?: string;
   onSuccess?: (filePath: string) => void;
   onError?: (error: string) => void;
+  onWarning?: (message: string) => void;
 }
 
-export function useRecording({ roomName, userEmail, userName = 'local-user', onSuccess, onError }: UseRecordingOptions) {
+const MAX_RECORDING_SECONDS = 3600; // 1 hour
+const WARNING_AT_SECONDS = 3000; // 50 minutes
+
+export function useRecording({ roomName, userEmail, userName = 'local-user', onSuccess, onError, onWarning }: UseRecordingOptions) {
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -27,10 +31,28 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
     totalChunks: number;
   } | null>(null);
 
+  // Track whether warning was already shown
+  const warningShownRef = useRef(false);
+  // Ref to access latest stopRecording in timer without circular deps
+  const autoStopRef = useRef<(() => void) | null>(null);
+
   const startTimer = () => {
     setDuration(0);
+    warningShownRef.current = false;
     timerRef.current = setInterval(() => {
-      setDuration((prev) => prev + 1);
+      setDuration((prev) => {
+        const next = prev + 1;
+        // 50-minute warning
+        if (next === WARNING_AT_SECONDS && !warningShownRef.current) {
+          warningShownRef.current = true;
+          onWarning?.('⚠️ Only 10 minutes of recording time remaining!');
+        }
+        // Auto-stop at 1 hour
+        if (next >= MAX_RECORDING_SECONDS) {
+          autoStopRef.current?.();
+        }
+        return next;
+      });
     }, 1000);
   };
 
@@ -211,6 +233,11 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
       mediaRecorderRef.current.stop();
     }
   }, []);
+
+  // Keep autoStopRef updated
+  useEffect(() => {
+    autoStopRef.current = stopRecording;
+  }, [stopRecording]);
 
   useEffect(() => {
     return () => {

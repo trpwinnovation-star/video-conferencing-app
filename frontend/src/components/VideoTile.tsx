@@ -85,8 +85,8 @@ export function VideoTile({ trackRef, isPinned = false }: VideoTileProps) {
       {/* Pin control */}
       {canPin && (
         <div className={cn(
-          "absolute top-3 right-3 z-20 transition-opacity duration-300",
-          isPinnedParticipant ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          "absolute top-3 left-3 z-30 transition-opacity duration-300",
+          isPinnedParticipant ? "opacity-100" : "opacity-100 md:opacity-0 md:group-hover:opacity-100"
         )}>
           <button
             type="button"

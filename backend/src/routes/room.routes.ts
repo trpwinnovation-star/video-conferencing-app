@@ -6,6 +6,7 @@ import {
   verifyRoomPasswordHandler,
   startRecording,
   stopRecording,
+  endMeeting,
 } from '../controllers/room.controller';
 
 const router = Router();
@@ -16,5 +17,6 @@ router.post('/token', generateToken);
 router.post('/create', createRoom);
 router.post('/recording/start', startRecording);
 router.post('/recording/stop', stopRecording);
+router.post('/end-meeting', endMeeting);
 
 export default router;

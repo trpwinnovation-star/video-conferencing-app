@@ -95,12 +95,16 @@ export const processRecording = async (
     console.log("signed url generated", signedUrl)
 
     // 5. Update DB
+    const fiveDaysFromNow = new Date();
+    fiveDaysFromNow.setDate(fiveDaysFromNow.getDate() + 5);
+
     await (prisma as any).recording.update({
       where: { id: recordingId },
       data: {
         status: 'completed',
         fileSize: stats.size,
         s3Key: s3Key,
+        downloadExpiresAt: fiveDaysFromNow,
       },
     });
 

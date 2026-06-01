@@ -48,6 +48,32 @@ export const sendRecordingReadyEmail = async (
   }
 };
 
+export const sendPasswordResetEmail = async (toEmail: string, resetLink: string) => {
+  try {
+    const response = await resend.emails.send({
+      from: "Video Conference <onboarding@resend.dev>",
+      to: toEmail,
+      subject: "Password Reset Request",
+      html: `
+        <h2>Password Reset</h2>
+        <p>You requested a password reset. Click the button below to reset your password. This link expires in 15 minutes.</p>
+        <a
+          href="${resetLink}"
+          style="display:inline-block;padding:10px 20px;background:#c16d18;color:white;text-decoration:none;border-radius:5px;font-weight:bold;"
+        >
+          Reset Password
+        </a>
+        <p>If you didn't request this, you can safely ignore this email.</p>
+      `,
+    });
+    console.log("Password reset email sent:", response);
+    return true;
+  } catch (error) {
+    console.error("Error sending password reset email:", error);
+    return false;
+  }
+};
+
 
 // import nodemailer from "nodemailer";
 

@@ -67,9 +67,20 @@ export function MeetingControls({ roomName }: MeetingControlsProps) {
     }
   }, [isHost, hasShownPopup]);
 
+  // Leave confirmation state
+  const [showLeaveConfirm, setShowLeaveConfirm] = React.useState(false);
 
   const handleLeave = async () => {
     try {
+      if (isHost) {
+        // Host ends meeting for everyone
+        try {
+          const { apiEndMeeting } = await import("@/lib/api");
+          await apiEndMeeting(roomName);
+        } catch (e) {
+          console.warn("Failed to end meeting via API, disconnecting locally:", e);
+        }
+      }
       if (room && room.state !== "disconnected") {
         await room.disconnect(true);
       }
@@ -81,57 +92,93 @@ export function MeetingControls({ roomName }: MeetingControlsProps) {
   };
 
   return (
-    <div className="relative flex items-center gap-1 md:gap-3 bg-white/95 backdrop-blur-xl border border-stone-200/80 p-2 md:p-3 md:px-6 rounded-2xl md:rounded-3xl shadow-xl shadow-stone-300/40">
+    <>
+      <div className="relative flex items-center gap-1 md:gap-3 bg-white/95 backdrop-blur-xl border border-stone-200/80 p-2 md:p-3 md:px-6 rounded-2xl md:rounded-3xl shadow-xl shadow-stone-300/40">
 
-      {/* Record Reminder Popup */}
-      {showRecordPopup && (
-        <div className="absolute -top-16 md:-top-20 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-3 whitespace-nowrap animate-in fade-in zoom-in-95 duration-300 z-50">
-          <div className="w-2 h-2 rounded-full bg-[#c16d18] animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-          <span className="text-sm font-medium">Meeting started! Click the record button to record the meeting.</span>
-          <button onClick={() => setShowRecordPopup(false)} className="ml-1 p-1 text-stone-400 hover:text-white rounded-full hover:bg-stone-800 transition-colors cursor-pointer">
-            <X size={14} />
-          </button>
-          {/* Tooltip arrow pointing down */}
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-stone-900" />
-        </div>
-      )}
+        {/* Record Reminder Popup */}
+        {showRecordPopup && (
+          <div className="absolute -top-16 md:-top-20 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-3 whitespace-nowrap animate-in fade-in zoom-in-95 duration-300 z-50">
+            <div className="w-2 h-2 rounded-full bg-[#c16d18] animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+            <span className="text-sm font-medium">Meeting started! Click the record button to record the meeting.</span>
+            <button onClick={() => setShowRecordPopup(false)} className="ml-1 p-1 text-stone-400 hover:text-white rounded-full hover:bg-stone-800 transition-colors cursor-pointer">
+              <X size={14} />
+            </button>
+            {/* Tooltip arrow pointing down */}
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-stone-900" />
+          </div>
+        )}
 
 
-      <div className="flex flex-col items-center gap-1 group">
-        <AudioToggleButton />
-        <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Mute</span>
-      </div>
-
-      <div className="flex flex-col items-center gap-1 group">
-        <VideoToggleButton />
-        <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Video</span>
-      </div>
-
-      <div className="hidden md:block w-px h-10 bg-stone-200 mx-1" />
-
-      <div className="flex flex-col items-center gap-1 group">
-        <ScreenShareButton />
-        <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Share</span>
-      </div>
-
-      {isHost && (
         <div className="flex flex-col items-center gap-1 group">
-          <RecordingControls roomName={roomName} onRecordStart={() => setShowRecordPopup(false)} />
-          <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Record</span>
+          <AudioToggleButton />
+          <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Mute</span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1 group">
+          <VideoToggleButton />
+          <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Video</span>
+        </div>
+
+        <div className="hidden md:block w-px h-10 bg-stone-200 mx-1" />
+
+        <div className="flex flex-col items-center gap-1 group">
+          <ScreenShareButton />
+          <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Share</span>
+        </div>
+
+        {isHost && (
+          <div className="flex flex-col items-center gap-1 group">
+            <RecordingControls roomName={roomName} onRecordStart={() => setShowRecordPopup(false)} />
+            <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Record</span>
+          </div>
+        )}
+
+        <div className="hidden md:block w-px h-10 bg-stone-200 mx-1" />
+
+        <div className="flex flex-col items-center gap-1 group">
+          <button
+            onClick={() => setShowLeaveConfirm(true)}
+            className="h-10 w-14 md:h-12 md:w-20 rounded-2xl flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-all shadow-md shadow-red-200 active:scale-95 cursor-pointer border border-red-400"
+          >
+            <PhoneOff size={20} className="md:w-[22px] md:h-[22px]" />
+          </button>
+          <span className="hidden md:block text-[9px] font-bold text-red-500 group-hover:text-red-600 transition-colors uppercase tracking-wider">Leave</span>
+        </div>
+      </div>
+
+      {/* Leave Confirmation Modal */}
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl border border-stone-200/80 p-6 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-300">
+            <h3 className="text-lg font-bold text-stone-900 mb-2">
+              {isHost ? "End meeting?" : "Leave meeting?"}
+            </h3>
+            <p className="text-sm text-stone-500 mb-6">
+              {isHost
+                ? "You are the host. Leaving will end the meeting for all participants."
+                : "Are you sure you want to exit this meeting?"}
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowLeaveConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-700 font-bold text-sm hover:bg-stone-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowLeaveConfirm(false);
+                  handleLeave();
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm transition-colors shadow-md shadow-red-200 cursor-pointer"
+              >
+                {isHost ? "End Meeting" : "Yes, Leave"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
-
-      <div className="hidden md:block w-px h-10 bg-stone-200 mx-1" />
-
-      <div className="flex flex-col items-center gap-1 group">
-        <button
-          onClick={handleLeave}
-          className="h-10 w-14 md:h-12 md:w-20 rounded-2xl flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-all shadow-md shadow-red-200 active:scale-95 cursor-pointer border border-red-400"
-        >
-          <PhoneOff size={20} className="md:w-[22px] md:h-[22px]" />
-        </button>
-        <span className="hidden md:block text-[9px] font-bold text-red-500 group-hover:text-red-600 transition-colors uppercase tracking-wider">Leave</span>
-      </div>
-    </div>
+    </>
   );
 }
+

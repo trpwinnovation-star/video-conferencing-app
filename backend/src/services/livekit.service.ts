@@ -105,4 +105,17 @@ export class LivekitService {
       throw error;
     }
   }
+
+  /**
+   * Delete a room, ending the meeting for all participants
+   */
+  public async deleteRoom(roomName: string) {
+    const roomService = getRoomService();
+    try {
+      await roomService.deleteRoom(roomName);
+    } catch (error) {
+      console.error('Error deleting room:', error);
+      throw error;
+    }
+  }
 }

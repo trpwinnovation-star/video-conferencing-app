@@ -69,28 +69,41 @@ export default function HomePage() {
       <nav className="flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <Image
-            src="/logo_b.png"
+            src="/logo_betel.png"
             alt="BetelMeet Logo"
-            width={28}
-            height={28}
-            className="object-contain"
+            width={140}
+            height={36}
+            className="object-contain mix-blend-multiply"
             priority
           />
-          <span className="text-stone-900 font-bold text-xl tracking-tight">BetelMeet</span>
         </div>
 
         <div className="flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-stone-700 text-sm">
+              <Link
+                href="/meetings"
+                className="text-stone-600 hover:text-stone-900 font-semibold text-sm transition-colors hidden sm:block"
+              >
+                Meetings
+              </Link>
+              <Link
+                href="/profile"
+                className="text-stone-600 hover:text-stone-900 font-semibold text-sm transition-colors hidden sm:block mr-2"
+              >
+                Profile
+              </Link>
+              <div className="w-px h-5 bg-stone-200 hidden sm:block" />
+
+              <Link href="/profile" className="flex items-center gap-2 text-stone-700 text-sm hover:opacity-80 transition-opacity">
                 <div className="w-8.5 h-8.5 rounded-full bg-[#c16d18]/10 border border-[#c16d18]/20 flex items-center justify-center text-[#c16d18] font-bold text-sm">
                   {user.name[0].toUpperCase()}
                 </div>
                 <span className="hidden sm:block font-medium">{user.name}</span>
-              </div>
+              </Link>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 text-stone-500 hover:text-stone-800 text-sm font-medium transition-colors"
+                className="flex items-center gap-1.5 text-stone-500 hover:text-stone-800 text-sm font-medium transition-colors ml-2"
               >
                 <LogOut size={16} />
                 <span className="hidden sm:block">Sign out</span>

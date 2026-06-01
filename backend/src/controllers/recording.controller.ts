@@ -4,8 +4,11 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
+import jwt from 'jsonwebtoken';
 import { processRecording } from '../services/recording.service';
 import { generateSignedUrl } from '../services/s3.service';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
 const prisma = new PrismaClient();
 const CHUNKS_DIR = path.join(os.tmpdir(), 'video-app-chunks');
@@ -103,12 +106,53 @@ export const getRecording = async (req: Request, res: Response) => {
       });
     }
 
+    // Check expiry
+    if (recording.downloadExpiresAt && new Date() > recording.downloadExpiresAt) {
+      return res.status(403).json({ error: 'Download link has expired (5 days limit).' });
+    }
+
+    // Check download limit
+    if (recording.downloadCount >= 3) {
+      return res.status(403).json({ error: 'Maximum download limit reached (3 times).' });
+    }
+
     // Generate a fresh signed URL valid for 1 hour
     const signedUrl = await generateSignedUrl(recording.s3Key, 3600);
 
-    res.status(200).json({ ...recording, signedUrl });
+    // Increment download count
+    await prisma.recording.update({
+      where: { id: recording.id },
+      data: { downloadCount: { increment: 1 } },
+    });
+
+    res.status(200).json({ ...recording, signedUrl, downloadCount: recording.downloadCount + 1 });
   } catch (error) {
     console.error('Error fetching recording:', error);
     res.status(500).json({ error: 'Failed to fetch recording' });
+  }
+};
+
+export const getMyRecordings = async (req: Request, res: Response) => {
+  try {
+    let token = req.cookies?.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.substring(7);
+    }
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET) as { name: string };
+    
+    const recordings = await prisma.recording.findMany({
+      where: { createdBy: decoded.name },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.json({ recordings });
+  } catch (error) {
+    console.error('Error fetching my recordings:', error);
+    return res.status(500).json({ error: 'Failed to fetch recordings' });
   }
 };

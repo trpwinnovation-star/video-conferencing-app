@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Video, Eye, EyeOff, Loader2 } from "lucide-react";
-import { apiLogin } from "@/lib/api";
+import { Video, Eye, EyeOff, Loader2, CheckCircle2 } from "lucide-react";
+import { apiLogin, apiForgotPassword } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export default function LoginPage() {
@@ -15,12 +15,28 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
+
+    if (isForgotPassword) {
+      try {
+        const msg = await apiForgotPassword(email);
+        setSuccess(msg);
+      } catch (err: any) {
+        setError(err.message || "Failed to send reset link");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       await apiLogin(email, password);
       await refresh();
@@ -37,15 +53,14 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-10">
-          <Image 
-            src="/logo_b.png" 
-            alt="BetelMeet Logo" 
-            width={36} 
-            height={36} 
-            className="object-contain"
+          <Image
+            src="/logo_betel.png"
+            alt="BetelMeet Logo"
+            width={180}
+            height={48}
+            className="object-contain mix-blend-multiply"
             priority
           />
-          <span className="text-stone-900 font-extrabold text-2xl tracking-tight">BetelMeet</span>
         </div>
 
         <div className="bg-white border border-stone-200/80 rounded-2xl p-8 shadow-xl">
@@ -65,30 +80,48 @@ export default function LoginPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-stone-600 mb-2">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#c16d18]/15 focus:border-[#c16d18] transition-all pr-12"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#c16d18] transition-colors"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+            {!isForgotPassword && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-semibold text-stone-600">Password</label>
+                  <button
+                    type="button"
+                    onClick={() => { setIsForgotPassword(true); setError(""); setSuccess(""); }}
+                    className="text-xs font-bold text-[#c16d18] hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#c16d18]/15 focus:border-[#c16d18] transition-all pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#c16d18] transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-600 text-sm font-semibold">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-600 text-sm font-semibold flex items-center gap-2">
                 {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 text-green-700 text-sm font-semibold flex items-center gap-2">
+                <CheckCircle2 size={16} />
+                {success}
               </div>
             )}
 
@@ -98,8 +131,18 @@ export default function LoginPage() {
               className="w-full py-3.5 bg-[#c16d18] hover:bg-[#a0560e] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#c16d18]/25 active:scale-95 cursor-pointer"
             >
               {loading && <Loader2 size={18} className="animate-spin" />}
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? (isForgotPassword ? "Sending..." : "Signing in...") : (isForgotPassword ? "Send Reset Link" : "Sign In")}
             </button>
+
+            {isForgotPassword && (
+              <button
+                type="button"
+                onClick={() => { setIsForgotPassword(false); setError(""); setSuccess(""); }}
+                className="w-full py-3 text-sm font-bold text-stone-500 hover:text-stone-800 transition-colors"
+              >
+                Back to Sign In
+              </button>
+            )}
           </form>
 
           <p className="text-center text-stone-500 text-sm mt-6">

@@ -20,7 +20,7 @@ export function RoomHeader({ roomName }: RoomHeaderProps) {
     <div className="h-16 w-full flex items-center justify-between px-6 bg-white border-b border-stone-200/80 shadow-sm text-stone-900">
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="bg-[#c16d18] text-white px-3 sm:px-4.5 py-2 rounded-xl text-sm font-bold shadow-md shadow-[#c16d18]/20 font-mono flex items-center gap-2">
-          {roomName}
+          Meeting ID : {roomName}
           <button
             onClick={() => {
               navigator.clipboard.writeText(roomName).then(() => {

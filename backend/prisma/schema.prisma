@@ -37,6 +37,8 @@ model Recording {
   signedUrl String?
   status        String   // 'processing', 'completed', 'failed'
   failureReason String?
+  downloadCount Int      @default(0)
+  downloadExpiresAt DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

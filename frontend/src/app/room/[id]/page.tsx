@@ -174,6 +174,10 @@ export default function RoomPage() {
         token={token}
         serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || "ws://localhost:7880"}
         className="h-full w-full relative"
+        onDisconnected={() => {
+          setError("The meeting has ended or you were disconnected.");
+          setToken("");
+        }}
       >
         <RoomPinProvider>
           <div className="h-full w-full relative z-0 pt-16 md:pt-20 pb-24 md:pb-28">

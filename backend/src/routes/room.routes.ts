@@ -7,6 +7,7 @@ import {
   startRecording,
   stopRecording,
   endMeeting,
+  checkRoomStatus,
 } from '../controllers/room.controller';
 
 const router = Router();
@@ -18,5 +19,6 @@ router.post('/create', createRoom);
 router.post('/recording/start', startRecording);
 router.post('/recording/stop', stopRecording);
 router.post('/end-meeting', endMeeting);
+router.post('/check-status', checkRoomStatus);
 
 export default router;

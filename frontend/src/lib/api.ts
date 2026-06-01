@@ -147,6 +147,22 @@ export async function apiEndMeeting(roomName: string) {
   return await response.json();
 }
 
+export async function checkRoomStatus(roomName: string): Promise<{ exists: boolean; status: string }> {
+  const response = await fetch(`${ROOMS_URL}/check-status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ roomName }),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    console.warn('Failed to check room status:', err);
+    // If we can't check, assume room exists (fail safe)
+    return { exists: true, status: 'unknown' };
+  }
+  return await response.json();
+}
+
 // ---- Legacy/Mock Recording APIs (Local only) ----
 export async function startRecording(roomName: string) {
   console.log('Local recording started for room:', roomName);

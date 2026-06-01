@@ -10,7 +10,7 @@ import {
 } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
 import "@livekit/components-styles";
-import { getToken } from "@/lib/api";
+import { getToken, checkRoomStatus } from "@/lib/api";
 import { getStoredRoomPassword, clearRoomPassword } from "@/lib/roomAccess";
 import { RoomHeader } from "@/components/RoomHeader";
 import { ParticipantGrid } from "@/components/ParticipantGrid";
@@ -19,9 +19,21 @@ import { RoomJoinGate } from "@/components/RoomJoinGate";
 import { RoomPinProvider } from "@/contexts/RoomPinContext";
 import { Loader2 } from "lucide-react";
 
-function MeetingEndListener({ onMeetingEnded }: { onMeetingEnded: () => void }) {
+function MeetingEndListener({ onMeetingEnded, roomName }: { onMeetingEnded: () => void; roomName: string }) {
   const room = useRoomContext();
 
+  // Derive isHost from room data without storing in state
+  const isHost = (() => {
+    if (!room?.localParticipant?.metadata) return false;
+    try {
+      const meta = JSON.parse(room.localParticipant.metadata);
+      return meta.isHost === true;
+    } catch {
+      return false;
+    }
+  })();
+
+  // Data channel listener (for when host deliberately ends meeting)
   useEffect(() => {
     if (!room) return;
 
@@ -30,11 +42,12 @@ function MeetingEndListener({ onMeetingEnded }: { onMeetingEnded: () => void }) 
         const str = new TextDecoder().decode(payload);
         const msg = JSON.parse(str);
         if (msg?.type === "MEETING_ENDED") {
+          console.log("Received MEETING_ENDED signal from host");
           onMeetingEnded();
           room.disconnect(true);
         }
       } catch (e) {
-        // ignore
+        // ignore parse errors
       }
     };
 
@@ -43,6 +56,40 @@ function MeetingEndListener({ onMeetingEnded }: { onMeetingEnded: () => void }) 
       room.off(RoomEvent.DataReceived, handleDataReceived);
     };
   }, [room, onMeetingEnded]);
+
+  // Room status polling for non-host participants
+  // This ensures they're kicked out if the host ends the meeting or the room is deleted
+  useEffect(() => {
+    if (!room || isHost) return; // Only poll for non-host participants
+
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    const startPolling = async () => {
+      // Start polling after 3 seconds (give the meeting time to start)
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      pollInterval = setInterval(async () => {
+        try {
+          const status = await checkRoomStatus(roomName);
+          if (!status.exists) {
+            console.log("Room no longer exists - meeting ended by host");
+            onMeetingEnded();
+            if (room && room.state !== "disconnected") {
+              await room.disconnect(true);
+            }
+          }
+        } catch (error) {
+          console.warn("Error polling room status:", error);
+        }
+      }, 5000); // Poll every 5 seconds
+    };
+
+    startPolling();
+
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [room, roomName, isHost, onMeetingEnded]);
 
   return null;
 }
@@ -215,10 +262,13 @@ export default function RoomPage() {
           </div>
 
           <div className="absolute inset-0 pointer-events-none z-50">
-            <MeetingEndListener onMeetingEnded={() => {
-              setError("The meeting has been ended by the host.");
-              setToken("");
-            }} />
+            <MeetingEndListener 
+              onMeetingEnded={() => {
+                setError("The meeting has been ended by the host.");
+                setToken("");
+              }} 
+              roomName={roomName}
+            />
             <div className="absolute top-0 left-0 right-0 h-16 pointer-events-auto">
               <RoomHeader roomName={roomName} />
             </div>

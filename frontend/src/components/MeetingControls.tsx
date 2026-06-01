@@ -73,30 +73,32 @@ export function MeetingControls({ roomName }: MeetingControlsProps) {
   const handleLeave = async () => {
     try {
       if (isHost) {
-        // Fire the backend API immediately (kick starts LiveKit room deletion on server side)
+        // Fire the backend API to end the meeting for ALL participants
         try {
           const { apiEndMeeting } = await import("@/lib/api");
-          apiEndMeeting(roomName).catch(e => {
-            console.warn("Failed to end meeting via API:", e);
-          });
+          await apiEndMeeting(roomName);
+          console.log("Meeting ended successfully via API");
         } catch (e) {
-          console.warn("Failed to import api module:", e);
+          console.warn("Failed to end meeting via API:", e);
         }
 
-        // Broadcast MEETING_ENDED signal to all participants via Data Channel
+        // Broadcast MEETING_ENDED signal to all participants via Data Channel as backup
         if (room && room.localParticipant) {
           try {
             const encoder = new TextEncoder();
             const data = encoder.encode(JSON.stringify({ type: 'MEETING_ENDED' }));
             await room.localParticipant.publishData(data, { reliable: true });
+            console.log("MEETING_ENDED signal sent to participants");
           } catch (err) {
             console.warn("Failed to send meeting ended signal", err);
           }
         }
 
-        // Wait 400ms to give LiveKit time to deliver the signal to all participants
-        // before the host's WebRTC data channel closes on disconnect
-        await new Promise(resolve => setTimeout(resolve, 400));
+        // Wait 800ms (increased from 400ms) to give LiveKit time to:
+        // 1. Delete the room on the backend
+        // 2. Deliver the MEETING_ENDED signal to all participants
+        // 3. Kick all participants from the room
+        await new Promise(resolve => setTimeout(resolve, 800));
       }
       if (room && room.state !== "disconnected") {
         await room.disconnect(true);

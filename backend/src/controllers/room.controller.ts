@@ -222,3 +222,34 @@ export const endMeeting = async (req: Request, res: Response) => {
     return res.status(500).json({ error: error.message || 'Failed to end meeting' });
   }
 };
+
+export const checkRoomStatus = async (req: Request, res: Response) => {
+  try {
+    const { roomName } = req.body;
+    if (!roomName) {
+      return res.status(400).json({ error: 'roomName is required' });
+    }
+
+    const roomId = normalizeRoomId(roomName);
+    
+    try {
+      // Check if room exists in LiveKit
+      const rooms = await livekitService.listRooms();
+      const roomExists = rooms.some(r => r.name === roomId);
+      
+      return res.json({ 
+        exists: roomExists,
+        status: roomExists ? 'active' : 'deleted'
+      });
+    } catch (error) {
+      console.warn('Error checking room status:', error);
+      return res.status(500).json({ 
+        error: 'Failed to check room status',
+        status: 'unknown'
+      });
+    }
+  } catch (error: any) {
+    console.error('Error in checkRoomStatus:', error);
+    return res.status(500).json({ error: error.message || 'Failed to check room status' });
+  }
+};

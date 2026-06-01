@@ -45,12 +45,12 @@ export default function SignupPage() {
     <div className="min-h-screen bg-[#FBF9FA] flex items-center justify-center p-6 text-stone-900">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-10">
+        <div className="flex items-center justify-center mb-12">
           <Image
             src="/logo_betel.png"
             alt="BetelMeet Logo"
-            width={180}
-            height={48}
+            width={200}
+            height={50}
             className="object-contain mix-blend-multiply"
             priority
           />

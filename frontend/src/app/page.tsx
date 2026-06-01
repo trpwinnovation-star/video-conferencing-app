@@ -66,13 +66,13 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen bg-[#FBF9FA] flex-col text-stone-900">
       {/* Navbar */}
-      <nav className="flex items-center justify-between h-16 py-4 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
-        <div className="flex items-center gap-2">
+      <nav className="flex items-center justify-between h-16 px-8 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
+        <div className="flex items-center">
           <Image
             src="/logo_betel.png"
             alt="BetelMeet Logo"
-            width={140}
-            height={36}
+            width={160}
+            height={40}
             className="object-contain mix-blend-multiply"
             priority
           />

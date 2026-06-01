@@ -65,7 +65,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-[#FBF9FA] text-stone-900 pb-12">
       {/* Navbar */}
-      <nav className="flex items-center px-6 py-4 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
+      <nav className="flex items-center h-16 py-4 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Image src="/logo_betel.png" alt="BetelMeet Logo" width={140} height={36} className="object-contain mix-blend-multiply" />
         </Link>

@@ -66,7 +66,7 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen bg-[#FBF9FA] flex-col text-stone-900">
       {/* Navbar */}
-      <nav className="flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
+      <nav className="flex items-center justify-between h-16 py-4 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <Image
             src="/logo_betel.png"

@@ -6,7 +6,9 @@ import {
   LiveKitRoom,
   RoomAudioRenderer,
   StartAudio,
+  useRoomContext,
 } from "@livekit/components-react";
+import { RoomEvent } from "livekit-client";
 import "@livekit/components-styles";
 import { getToken } from "@/lib/api";
 import { getStoredRoomPassword, clearRoomPassword } from "@/lib/roomAccess";
@@ -16,6 +18,33 @@ import { MeetingControls } from "@/components/MeetingControls";
 import { RoomJoinGate } from "@/components/RoomJoinGate";
 import { RoomPinProvider } from "@/contexts/RoomPinContext";
 import { Loader2 } from "lucide-react";
+
+function MeetingEndListener() {
+  const room = useRoomContext();
+
+  useEffect(() => {
+    if (!room) return;
+
+    const handleDataReceived = (payload: Uint8Array) => {
+      try {
+        const str = new TextDecoder().decode(payload);
+        const msg = JSON.parse(str);
+        if (msg?.type === "MEETING_ENDED") {
+          room.disconnect(true);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    room.on(RoomEvent.DataReceived, handleDataReceived);
+    return () => {
+      room.off(RoomEvent.DataReceived, handleDataReceived);
+    };
+  }, [room]);
+
+  return null;
+}
 
 export default function RoomPage() {
   const params = useParams();
@@ -185,6 +214,7 @@ export default function RoomPage() {
           </div>
 
           <div className="absolute inset-0 pointer-events-none z-50">
+            <MeetingEndListener />
             <div className="absolute top-0 left-0 right-0 h-16 pointer-events-auto">
               <RoomHeader roomName={roomName} />
             </div>

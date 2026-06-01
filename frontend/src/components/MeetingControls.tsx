@@ -73,6 +73,17 @@ export function MeetingControls({ roomName }: MeetingControlsProps) {
   const handleLeave = async () => {
     try {
       if (isHost) {
+        // Broadcast MEETING_ENDED signal to all participants via Data Channel
+        if (room && room.localParticipant) {
+          try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(JSON.stringify({ type: 'MEETING_ENDED' }));
+            await room.localParticipant.publishData(data, { reliable: true });
+          } catch (err) {
+            console.warn("Failed to send meeting ended signal", err);
+          }
+        }
+
         // Host ends meeting for everyone
         try {
           const { apiEndMeeting } = await import("@/lib/api");

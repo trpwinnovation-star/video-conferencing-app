@@ -73,6 +73,16 @@ export function MeetingControls({ roomName }: MeetingControlsProps) {
   const handleLeave = async () => {
     try {
       if (isHost) {
+        // Fire the backend API immediately (kick starts LiveKit room deletion on server side)
+        try {
+          const { apiEndMeeting } = await import("@/lib/api");
+          apiEndMeeting(roomName).catch(e => {
+            console.warn("Failed to end meeting via API:", e);
+          });
+        } catch (e) {
+          console.warn("Failed to import api module:", e);
+        }
+
         // Broadcast MEETING_ENDED signal to all participants via Data Channel
         if (room && room.localParticipant) {
           try {
@@ -84,15 +94,9 @@ export function MeetingControls({ roomName }: MeetingControlsProps) {
           }
         }
 
-        // Host ends meeting for everyone (run in background for instant UI response)
-        try {
-          const { apiEndMeeting } = await import("@/lib/api");
-          apiEndMeeting(roomName).catch(e => {
-            console.warn("Failed to end meeting via API:", e);
-          });
-        } catch (e) {
-          console.warn("Failed to import api module:", e);
-        }
+        // Wait 400ms to give LiveKit time to deliver the signal to all participants
+        // before the host's WebRTC data channel closes on disconnect
+        await new Promise(resolve => setTimeout(resolve, 400));
       }
       if (room && room.state !== "disconnected") {
         await room.disconnect(true);
@@ -103,6 +107,7 @@ export function MeetingControls({ roomName }: MeetingControlsProps) {
       router.push("/");
     }
   };
+
 
   return (
     <>

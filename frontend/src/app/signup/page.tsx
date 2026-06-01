@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Video, Eye, EyeOff, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { apiRegister } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -45,10 +46,14 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-10">
-          <div className="p-2.5 bg-[#c16d18] rounded-xl shadow-md shadow-[#c16d18]/25 animate-pulse">
-            <Video size={24} className="text-white" />
-          </div>
-          <span className="text-stone-900 font-extrabold text-2xl tracking-tight">BetelMeet</span>
+          <Image
+            src="/logo_betel.png"
+            alt="BetelMeet Logo"
+            width={180}
+            height={48}
+            className="object-contain mix-blend-multiply"
+            priority
+          />
         </div>
 
         <div className="bg-white border border-stone-200/80 rounded-2xl p-8 shadow-xl">

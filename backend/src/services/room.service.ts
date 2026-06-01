@@ -71,3 +71,12 @@ export async function ensureLivekitRoom(roomId: string) {
     // Room may already exist in LiveKit
   }
 }
+
+export async function deleteRoomFromDb(roomId: string) {
+  const id = normalizeRoomId(roomId);
+  try {
+    await prisma.room.delete({ where: { roomId: id } });
+  } catch (error) {
+    console.warn(`Failed to delete room ${id} from DB (maybe already deleted):`, error);
+  }
+}

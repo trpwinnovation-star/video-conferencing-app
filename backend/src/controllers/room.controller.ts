@@ -8,6 +8,7 @@ import {
   ensureLivekitRoom,
   isValidRoomId,
   normalizeRoomId,
+  deleteRoomFromDb,
 } from '../services/room.service';
 
 const livekitService = new LivekitService();
@@ -206,7 +207,14 @@ export const endMeeting = async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Only the host can end the meeting' });
     }
 
-    await livekitService.deleteRoom(roomId);
+    try {
+      await livekitService.deleteRoom(roomId);
+    } catch (livekitError: any) {
+      console.warn('LiveKit room delete warning (maybe already deleted):', livekitError.message);
+    }
+    
+    // Completely destroy the room so participants are fully kicked and can't rejoin
+    await deleteRoomFromDb(roomId);
     
     return res.json({ message: 'Meeting ended successfully' });
   } catch (error: any) {

@@ -78,9 +78,9 @@ export function RoomHeader({ roomName }: RoomHeaderProps) {
                         <p className="text-sm font-semibold text-stone-800 truncate">
                           {participant.name || participant.identity}
                         </p>
-                        <p className="text-xs text-stone-400">
+                        {/* <p className="text-xs text-stone-400">
                           {participant.isSpeaking ? '🔴 Speaking' : 'Idle'}
-                        </p>
+                        </p> */}
                       </div>
                       {participant.isCameraEnabled && (
                         <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">

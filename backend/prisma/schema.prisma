@@ -14,6 +14,10 @@ model User {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  scheduledMeetings ScheduledMeeting[] @relation("HostedMeetings")
+  meetingAttendees  MeetingAttendee[]
+  notifications     Notification[]
 }
 
 model Room {
@@ -41,4 +45,67 @@ model Recording {
   downloadExpiresAt DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model ScheduledMeeting {
+  id              String   @id @default(uuid())
+  title           String
+  description     String?
+  roomId          String   @unique
+  hostId          String
+  host            User     @relation("HostedMeetings", fields: [hostId], references: [id], onDelete: Cascade)
+  
+  scheduledTime   DateTime
+  durationMinutes Int      @default(60)
+  
+  status          String   @default("scheduled")  // 'scheduled', 'in_progress', 'completed', 'cancelled'
+  
+  shareableLink   String   @unique
+  meetingCode     String   @unique
+  
+  attendees       MeetingAttendee[]
+  
+  hostJoinedAt    DateTime?
+  actualStartTime DateTime?
+  actualEndTime   DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model MeetingAttendee {
+  id              String   @id @default(uuid())
+  meetingId       String
+  meeting         ScheduledMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  email           String?
+  name            String?
+  
+  joinedAt        DateTime?
+  leftAt          DateTime?
+  
+  invitationSent  Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+
+model Notification {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type             String
+  title            String
+  message          String
+  relatedMeetingId String?
+
+  isRead           Boolean  @default(false)
+  readAt           DateTime?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }

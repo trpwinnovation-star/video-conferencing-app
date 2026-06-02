@@ -1,0 +1,355 @@
+import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import { PrismaClient } from "@prisma/client";
+
+
+import {
+  createScheduledMeeting,
+  getScheduledMeeting,
+  getScheduledMeetingByRoomId,
+  getUserScheduledMeetings,
+  getUpcomingMeetings,
+  updateMeetingStatus,
+  hostJoinedMeeting,
+  endMeeting,
+  addMeetingAttendee,
+  recordAttendeeJoin,
+  recordAttendeeLeft,
+  getUserNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+} from '../services/scheduled-meeting.service';
+import { LivekitService } from '../services/livekit.service';
+import { createProtectedRoom } from '../services/room.service';
+
+const prisma = new PrismaClient();
+
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
+const livekitService = new LivekitService();
+
+// Get current user ID from token
+const getUserIdFromToken = (req: Request): string | null => {
+  let token = req.cookies?.token;
+  if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+    token = req.headers.authorization.substring(7);
+  }
+
+  if (!token) return null;
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    return decoded.id;
+  } catch {
+    return null;
+  }
+};
+
+// Create scheduled meeting
+export const scheduleNewMeeting = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { title, description, scheduledTime, durationMinutes, attendeeEmails } = req.body;
+
+    if (!title || !scheduledTime) {
+      return res.status(400).json({ error: 'Title and scheduledTime are required' });
+    }
+
+    const scheduledDate = new Date(scheduledTime);
+    if (scheduledDate <= new Date()) {
+      return res.status(400).json({ error: 'Scheduled time must be in the future' });
+    }
+
+    const meeting = await createScheduledMeeting(
+      title,
+      description,
+      userId,
+      scheduledDate,
+      durationMinutes || 60,
+      attendeeEmails || []
+    );
+
+    return res.status(201).json({
+      meeting,
+      shareableLink: meeting.shareableLink,
+      meetingCode: meeting.meetingCode,
+    });
+  } catch (error: any) {
+    console.error('Schedule meeting error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to schedule meeting' });
+  }
+};
+
+// Get scheduled meeting details
+export const getScheduledMeetingDetails = async (req: Request, res: Response) => {
+  try {
+   const meetingId = String(req.params.meetingId);
+
+    // if (!meetingId) {
+    //   return res.status(400).json({
+    //     error: "Meeting ID is required",
+    //   });
+    // }
+
+    const meeting = await getScheduledMeeting(meetingId);
+    if (!meeting) {
+      return res.status(404).json({ error: 'Meeting not found' });
+    }
+
+    return res.json(meeting);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Failed to fetch meeting' });
+  }
+};
+
+// Get user's scheduled meetings
+export const getUserMeetings = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const meetings = await getUserScheduledMeetings(userId);
+    return res.json({ meetings });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Failed to fetch meetings' });
+  }
+};
+
+// Get upcoming meetings (both hosted and attending)
+export const getUpcomingUserMeetings = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const meetings = await getUpcomingMeetings(userId);
+    return res.json({ meetings });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Failed to fetch meetings' });
+  }
+};
+
+// Host joins meeting
+export const joinScheduledMeeting = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromToken(req);
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const meetingId = String(req.params.meetingId);
+
+    const meeting = await getScheduledMeeting(meetingId);
+
+    if (!meeting) {
+      return res.status(404).json({ error: 'Meeting not found' });
+    }
+
+    if (meeting.hostId !== userId) {
+      return res.status(403).json({ error: 'Only host can join scheduled meeting' });
+    }
+
+    await hostJoinedMeeting(meetingId);
+
+    const livekitToken = await livekitService.generateToken(
+      meeting.roomId,
+      'Host',
+      true
+    );
+
+    return res.json({
+      token: livekitToken,
+      roomId: meeting.roomId,
+      meeting,
+    });
+  } catch (error: any) {
+    console.error('Join meeting error:', error);
+    return res.status(500).json({
+      error: error.message || 'Failed to join meeting',
+    });
+  }
+};
+
+// End scheduled meeting
+export const endScheduledMeeting = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromToken(req);
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const meetingId = String(req.params.meetingId);
+
+    const meeting = await getScheduledMeeting(meetingId);
+
+    if (!meeting) {
+      return res.status(404).json({ error: 'Meeting not found' });
+    }
+
+    if (meeting.hostId !== userId) {
+      return res.status(403).json({ error: 'Only host can end meeting' });
+    }
+
+    await endMeeting(meetingId);
+
+    return res.json({
+      message: 'Meeting ended successfully',
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      error: error.message || 'Failed to end meeting',
+    });
+  }
+};
+
+// Get notifications for user
+export const getNotifications = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const notifications = await getUserNotifications(userId);
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+
+    return res.json({
+      notifications,
+      unreadCount,
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Failed to fetch notifications' });
+  }
+};
+
+// Mark notification as read
+export const markNotificationRead = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromToken(req);
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const notificationId = String(req.params.notificationId);
+
+    await markNotificationAsRead(notificationId);
+
+    return res.json({
+      message: 'Notification marked as read',
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      error: error.message || 'Failed to update notification',
+    });
+  }
+};
+
+// Mark all notifications as read
+export const markAllNotificationsRead = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    await markAllNotificationsAsRead(userId);
+
+    return res.json({ message: 'All notifications marked as read' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || 'Failed to update notifications' });
+  }
+};
+
+// Get scheduled meeting by room ID (for joining via link)
+export const getMeetingByCode = async (req: Request, res: Response) => {
+  try {
+    const roomId = String(req.params.roomId);
+
+    const meeting = await getScheduledMeetingByRoomId(roomId);
+
+    if (!meeting) {
+      return res.status(404).json({ error: 'Meeting not found' });
+    }
+
+    return res.json({
+      id: meeting.id,
+      title: meeting.title,
+      description: meeting.description,
+      scheduledTime: meeting.scheduledTime,
+      host: meeting.host,
+      status: meeting.status,
+      hostJoinedAt: meeting.hostJoinedAt,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      error: error.message || 'Failed to fetch meeting',
+    });
+  }
+};
+
+// Generate LiveKit token for attendee to join
+export const getAttendeeToken = async (req: Request, res: Response) => {
+  try {
+    const roomId = String(req.params.roomId);
+    const { participantName } = req.body;
+
+    if (!participantName) {
+      return res.status(400).json({
+        error: 'participantName is required',
+      });
+    }
+
+    const meeting = await getScheduledMeetingByRoomId(roomId);
+
+    if (!meeting) {
+      return res.status(404).json({
+        error: 'Meeting not found',
+      });
+    }
+
+    const now = new Date();
+    const meetingStart = new Date(meeting.scheduledTime);
+
+    if (
+      now < meetingStart ||
+      meeting.status === 'cancelled'
+    ) {
+      return res.status(403).json({
+        error: 'Meeting has not started yet',
+        startsAt: meeting.scheduledTime,
+      });
+    }
+
+    const livekitToken = await livekitService.generateToken(
+      meeting.roomId,
+      participantName,
+      false
+    );
+
+    return res.json({
+      token: livekitToken,
+      roomId: meeting.roomId,
+      meeting: {
+        id: meeting.id,
+        title: meeting.title,
+        host: meeting.host,
+        status: meeting.status,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get attendee token error:', error);
+
+    return res.status(500).json({
+      error: error.message || 'Failed to get token',
+    });
+  }
+};

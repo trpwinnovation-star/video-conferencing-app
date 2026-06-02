@@ -272,3 +272,207 @@ export async function apiGetMe(): Promise<User | null> {
     return null;
   }
 }
+
+// ---- Scheduled Meetings APIs ----
+const SCHEDULED_MEETINGS_URL = `${API_BASE}/scheduled-meetings`;
+
+export interface ScheduledMeeting {
+  id: string;
+  title: string;
+  description?: string;
+  roomId: string;
+  hostId: string;
+  scheduledTime: string;
+  durationMinutes: number;
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  shareableLink: string;
+  meetingCode: string;
+  hostJoinedAt?: string;
+  actualStartTime?: string;
+  actualEndTime?: string;
+  host?: User;
+  attendees?: any[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function apiScheduleMeeting(
+  title: string,
+  description: string | undefined,
+  scheduledTime: Date,
+  durationMinutes: number = 60,
+  attendeeEmails: string[] = []
+): Promise<{ meeting: ScheduledMeeting; shareableLink: string; meetingCode: string }> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/schedule`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include',
+    body: JSON.stringify({
+      title,
+      description,
+      scheduledTime: scheduledTime.toISOString(),
+      durationMinutes,
+      attendeeEmails,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to schedule meeting');
+  return data;
+}
+
+export async function apiGetUserMeetings(): Promise<{ meetings: ScheduledMeeting[] }> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/meetings`, {
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Failed to fetch meetings');
+  }
+
+  return await res.json();
+}
+
+export async function apiGetUpcomingMeetings(): Promise<{ meetings: ScheduledMeeting[] }> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/upcoming`, {
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Failed to fetch meetings');
+  }
+
+  return await res.json();
+}
+
+export async function apiGetScheduledMeeting(meetingId: string): Promise<ScheduledMeeting> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/meeting/${meetingId}`, {
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Failed to fetch meeting');
+  }
+
+  return await res.json();
+}
+
+export async function apiJoinScheduledMeeting(meetingId: string): Promise<{
+  token: string;
+  roomId: string;
+  meeting: ScheduledMeeting;
+}> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/meeting/${meetingId}/join`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include',
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to join meeting');
+  return data;
+}
+
+export async function apiEndScheduledMeeting(meetingId: string): Promise<{ message: string }> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/meeting/${meetingId}/end`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include',
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to end meeting');
+  return data;
+}
+
+export async function apiGetMeetingByCode(roomId: string): Promise<{
+  id: string;
+  title: string;
+  description?: string;
+  scheduledTime: string;
+  host: User;
+  status: string;
+  hostJoinedAt?: string;
+}> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/code/${roomId}`);
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Meeting not found');
+  }
+
+  return await res.json();
+}
+
+export async function apiGetAttendeeToken(
+  roomId: string,
+  participantName: string
+): Promise<{ token: string; roomId: string; meeting: ScheduledMeeting }> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/code/${roomId}/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ participantName }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to get token');
+  return data;
+}
+
+export interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  relatedMeetingId?: string;
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+export async function apiGetNotifications(): Promise<{
+  notifications: Notification[];
+  unreadCount: number;
+}> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/notifications`, {
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Failed to fetch notifications');
+  }
+
+  return await res.json();
+}
+
+export async function apiMarkNotificationAsRead(notificationId: string): Promise<{ message: string }> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/notifications/${notificationId}/read`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include',
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to update notification');
+  return data;
+}
+
+export async function apiMarkAllNotificationsAsRead(): Promise<{ message: string }> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/notifications/read-all`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include',
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to update notifications');
+  return data;
+}

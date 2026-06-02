@@ -13,9 +13,10 @@ interface RecordingControlsProps {
   userEmail?: string;
   userName?: string;
   onRecordStart?: () => void;
+  onRecordingStateChange?: (isRecording: boolean, duration: number) => void;
 }
 
-export function RecordingControls({ roomName, userEmail, userName, onRecordStart }: RecordingControlsProps) {
+export function RecordingControls({ roomName, userEmail, userName, onRecordStart, onRecordingStateChange }: RecordingControlsProps) {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
@@ -59,6 +60,11 @@ export function RecordingControls({ roomName, userEmail, userName, onRecordStart
       return () => clearTimeout(timer);
     }
   }, [showToast, toastMessage]);
+
+  // Notify parent of recording state changes
+  useEffect(() => {
+    onRecordingStateChange?.(localRecorder.isRecording, localRecorder.duration);
+  }, [localRecorder.isRecording, localRecorder.duration, onRecordingStateChange]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

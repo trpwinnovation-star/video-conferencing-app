@@ -15,6 +15,7 @@ import { getStoredRoomPassword, clearRoomPassword } from "@/lib/roomAccess";
 import { RoomHeader } from "@/components/RoomHeader";
 import { ParticipantGrid } from "@/components/ParticipantGrid";
 import { MeetingControls } from "@/components/MeetingControls";
+import { RecordingCountdown } from "@/components/RecordingCountdown";
 import { RoomJoinGate } from "@/components/RoomJoinGate";
 import { RoomPinProvider } from "@/contexts/RoomPinContext";
 import { Loader2 } from "lucide-react";
@@ -107,6 +108,13 @@ export default function RoomPage() {
   const [error, setError] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [storageChecked, setStorageChecked] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+
+  const handleRecordingStateChange = (isRecording: boolean, duration: number) => {
+    setIsRecording(isRecording);
+    setRecordingDuration(duration);
+  };
 
   useEffect(() => {
     const stored = getStoredRoomPassword(roomName);
@@ -274,8 +282,10 @@ export default function RoomPage() {
             </div>
 
             <div className="absolute bottom-8 left-0 right-0 flex justify-center pointer-events-auto px-4">
-              <MeetingControls roomName={roomName} />
+              <MeetingControls roomName={roomName} onRecordingStateChange={handleRecordingStateChange} />
             </div>
+
+            <RecordingCountdown recordingDuration={recordingDuration} isRecording={isRecording} />
           </div>
         </RoomPinProvider>
 

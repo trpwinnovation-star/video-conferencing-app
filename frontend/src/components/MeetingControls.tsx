@@ -13,9 +13,10 @@ import { cn } from "@/lib/utils";
 
 interface MeetingControlsProps {
   roomName: string;
+  onRecordingStateChange?: (isRecording: boolean, duration: number) => void;
 }
 
-export function MeetingControls({ roomName }: MeetingControlsProps) {
+export function MeetingControls({ roomName, onRecordingStateChange }: MeetingControlsProps) {
   const room = useRoomContext();
   const router = useRouter();
   // Obtain the local participant from the hook
@@ -148,7 +149,7 @@ export function MeetingControls({ roomName }: MeetingControlsProps) {
 
         {isHost && (
           <div className="flex flex-col items-center gap-1 group">
-            <RecordingControls roomName={roomName} onRecordStart={() => setShowRecordPopup(false)} />
+            <RecordingControls roomName={roomName} onRecordStart={() => setShowRecordPopup(false)} onRecordingStateChange={onRecordingStateChange} />
             <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Record</span>
           </div>
         )}

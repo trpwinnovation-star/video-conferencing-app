@@ -31,26 +31,27 @@ export default function RecordingPage() {
         if (baseUrl.endsWith('/api')) baseUrl = baseUrl.slice(0, -4);
         
         const res = await fetch(`${baseUrl}/api/recording/${recordingId}`);
+        const contentType = res.headers.get("content-type");
+        const isJson = contentType && contentType.includes("application/json");
         
         if (!res.ok) {
           let errMsg = `Failed to load recording (HTTP ${res.status})`;
-          try {
-            const contentType = res.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-              const data = await res.json();
-              errMsg = data.error || errMsg;
-              if (data.details) errMsg = `${errMsg}: ${data.details}`;
-            } else {
-              const text = await res.text();
-              console.error("Non-JSON error response:", text);
-            }
-          } catch (e) {
-            console.error("Failed to parse error response", e);
+          if (isJson) {
+            const data = await res.json();
+            errMsg = data.error || errMsg;
+            if (data.details) errMsg = `${errMsg}: ${data.details}`;
+          } else {
+            const text = await res.text();
+            console.error("Non-JSON error response:", text);
           }
           throw new Error(errMsg);
         }
         
         const data = await res.json();
+        if (res.status === 202 || data.status !== 'completed') {
+          throw new Error(data.details || `Recording status: ${data.status || 'processing'}. Please try again shortly.`);
+        }
+        
         setRecording(data);
       } catch (err: any) {
         setError(err.message);

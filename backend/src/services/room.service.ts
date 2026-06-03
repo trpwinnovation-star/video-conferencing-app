@@ -79,4 +79,20 @@ export async function deleteRoomFromDb(roomId: string) {
   } catch (error) {
     console.warn(`Failed to delete room ${id} from DB (maybe already deleted):`, error);
   }
+
+  try {
+    // Also mark any corresponding ScheduledMeeting as completed
+    await prisma.scheduledMeeting.updateMany({
+      where: { 
+        roomId: id,
+        status: { in: ['scheduled', 'in_progress'] }
+      },
+      data: {
+        status: 'completed',
+        actualEndTime: new Date()
+      }
+    });
+  } catch (smError) {
+    console.warn(`Failed to mark scheduled meeting for room ${id} as completed:`, smError);
+  }
 }

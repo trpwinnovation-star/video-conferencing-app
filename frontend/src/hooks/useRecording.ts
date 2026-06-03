@@ -7,12 +7,13 @@ interface UseRecordingOptions {
   onSuccess?: (filePath: string) => void;
   onError?: (error: string) => void;
   onWarning?: (message: string) => void;
+  onRecordingReady?: (blob: Blob, duration: number) => void;
 }
 
 const MAX_RECORDING_SECONDS = 3600; // 1 hour
 const WARNING_AT_SECONDS = 3000; // 50 minutes
 
-export function useRecording({ roomName, userEmail, userName = 'local-user', onSuccess, onError, onWarning }: UseRecordingOptions) {
+export function useRecording({ roomName, userEmail, userName = 'local-user', onSuccess, onError, onWarning, onRecordingReady }: UseRecordingOptions) {
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -22,6 +23,7 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const localChunksRef = useRef<Blob[]>([]);
   
   // Track continuous recording session
   const recordingSessionRef = useRef<{
@@ -99,6 +101,7 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
   };
 
   const startRecording = async (audioTracks: MediaStreamTrack[] = []) => {
+    localChunksRef.current = [];
     try {
       setError(null);
       
@@ -160,19 +163,32 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = async (event) => {
-        if (event.data.size > 0 && recordingSessionRef.current) {
-          const currentIndex = recordingSessionRef.current.chunkIndex;
-          recordingSessionRef.current.chunkIndex++;
-          recordingSessionRef.current.totalChunks++;
+        if (event.data.size > 0) {
+          // Keep a local copy for immediate download
+          localChunksRef.current.push(event.data);
           
-          await uploadChunk(event.data, currentIndex, recordingSessionRef.current.meetingId);
+          if (recordingSessionRef.current) {
+            const currentIndex = recordingSessionRef.current.chunkIndex;
+            recordingSessionRef.current.chunkIndex++;
+            recordingSessionRef.current.totalChunks++;
+            
+            await uploadChunk(event.data, currentIndex, recordingSessionRef.current.meetingId);
+          }
         }
       };
 
       mediaRecorder.onstop = async () => {
         setIsRecording(false);
+        const finalDuration = duration;
         stopTimer();
         setIsUploading(true);
+        
+        // Create local blob for immediate download
+        if (localChunksRef.current.length > 0) {
+          const localBlob = new Blob(localChunksRef.current, { type: 'video/webm' });
+          onRecordingReady?.(localBlob, finalDuration);
+          localChunksRef.current = [];
+        }
         
         stream.getTracks().forEach(track => track.stop());
         

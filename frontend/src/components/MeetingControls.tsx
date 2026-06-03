@@ -6,8 +6,10 @@ import { ParticipantEvent } from "livekit-client";
 import { PhoneOff, X } from "lucide-react";
 import { AudioToggleButton } from "./AudioToggleButton";
 import { VideoToggleButton } from "./VideoToggleButton";
+import { CameraFlipButton } from "./CameraFlipButton";
 import { ScreenShareButton } from "./ScreenShareButton";
 import { RecordingControls } from "./RecordingControls";
+import { SaveRecordingModal } from "./SaveRecordingModal";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +73,17 @@ export function MeetingControls({ roomName, onRecordingStateChange }: MeetingCon
   // Leave confirmation state
   const [showLeaveConfirm, setShowLeaveConfirm] = React.useState(false);
 
+  // Recording save modal state
+  const [recordingBlob, setRecordingBlob] = React.useState<Blob | null>(null);
+  const [recordingDuration, setRecordingDuration] = React.useState(0);
+  const [showSaveModal, setShowSaveModal] = React.useState(false);
+
+  const handleRecordingReady = (blob: Blob, duration: number) => {
+    setRecordingBlob(blob);
+    setRecordingDuration(duration);
+    setShowSaveModal(true);
+  };
+
   const handleLeave = async () => {
     // Safety net: always redirect home after 3 seconds no matter what
     const safetyTimer = setTimeout(() => {
@@ -78,6 +91,7 @@ export function MeetingControls({ roomName, onRecordingStateChange }: MeetingCon
     }, 3000);
 
     try {
+      sessionStorage.setItem("voluntary_leave", "true");
       if (isHost) {
         // Fire the backend API to end the meeting for ALL participants
         try {
@@ -100,17 +114,19 @@ export function MeetingControls({ roomName, onRecordingStateChange }: MeetingCon
           }
         }
 
-        // Wait 800ms to give LiveKit time to process
-        await new Promise(resolve => setTimeout(resolve, 800));
-      }
-      if (room && room.state !== "disconnected") {
-        await room.disconnect(true);
+        // Wait 400ms to give signals time to emit before we leave
+        await new Promise(resolve => setTimeout(resolve, 400));
       }
     } catch (e) {
       console.warn("Error during leave:", e);
     } finally {
       clearTimeout(safetyTimer);
+      // Navigate to homepage first so the page transition starts immediately
       router.push("/");
+      // Trigger disconnect asynchronously in the background so it doesn't block the routing
+      if (room && room.state !== "disconnected") {
+        room.disconnect(true).catch(e => console.warn(e));
+      }
     }
   };
 
@@ -143,6 +159,8 @@ export function MeetingControls({ roomName, onRecordingStateChange }: MeetingCon
           <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Video</span>
         </div>
 
+        <CameraFlipButton />
+
         <div className="hidden md:block w-px h-10 bg-stone-200 mx-1" />
 
         <div className="flex flex-col items-center gap-1 group">
@@ -152,7 +170,7 @@ export function MeetingControls({ roomName, onRecordingStateChange }: MeetingCon
 
         {isHost && (
           <div className="flex flex-col items-center gap-1 group">
-            <RecordingControls roomName={roomName} onRecordStart={() => setShowRecordPopup(false)} onRecordingStateChange={onRecordingStateChange} />
+            <RecordingControls roomName={roomName} onRecordStart={() => setShowRecordPopup(false)} onRecordingStateChange={onRecordingStateChange} onRecordingReady={handleRecordingReady} />
             <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Record</span>
           </div>
         )}
@@ -201,6 +219,19 @@ export function MeetingControls({ roomName, onRecordingStateChange }: MeetingCon
             </div>
           </div>
         </div>
+      )}
+      {/* Save Recording Modal */}
+      {showSaveModal && recordingBlob && (
+        <SaveRecordingModal
+          isOpen={showSaveModal}
+          onClose={() => {
+            setShowSaveModal(false);
+            setRecordingBlob(null);
+          }}
+          blob={recordingBlob}
+          roomName={roomName}
+          duration={recordingDuration}
+        />
       )}
     </>
   );

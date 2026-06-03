@@ -268,6 +268,11 @@ export default function RoomPage() {
         serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || "ws://localhost:7880"}
         className="h-full w-full relative"
         onDisconnected={() => {
+          if (sessionStorage.getItem("voluntary_leave")) {
+            sessionStorage.removeItem("voluntary_leave");
+            router.push("/");
+            return;
+          }
           setError("The meeting has ended or you were disconnected.");
           setToken("");
         }}

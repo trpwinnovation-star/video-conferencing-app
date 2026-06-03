@@ -219,7 +219,7 @@ export default function MeetingsPage() {
                       {rec.status === 'completed' ? (
                         canDownload ? (
                           <Link
-                            href={`/recording/${rec.meetingId}`}
+                            href={`/recordings/${rec.id}`}
                             className="w-full py-2.5 bg-[#c16d18]/10 hover:bg-[#c16d18] text-[#c16d18] hover:text-white border border-[#c16d18]/20 hover:border-[#c16d18] rounded-xl font-bold transition-all flex items-center justify-center gap-2 mt-auto"
                           >
                             <Download size={16} />

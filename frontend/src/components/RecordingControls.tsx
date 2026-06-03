@@ -14,9 +14,10 @@ interface RecordingControlsProps {
   userName?: string;
   onRecordStart?: () => void;
   onRecordingStateChange?: (isRecording: boolean, duration: number) => void;
+  onRecordingReady?: (blob: Blob, duration: number) => void;
 }
 
-export function RecordingControls({ roomName, userEmail, userName, onRecordStart, onRecordingStateChange }: RecordingControlsProps) {
+export function RecordingControls({ roomName, userEmail, userName, onRecordStart, onRecordingStateChange, onRecordingReady }: RecordingControlsProps) {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
@@ -44,10 +45,12 @@ export function RecordingControls({ roomName, userEmail, userName, onRecordStart
     },
     onWarning: (msg) => {
       setToastMessage(msg);
-      setToastType("error"); // use error styling for warning
+      setToastType("error");
       setShowToast(true);
-      // Auto-hide warning after 10s
       setTimeout(() => setShowToast(false), 10000);
+    },
+    onRecordingReady: (blob, duration) => {
+      onRecordingReady?.(blob, duration);
     }
   });
 

@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Clock, Users, Share2, Play, MoreVertical, Loader } from 'lucide-react';
-import { apiGetUserMeetings, ScheduledMeeting } from '@/lib/api';
+import { apiGetUserMeetings, apiJoinScheduledMeeting, ScheduledMeeting } from '@/lib/api';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface ScheduledMeetingsListProps {
   refresh?: boolean;
@@ -14,6 +15,7 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     loadMeetings();
@@ -35,6 +37,17 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
     navigator.clipboard.writeText(link);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleJoinMeeting = async (meeting: ScheduledMeeting) => {
+    try {
+      const result = await apiJoinScheduledMeeting(meeting.id);
+      sessionStorage.setItem(`room_token_${result.roomId}`, result.token);
+      const hostName = encodeURIComponent(meeting.host?.name || 'Host');
+      router.push(`/room/${result.roomId}?name=${hostName}`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to join meeting');
+    }
   };
 
   const getStatusColor = (meeting: ScheduledMeeting) => {
@@ -75,7 +88,9 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
     const meetingEnd = new Date(
       meetingStart.getTime() + meeting.durationMinutes * 60000
     );
-    return meeting.status === 'scheduled' && now >= meetingStart && now <= meetingEnd;
+    const isStatusValid = meeting.status === 'scheduled' || meeting.status === 'in_progress';
+    const isTimeValid = now >= new Date(meetingStart.getTime() - 15 * 60000) && now <= meetingEnd;
+    return isStatusValid && isTimeValid;
   };
 
   if (isLoading) {
@@ -172,13 +187,13 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
 
               {/* Join Button (only if meeting is happening now) */}
               {canJoinMeeting(meeting) && (
-                <Link
-                  href={`/room/${meeting.roomId}`}
+                <button
+                  onClick={() => handleJoinMeeting(meeting)}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
                 >
                   <Play size={16} />
                   Join Now
-                </Link>
+                </button>
               )}
 
               {/* Future Join Button (if upcoming) */}

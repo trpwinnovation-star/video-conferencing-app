@@ -117,6 +117,14 @@ export default function RoomPage() {
   };
 
   useEffect(() => {
+    const storedToken = sessionStorage.getItem(`room_token_${roomName}`);
+    if (storedToken) {
+      setToken(storedToken);
+      sessionStorage.removeItem(`room_token_${roomName}`);
+      setStorageChecked(true);
+      return;
+    }
+
     const stored = getStoredRoomPassword(roomName);
     if (stored) setAccessPassword(stored);
     setStorageChecked(true);

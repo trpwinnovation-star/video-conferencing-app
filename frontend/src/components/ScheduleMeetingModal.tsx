@@ -21,6 +21,7 @@ export default function ScheduleMeetingModal({
   const [time, setTime] = useState('10:00');
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [attendeeEmails, setAttendeeEmails] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [shareableLink, setShareableLink] = useState('');
@@ -49,6 +50,10 @@ export default function ScheduleMeetingModal({
       if (scheduledDateTime <= now) {
         throw new Error('Scheduled time must be in the future');
       }
+      
+      if (!password || password.length < 4) {
+        throw new Error('Password is required and must be at least 4 characters');
+      }
 
       // Parse attendee emails
       const emails = attendeeEmails
@@ -61,7 +66,8 @@ export default function ScheduleMeetingModal({
         description || undefined,
         scheduledDateTime,
         durationMinutes,
-        emails
+        emails,
+        password
       );
 
       setShareableLink(result.shareableLink);
@@ -124,6 +130,7 @@ export default function ScheduleMeetingModal({
               setTime('10:00');
               setDurationMinutes(60);
               setAttendeeEmails('');
+              setPassword('');
               onClose();
             }}
             className="w-full bg-gray-300 hover:bg-gray-400 text-gray-900 font-semibold py-2 px-4 rounded-lg"
@@ -232,6 +239,21 @@ export default function ScheduleMeetingModal({
               disabled={isLoading}
             />
             <p className="text-xs text-gray-500 mt-1">example@email.com, another@email.com</p>
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Meeting Password *
+            </label>
+            <input
+              type="text"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter a secure password"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isLoading}
+            />
           </div>
 
           {/* Error Message */}

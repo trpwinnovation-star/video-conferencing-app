@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { LivekitService } from './livekit.service';
+import { createProtectedRoom, deleteRoomFromDb } from './room.service';
 
 const prisma = new PrismaClient();
 const livekitService = new LivekitService();
@@ -11,7 +12,8 @@ export async function createScheduledMeeting(
   hostId: string,
   scheduledTime: Date,
   durationMinutes: number = 60,
-  attendeeEmails: string[] = []
+  attendeeEmails: string[] = [],
+  password?: string
 ) {
   // Generate unique meeting code and shareable link
   const meetingCode = generateMeetingCode();
@@ -19,7 +21,8 @@ export async function createScheduledMeeting(
   const shareableLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/meeting/${roomId}`;
 
   // Create password-protected room
-  const password = generateMeetingPassword();
+  const roomPassword = password || generateMeetingPassword();
+  await createProtectedRoom(roomId, roomPassword, hostId);
 
   // Create scheduled meeting record
   const scheduledMeeting = await prisma.scheduledMeeting.create({

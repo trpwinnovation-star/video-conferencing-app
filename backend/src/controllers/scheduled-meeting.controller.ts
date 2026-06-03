@@ -20,7 +20,7 @@ import {
   markAllNotificationsAsRead,
 } from '../services/scheduled-meeting.service';
 import { LivekitService } from '../services/livekit.service';
-import { createProtectedRoom } from '../services/room.service';
+import { createProtectedRoom, deleteRoomFromDb } from '../services/room.service';
 
 const prisma = new PrismaClient();
 
@@ -52,7 +52,7 @@ export const scheduleNewMeeting = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const { title, description, scheduledTime, durationMinutes, attendeeEmails } = req.body;
+    const { title, description, scheduledTime, durationMinutes, attendeeEmails, password } = req.body;
 
     if (!title || !scheduledTime) {
       return res.status(400).json({ error: 'Title and scheduledTime are required' });
@@ -69,7 +69,8 @@ export const scheduleNewMeeting = async (req: Request, res: Response) => {
       userId,
       scheduledDate,
       durationMinutes || 60,
-      attendeeEmails || []
+      attendeeEmails || [],
+      password
     );
 
     return res.status(201).json({
@@ -199,6 +200,7 @@ export const endScheduledMeeting = async (req: Request, res: Response) => {
     }
 
     await endMeeting(meetingId);
+    await deleteRoomFromDb(meeting.roomId);
 
     return res.json({
       message: 'Meeting ended successfully',

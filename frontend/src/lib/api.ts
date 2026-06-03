@@ -301,7 +301,8 @@ export async function apiScheduleMeeting(
   description: string | undefined,
   scheduledTime: Date,
   durationMinutes: number = 60,
-  attendeeEmails: string[] = []
+  attendeeEmails: string[] = [],
+  password?: string
 ): Promise<{ meeting: ScheduledMeeting; shareableLink: string; meetingCode: string }> {
   const res = await fetch(`${SCHEDULED_MEETINGS_URL}/schedule`, {
     method: 'POST',
@@ -313,6 +314,7 @@ export async function apiScheduleMeeting(
       scheduledTime: scheduledTime.toISOString(),
       durationMinutes,
       attendeeEmails,
+      password,
     }),
   });
 
@@ -361,6 +363,10 @@ export async function apiGetScheduledMeeting(meetingId: string): Promise<Schedul
   }
 
   return await res.json();
+}
+
+export async function apiGetScheduledMeetingDetails(meetingId: string): Promise<ScheduledMeeting> {
+  return apiGetScheduledMeeting(meetingId);
 }
 
 export async function apiJoinScheduledMeeting(meetingId: string): Promise<{

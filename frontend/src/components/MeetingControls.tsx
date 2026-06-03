@@ -72,6 +72,11 @@ export function MeetingControls({ roomName, onRecordingStateChange }: MeetingCon
   const [showLeaveConfirm, setShowLeaveConfirm] = React.useState(false);
 
   const handleLeave = async () => {
+    // Safety net: always redirect home after 3 seconds no matter what
+    const safetyTimer = setTimeout(() => {
+      router.push("/");
+    }, 3000);
+
     try {
       if (isHost) {
         // Fire the backend API to end the meeting for ALL participants
@@ -95,18 +100,16 @@ export function MeetingControls({ roomName, onRecordingStateChange }: MeetingCon
           }
         }
 
-        // Wait 800ms (increased from 400ms) to give LiveKit time to:
-        // 1. Delete the room on the backend
-        // 2. Deliver the MEETING_ENDED signal to all participants
-        // 3. Kick all participants from the room
+        // Wait 800ms to give LiveKit time to process
         await new Promise(resolve => setTimeout(resolve, 800));
       }
       if (room && room.state !== "disconnected") {
         await room.disconnect(true);
       }
     } catch (e) {
-      // Ignore disconnect errors
+      console.warn("Error during leave:", e);
     } finally {
+      clearTimeout(safetyTimer);
       router.push("/");
     }
   };

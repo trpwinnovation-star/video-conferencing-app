@@ -15,11 +15,11 @@ export function CameraFlipButton() {
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
   }, []);
 
-  // Only show on mobile devices where facingMode is fully supported
-  if (!isMobile) return null;
+  // Only show on mobile devices where facingMode is fully supported, AND only when camera is actually ON
+  if (!isMobile || !localParticipant?.isCameraEnabled) return null;
 
   const handleFlip = async () => {
-    if (isFlipping || !localParticipant) return;
+    if (isFlipping || !localParticipant || !localParticipant.isCameraEnabled) return;
     setIsFlipping(true);
 
     try {

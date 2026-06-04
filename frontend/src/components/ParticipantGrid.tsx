@@ -165,73 +165,28 @@ export function ParticipantGrid() {
   const getGridClass = () => {
     switch (count) {
       case 1:
-        // Single participant — centered, large tile
-        return "flex items-center justify-center";
+        // Single participant — takes full screen
+        return "grid grid-cols-1";
       case 2:
-        // 2 participants — side by side desktop, stacked mobile
-        return "grid grid-cols-1 sm:grid-cols-2 grid-rows-2 sm:grid-rows-1";
+        // 2 participants — stacked mobile, side by side desktop
+        return "grid grid-cols-1 md:grid-cols-2";
       case 3:
-        // 3 participants — special layout
-        return "grid grid-cols-2 sm:grid-cols-2";
+        // 3 participants — stacked mobile, 3 cols desktop
+        return "grid grid-cols-1 md:grid-cols-3";
       case 4:
-        // 4 participants — perfect 2×2
-        return "grid grid-cols-2 grid-rows-2";
+        // 4 participants — perfect 2×2 grid everywhere
+        return "grid grid-cols-2";
       case 5:
       case 6:
         // 5-6 participants — 2 cols mobile, 3 cols desktop
-        return "grid grid-cols-2 sm:grid-cols-3";
+        return "grid grid-cols-2 lg:grid-cols-3";
       default:
         // 7+ participants — auto-fill responsive
-        return "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4";
+        return "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4";
     }
   };
 
-  // Special layout for 1 participant
-  if (count === 1) {
-    return (
-      <div className="h-full w-full bg-[#FBF9FA] flex items-center justify-center p-2 sm:p-4">
-        <div className="w-full max-w-4xl aspect-video relative overflow-hidden rounded-xl sm:rounded-2xl bg-white border border-stone-200/85 shadow-md">
-          <VideoTile
-            trackRef={cameraTracks[0]}
-            isPinned={cameraTracks[0].participant.identity === pinnedIdentity}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Special layout for 3 participants — 2 on top, 1 centered below
-  if (count === 3) {
-    return (
-      <div className="h-full w-full bg-[#FBF9FA] flex flex-col p-1.5 sm:p-3 gap-1.5 sm:gap-3">
-        {/* Top row — 2 tiles */}
-        <div className="flex-1 grid grid-cols-2 gap-1.5 sm:gap-3 min-h-0">
-          {cameraTracks.slice(0, 2).map((track) => (
-            <div
-              key={`${track.participant.identity}_${track.source}`}
-              className="w-full h-full relative overflow-hidden rounded-xl sm:rounded-2xl bg-white border border-stone-200/85 shadow-md"
-            >
-              <VideoTile
-                trackRef={track}
-                isPinned={track.participant.identity === pinnedIdentity}
-              />
-            </div>
-          ))}
-        </div>
-        {/* Bottom row — 1 centered tile */}
-        <div className="flex-1 flex justify-center min-h-0">
-          <div className="w-full max-w-[50%] sm:max-w-[50%] h-full relative overflow-hidden rounded-xl sm:rounded-2xl bg-white border border-stone-200/85 shadow-md">
-            <VideoTile
-              trackRef={cameraTracks[2]}
-              isPinned={cameraTracks[2].participant.identity === pinnedIdentity}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Default grid for 2, 4, 5, 6, 7+ participants
+  // Default grid for all participants, fully responsive
   return (
     <div className="h-full w-full bg-[#FBF9FA] flex flex-col overflow-hidden">
       <div

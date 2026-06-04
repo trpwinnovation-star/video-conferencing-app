@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useLocalParticipant } from "@livekit/components-react";
+import { useLocalParticipant, useMediaDeviceSelect } from "@livekit/components-react";
 import { SwitchCamera } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function CameraFlipButton() {
   const { localParticipant } = useLocalParticipant();
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  const { devices, activeDeviceId, setActiveMediaDevice } = useMediaDeviceSelect({ kind: 'videoinput' });
   const [isFlipping, setIsFlipping] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -15,23 +15,19 @@ export function CameraFlipButton() {
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
   }, []);
 
-  // Only show on mobile devices where facingMode is fully supported, AND only when camera is actually ON
-  if (!isMobile || !localParticipant?.isCameraEnabled) return null;
+  // Only show on mobile, only when camera is ON, and only if there's more than 1 camera detected
+  if (!isMobile || !localParticipant?.isCameraEnabled || devices.length < 2) return null;
 
   const handleFlip = async () => {
     if (isFlipping || !localParticipant || !localParticipant.isCameraEnabled) return;
     setIsFlipping(true);
 
     try {
-      const nextMode = facingMode === "user" ? "environment" : "user";
+      const currentIndex = devices.findIndex((d) => d.deviceId === activeDeviceId);
+      // If we can't find current, just switch to the first alternative device
+      const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % devices.length : 1;
       
-      // Turn off current camera
-      await localParticipant.setCameraEnabled(false);
-      
-      // Turn it back on requesting the opposite camera
-      await localParticipant.setCameraEnabled(true, { facingMode: nextMode });
-      
-      setFacingMode(nextMode);
+      await setActiveMediaDevice(devices[nextIndex].deviceId);
     } catch (err) {
       console.error("[CameraFlip] Failed to flip camera:", err);
     } finally {

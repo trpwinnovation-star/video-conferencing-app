@@ -124,26 +124,24 @@ export default function MeetingsPage() {
         <div className="flex gap-2 mb-8 border-b border-stone-200">
           <button
             onClick={() => setActiveTab('scheduled')}
-            className={`px-4 py-3 font-semibold transition-all border-b-2 ${
-              activeTab === 'scheduled'
-                ? 'border-[#c16d18] text-[#c16d18]'
-                : 'border-transparent text-stone-600 hover:text-stone-900'
-            }`}
+            className={`px-4 py-3 font-semibold transition-all border-b-2 ${activeTab === 'scheduled'
+              ? 'border-[#c16d18] text-[#c16d18]'
+              : 'border-transparent text-stone-600 hover:text-stone-900'
+              }`}
           >
             <Calendar size={16} className="inline-block mr-2" />
             Scheduled Meetings
           </button>
-          <button
+          {/* <button
             onClick={() => setActiveTab('recordings')}
-            className={`px-4 py-3 font-semibold transition-all border-b-2 ${
-              activeTab === 'recordings'
+            className={`px-4 py-3 font-semibold transition-all border-b-2 ${activeTab === 'recordings'
                 ? 'border-[#c16d18] text-[#c16d18]'
                 : 'border-transparent text-stone-600 hover:text-stone-900'
-            }`}
+              }`}
           >
             <Video size={16} className="inline-block mr-2" />
             Recordings
-          </button>
+          </button> */}
         </div>
 
         {/* Scheduled Meetings Tab */}

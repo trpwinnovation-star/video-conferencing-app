@@ -249,7 +249,7 @@ export default function RoomPage() {
         participantName={participantName}
         onNameChange={setParticipantName}
         onVerified={handleVerified}
-        initialPassword={accessPassword}
+        initialPassword={accessPassword || ""}
       />
     );
   }

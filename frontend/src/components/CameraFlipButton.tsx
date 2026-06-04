@@ -1,71 +1,39 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRoomContext } from "@livekit/components-react";
+import { useLocalParticipant } from "@livekit/components-react";
 import { SwitchCamera } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function CameraFlipButton() {
-  const room = useRoomContext();
-  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
-  const [currentDeviceIndex, setCurrentDeviceIndex] = useState(0);
+  const { localParticipant } = useLocalParticipant();
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [isFlipping, setIsFlipping] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Enumerate video devices on mount
-  // On mobile browsers, we must request camera permission first so the browser populates device labels
   useEffect(() => {
-    const enumerateDevices = async () => {
-      try {
-        // First, check if we already have labeled devices
-        let devices = await navigator.mediaDevices.enumerateDevices();
-        let videoInputs = devices.filter(d => d.kind === "videoinput");
-
-        // On mobile, devices may have empty labels until permission is granted.
-        // If we detect unlabeled devices, request a brief camera access to force label population.
-        const hasUnlabeled = videoInputs.length > 0 && videoInputs.every(d => !d.label);
-        if (hasUnlabeled) {
-          try {
-            const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-            // Stop the temporary stream immediately — we only needed it for permission
-            tempStream.getTracks().forEach(track => track.stop());
-            // Re-enumerate now that permission is granted
-            devices = await navigator.mediaDevices.enumerateDevices();
-            videoInputs = devices.filter(d => d.kind === "videoinput");
-          } catch {
-            // User denied permission or error — fall through with what we have
-          }
-        }
-
-        setVideoDevices(videoInputs);
-      } catch (err) {
-        console.warn("[CameraFlip] Could not enumerate devices:", err);
-      }
-    };
-
-    enumerateDevices();
-
-    // Re-enumerate when devices change (e.g. user plugs in a camera)
-    navigator.mediaDevices?.addEventListener("devicechange", enumerateDevices);
-    return () => {
-      navigator.mediaDevices?.removeEventListener("devicechange", enumerateDevices);
-    };
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
   }, []);
 
-  // Only show if there are 2+ cameras
-  if (videoDevices.length < 2) return null;
+  // Only show on mobile devices where facingMode is fully supported
+  if (!isMobile) return null;
 
   const handleFlip = async () => {
-    if (isFlipping) return;
+    if (isFlipping || !localParticipant) return;
     setIsFlipping(true);
 
     try {
-      const nextIndex = (currentDeviceIndex + 1) % videoDevices.length;
-      const nextDevice = videoDevices[nextIndex];
-
-      await room.switchActiveDevice("videoinput", nextDevice.deviceId);
-      setCurrentDeviceIndex(nextIndex);
+      const nextMode = facingMode === "user" ? "environment" : "user";
+      
+      // Turn off current camera
+      await localParticipant.setCameraEnabled(false);
+      
+      // Turn it back on requesting the opposite camera
+      await localParticipant.setCameraEnabled(true, { facingMode: nextMode });
+      
+      setFacingMode(nextMode);
     } catch (err) {
-      console.error("[CameraFlip] Failed to switch camera:", err);
+      console.error("[CameraFlip] Failed to flip camera:", err);
     } finally {
       setIsFlipping(false);
     }

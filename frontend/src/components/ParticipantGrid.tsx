@@ -68,7 +68,7 @@ export function ParticipantGrid() {
     const otherTracks = cameraTracks;
 
     return (
-      <div className="w-full h-full relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl group bg-white border border-stone-200/80">
+      <div className="w-full h-full relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl group bg-black">
         {/* Main Track (Screen Share) */}
         <div className="absolute inset-0">
           <VideoTile trackRef={mainTrack} />
@@ -80,7 +80,7 @@ export function ParticipantGrid() {
             {otherTracks.map((track) => (
               <div
                 key={`${track.participant.identity}_${track.source}`}
-                className="w-24 sm:w-32 md:w-48 aspect-video flex-shrink-0 rounded-lg sm:rounded-xl overflow-hidden shadow-2xl border border-stone-200/80 bg-white hover:scale-105 transition-transform"
+                className="w-24 sm:w-32 md:w-48 aspect-video flex-shrink-0 rounded-lg sm:rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black hover:scale-105 transition-transform"
               >
                 <VideoTile trackRef={track} />
               </div>
@@ -93,7 +93,7 @@ export function ParticipantGrid() {
           <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => setShowFilmstrip(!showFilmstrip)}
-              className="p-1.5 sm:p-2 rounded-full bg-white/80 text-stone-700 hover:bg-white backdrop-blur-md border border-stone-200 transition-all shadow-lg cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md transition-all shadow-lg cursor-pointer"
               title={showFilmstrip ? "Hide participants" : "Show participants"}
             >
               {showFilmstrip ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
@@ -111,7 +111,7 @@ export function ParticipantGrid() {
     );
 
     return (
-      <div className="w-full h-full relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl group bg-white border border-stone-200/80">
+      <div className="w-full h-full relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl group bg-black">
         {/* Main Pinned Track */}
         <div className="absolute inset-0">
           <VideoTile trackRef={pinnedTrack} isPinned />
@@ -134,7 +134,7 @@ export function ParticipantGrid() {
             {filmstripTracks.map((track) => (
               <div
                 key={`${track.participant.identity}_${track.source}`}
-                className="w-24 sm:w-32 md:w-48 aspect-video flex-shrink-0 rounded-lg sm:rounded-xl overflow-hidden shadow-2xl border border-stone-200/80 bg-white hover:scale-105 transition-transform"
+                className="w-24 sm:w-32 md:w-48 aspect-video flex-shrink-0 rounded-lg sm:rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black hover:scale-105 transition-transform"
               >
                 <VideoTile trackRef={track} />
               </div>
@@ -147,7 +147,7 @@ export function ParticipantGrid() {
           <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => setShowFilmstrip(!showFilmstrip)}
-              className="p-1.5 sm:p-2 rounded-full bg-white/80 text-stone-700 hover:bg-white backdrop-blur-md border border-stone-200 transition-all shadow-lg cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md transition-all shadow-lg cursor-pointer"
               title={showFilmstrip ? "Hide participants" : "Show participants"}
             >
               {showFilmstrip ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
@@ -205,30 +205,26 @@ export function ParticipantGrid() {
     return (
       <div className="h-full w-full bg-[#FBF9FA] flex flex-col p-1.5 sm:p-3 gap-1.5 sm:gap-3">
         {/* Top row — 2 tiles */}
-        <div className="flex-1 grid grid-cols-2 gap-1.5 sm:gap-3 min-h-0 place-items-center">
+        <div className="flex-1 grid grid-cols-2 gap-1.5 sm:gap-3 min-h-0">
           {cameraTracks.slice(0, 2).map((track) => (
             <div
               key={`${track.participant.identity}_${track.source}`}
-              className="w-full h-full flex items-center justify-center min-h-0 min-w-0"
+              className="w-full h-full relative overflow-hidden rounded-xl sm:rounded-2xl bg-white border border-stone-200/85 shadow-md"
             >
-              <div className="aspect-video w-full h-auto max-h-full relative overflow-hidden rounded-xl sm:rounded-2xl bg-white border border-stone-200/85 shadow-md">
-                <VideoTile
-                  trackRef={track}
-                  isPinned={track.participant.identity === pinnedIdentity}
-                />
-              </div>
+              <VideoTile
+                trackRef={track}
+                isPinned={track.participant.identity === pinnedIdentity}
+              />
             </div>
           ))}
         </div>
         {/* Bottom row — 1 centered tile */}
-        <div className="flex-1 flex justify-center items-center min-h-0 w-full">
-          <div className="w-full max-w-[50%] sm:max-w-[50%] h-full flex items-center justify-center min-h-0 min-w-0">
-            <div className="aspect-video w-full h-auto max-h-full relative overflow-hidden rounded-xl sm:rounded-2xl bg-white border border-stone-200/85 shadow-md">
-              <VideoTile
-                trackRef={cameraTracks[2]}
-                isPinned={cameraTracks[2].participant.identity === pinnedIdentity}
-              />
-            </div>
+        <div className="flex-1 flex justify-center min-h-0">
+          <div className="w-full max-w-[50%] sm:max-w-[50%] h-full relative overflow-hidden rounded-xl sm:rounded-2xl bg-white border border-stone-200/85 shadow-md">
+            <VideoTile
+              trackRef={cameraTracks[2]}
+              isPinned={cameraTracks[2].participant.identity === pinnedIdentity}
+            />
           </div>
         </div>
       </div>
@@ -240,7 +236,7 @@ export function ParticipantGrid() {
     <div className="h-full w-full bg-[#FBF9FA] flex flex-col overflow-hidden">
       <div
         className={cn(
-          "flex-1 gap-1.5 sm:gap-2 md:gap-3 p-1.5 sm:p-2 md:p-3 auto-rows-fr place-items-center",
+          "flex-1 gap-1.5 sm:gap-2 md:gap-3 p-1.5 sm:p-2 md:p-3 auto-rows-fr",
           getGridClass()
         )}
         style={{ minHeight: 0 }}
@@ -248,14 +244,12 @@ export function ParticipantGrid() {
         {cameraTracks.map((track) => (
           <div
             key={`${track.participant.identity}_${track.source}`}
-            className="w-full h-full flex items-center justify-center min-h-0 min-w-0"
+            className="w-full h-full relative overflow-hidden rounded-xl sm:rounded-2xl bg-white border border-stone-200/85 shadow-md min-h-0"
           >
-            <div className="aspect-video w-full h-auto max-h-full relative overflow-hidden rounded-xl sm:rounded-2xl bg-white border border-stone-200/85 shadow-md">
-              <VideoTile
-                trackRef={track}
-                isPinned={track.participant.identity === pinnedIdentity}
-              />
-            </div>
+            <VideoTile
+              trackRef={track}
+              isPinned={track.participant.identity === pinnedIdentity}
+            />
           </div>
         ))}
       </div>

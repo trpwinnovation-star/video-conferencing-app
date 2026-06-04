@@ -78,7 +78,7 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
   const uploadChunk = async (blob: Blob, chunkIndex: number, meetingId: string, retryCount = 0) => {
     try {
       const formData = new FormData();
-      formData.append('chunk', blob);
+      formData.append('chunk', blob, 'chunk.webm');
       formData.append('meetingId', meetingId);
       formData.append('chunkIndex', chunkIndex.toString());
 
@@ -88,6 +88,8 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
       });
 
       if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`[RECORDING] Upload failed with status ${res.status}:`, errorText);
         throw new Error(`Upload failed with status ${res.status}`);
       }
       console.log(`[RECORDING] Chunk ${chunkIndex} uploaded successfully`);

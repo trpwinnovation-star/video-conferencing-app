@@ -51,7 +51,7 @@ export default function RecordingPage() {
     setDlState('loading');
     setDlError('');
     try {
-      const fileName = `Recording-${recording.roomId}-${new Date(recording.createdAt).toISOString().slice(0, 10)}.mp4`;
+      const fileName = `Recording-${recording.roomId}-${new Date(recording.createdAt).toISOString().slice(0, 10)}.webm`;
       // apiDownloadRecording streams from backend → blob → triggers save dialog internally
       const { downloadCount } = await apiDownloadRecording(recordingId, fileName);
 

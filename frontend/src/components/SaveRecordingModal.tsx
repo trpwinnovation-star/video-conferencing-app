@@ -124,19 +124,19 @@ export function SaveRecordingModal({ isOpen, onClose, blob, roomName, duration }
           {/* Email Info */}
           <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
             <Mail size={18} className="text-blue-500 mt-0.5 flex-shrink-0" />
-            <div>
+            {/* <div>
               <p className="text-sm font-semibold text-blue-900">Email copy processing</p>
               <p className="text-xs text-blue-600 mt-0.5">
                 A copy is being uploaded to the cloud. You'll receive an email with the recording link once it's ready.
               </p>
-            </div>
+            </div> */}
           </div>
 
           {/* Server download limit info */}
-          <p className="text-stone-400 text-sm mb-6 text-center">
+          {/* <p className="text-stone-400 text-sm mb-6 text-center">
             A raw backup of your recording is ready. <br />
             <span className="text-[#c16d18] font-bold">Note: A highly compatible MP4 is being processed on the server and will be available in your Dashboard.</span>
-          </p>
+          </p> */}
         </div>
 
         {/* Footer */}

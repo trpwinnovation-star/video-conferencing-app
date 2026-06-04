@@ -54,28 +54,23 @@ const mergeChunks = async (meetingId: string, totalChunks: number): Promise<stri
 };
 
 /**
- * Transcodes the merged WebM/MKV file into a standard MP4 for maximum compatibility
+ * Instantly fixes WebM playback (missing duration/unskippable) by regenerating cues
+ * This is 100x faster than converting to MP4 because it doesn't re-encode the video.
  */
-const convertToMp4 = (inputPath: string, outputPath: string): Promise<void> => {
+const fixWebmPlayback = (inputPath: string, outputPath: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    console.log(`[RECORDING] Starting ffmpeg conversion to MP4...`);
+    console.log(`[RECORDING] Starting instant ffmpeg WebM playback fix...`);
     ffmpeg(inputPath)
       .outputOptions([
-        '-c:v libx264',      // Standard MP4 video codec
-        '-preset fast',      // Faster encoding speed
-        '-crf 28',           // Good balance of quality/file size
-        '-pix_fmt yuv420p',  // CRITICAL: Required for MP4 playback on Mac/QuickTime/Windows
-        '-c:a aac',          // Standard MP4 audio codec
-        '-b:a 128k',         // Standard audio bitrate
-        '-movflags +faststart' // Optimizes file for web streaming
+        '-c copy',           // Just copies the raw video/audio (no heavy re-encoding)
       ])
       .save(outputPath)
       .on('end', () => {
-        console.log(`[RECORDING] ffmpeg conversion finished successfully.`);
+        console.log(`[RECORDING] WebM playback fix finished instantly.`);
         resolve();
       })
       .on('error', (err) => {
-        console.error('[RECORDING] ffmpeg error:', err);
+        console.error('[RECORDING] ffmpeg WebM fix error:', err);
         reject(err);
       });
   });
@@ -103,20 +98,20 @@ export const processRecording = async (
     // 2. Merge all chunks into a single raw file
     const mergedFilePath = await mergeChunks(meetingId, totalChunks);
 
-    // 2.5 Convert the raw file into a highly compatible MP4
-    const mp4FilePath = path.join(MERGED_DIR, `${meetingId}.mp4`);
-    await convertToMp4(mergedFilePath, mp4FilePath);
+    // 2.5 Fix the WebM playback issue (duration/skipping) instantly
+    const finalFilePath = path.join(MERGED_DIR, `${meetingId}-fixed.webm`);
+    await fixWebmPlayback(mergedFilePath, finalFilePath);
 
-    if (!fs.existsSync(mp4FilePath)) {
-      throw new Error(`Critical Error: MP4 file was not created.`);
+    if (!fs.existsSync(finalFilePath)) {
+      throw new Error(`Critical Error: Fixed WebM file was not created.`);
     }
 
-    const stats = fs.statSync(mp4FilePath);
-    console.log(`[RECORDING] Final MP4 video size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+    const stats = fs.statSync(finalFilePath);
+    console.log(`[RECORDING] Final WEBM video size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
     // 3. Upload to S3
-    const s3Key = `meeting-recordings/${roomId}/${meetingId}.mp4`;
-    await uploadFileToS3(mp4FilePath, s3Key);
+    const s3Key = `meeting-recordings/${roomId}/${meetingId}.webm`;
+    await uploadFileToS3(finalFilePath, s3Key);
 
     console.log(`[RECORDING] S3 Upload Success`);
 

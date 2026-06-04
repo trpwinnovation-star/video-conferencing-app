@@ -186,9 +186,9 @@ export const downloadRecording = async (req: Request, res: Response) => {
     // ── 6. Fetch from S3 and stream directly to browser ──────────────────
     const { stream, contentLength, contentType } = await getS3ObjectStream(recording.s3Key);
 
-    const fileName = `Recording-${recording.roomId}-${recording.createdAt.toISOString().slice(0, 10)}.mp4`;
+    const fileName = `Recording-${recording.roomId}-${recording.createdAt.toISOString().slice(0, 10)}.webm`;
 
-    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Type', 'video/webm');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.setHeader('X-Download-Count', updated.downloadCount);
     res.setHeader('X-Downloads-Remaining', Math.max(0, 3 - updated.downloadCount));

@@ -79,6 +79,15 @@ export function RecordingControls({ roomName, userEmail, userName, onRecordStart
     if (localRecorder.isRecording) {
       localRecorder.stopRecording();
     } else {
+      // Guard: check if screen recording is even supported (mobile browsers don't support getDisplayMedia)
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile || !navigator.mediaDevices?.getDisplayMedia) {
+        setToastMessage("Screen recording is not supported on mobile browsers. Please use a desktop browser.");
+        setToastType("error");
+        setShowToast(true);
+        return;
+      }
+
       // Extract all underlying MediaStreamTracks
       let mediaStreamTracks: MediaStreamTrack[] = [];
       
@@ -105,16 +114,16 @@ export function RecordingControls({ roomName, userEmail, userName, onRecordStart
       {/* Toast Notification */}
       {showToast && (
         <div className={cn(
-          "absolute -top-16 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl shadow-xl flex items-center gap-2 whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 duration-300 border z-[100]",
+          "absolute -top-14 sm:-top-16 left-1/2 -translate-x-1/2 px-3 sm:px-4 py-2 rounded-xl shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 border z-[100] max-w-[280px] sm:max-w-none",
           toastType === "success"
             ? "bg-green-50 text-green-800 border-green-200"
             : "bg-red-50 text-red-800 border-red-200"
         )}>
-          {toastType === "success" ? <CheckCircle2 size={16} className="text-green-600" /> : <AlertCircle size={16} className="text-red-600" />}
-          <span className="text-xs font-bold flex-1 pr-2">{toastMessage}</span>
+          {toastType === "success" ? <CheckCircle2 size={14} className="text-green-600 shrink-0" /> : <AlertCircle size={14} className="text-red-600 shrink-0" />}
+          <span className="text-[10px] sm:text-xs font-bold flex-1 pr-1 leading-tight">{toastMessage}</span>
           <button 
             onClick={() => setShowToast(false)}
-            className="p-0.5 rounded-full hover:bg-stone-200/50 transition-colors"
+            className="p-1 rounded-full hover:bg-stone-200/50 transition-colors shrink-0"
           >
             <X size={14} className="opacity-70 hover:opacity-100" />
           </button>

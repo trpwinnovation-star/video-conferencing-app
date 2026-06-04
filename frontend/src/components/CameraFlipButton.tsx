@@ -12,11 +12,30 @@ export function CameraFlipButton() {
   const [isFlipping, setIsFlipping] = useState(false);
 
   // Enumerate video devices on mount
+  // On mobile browsers, we must request camera permission first so the browser populates device labels
   useEffect(() => {
     const enumerateDevices = async () => {
       try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoInputs = devices.filter(d => d.kind === "videoinput");
+        // First, check if we already have labeled devices
+        let devices = await navigator.mediaDevices.enumerateDevices();
+        let videoInputs = devices.filter(d => d.kind === "videoinput");
+
+        // On mobile, devices may have empty labels until permission is granted.
+        // If we detect unlabeled devices, request a brief camera access to force label population.
+        const hasUnlabeled = videoInputs.length > 0 && videoInputs.every(d => !d.label);
+        if (hasUnlabeled) {
+          try {
+            const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            // Stop the temporary stream immediately — we only needed it for permission
+            tempStream.getTracks().forEach(track => track.stop());
+            // Re-enumerate now that permission is granted
+            devices = await navigator.mediaDevices.enumerateDevices();
+            videoInputs = devices.filter(d => d.kind === "videoinput");
+          } catch {
+            // User denied permission or error — fall through with what we have
+          }
+        }
+
         setVideoDevices(videoInputs);
       } catch (err) {
         console.warn("[CameraFlip] Could not enumerate devices:", err);

@@ -47,15 +47,15 @@ export function SaveRecordingModal({ isOpen, onClose, blob, roomName, duration }
   };
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl border border-stone-200/80 w-full max-w-md animate-in zoom-in-95 duration-300 overflow-hidden">
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 p-3 sm:p-4">
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-stone-200/80 w-full max-w-md animate-in zoom-in-95 duration-300 overflow-hidden max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#c16d18] to-[#e8943a] px-6 py-5 text-white relative">
+        <div className="bg-gradient-to-r from-[#c16d18] to-[#e8943a] px-4 sm:px-6 py-4 sm:py-5 text-white relative">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 sm:p-2.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
@@ -69,7 +69,7 @@ export function SaveRecordingModal({ isOpen, onClose, blob, roomName, duration }
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
           {/* Recording Info */}
           <div className="bg-stone-50 rounded-2xl p-4 flex items-center justify-between">
             <div>

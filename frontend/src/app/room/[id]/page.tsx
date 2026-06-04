@@ -281,7 +281,7 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="h-screen w-screen bg-[#FBF9FA] overflow-hidden relative text-stone-900">
+    <div className="h-screen w-screen bg-stone-950 overflow-hidden relative text-stone-900">
       <LiveKitRoom
         video={false}
         audio={false}
@@ -299,7 +299,7 @@ export default function RoomPage() {
         }}
       >
         <RoomPinProvider>
-          <div className="h-full w-full relative z-0 pt-16 md:pt-20 pb-24 md:pb-28">
+          <div className="h-full w-full relative z-0 pt-14 sm:pt-16 pb-20 sm:pb-24 md:pb-28">
             <ParticipantGrid />
           </div>
 
@@ -311,11 +311,11 @@ export default function RoomPage() {
               }} 
               roomName={roomName}
             />
-            <div className="absolute top-0 left-0 right-0 h-16 pointer-events-auto">
+            <div className="absolute top-0 left-0 right-0 h-14 sm:h-16 pointer-events-auto">
               <RoomHeader roomName={roomName} />
             </div>
 
-            <div className="absolute bottom-8 left-0 right-0 flex justify-center pointer-events-auto px-4">
+            <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center pointer-events-auto px-2 sm:px-4">
               <MeetingControls roomName={roomName} userName={participantName} onRecordingStateChange={handleRecordingStateChange} />
             </div>
 

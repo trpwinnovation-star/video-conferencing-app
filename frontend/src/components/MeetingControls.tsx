@@ -138,11 +138,11 @@ export function MeetingControls({ roomName, userName, onRecordingStateChange }: 
 
         {/* Record Reminder Popup */}
         {showRecordPopup && (
-          <div className="absolute -top-16 md:-top-20 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-3 whitespace-nowrap animate-in fade-in zoom-in-95 duration-300 z-50">
-            <div className="w-2 h-2 rounded-full bg-[#c16d18] animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-            <span className="text-sm font-medium">Meeting started! Click the record button to record the meeting.</span>
-            <button onClick={() => setShowRecordPopup(false)} className="ml-1 p-1 text-stone-400 hover:text-white rounded-full hover:bg-stone-800 transition-colors cursor-pointer">
-              <X size={14} />
+          <div className="absolute -top-20 sm:-top-20 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-2xl flex items-center gap-2 sm:gap-3 animate-in fade-in zoom-in-95 duration-300 z-50 max-w-[280px] sm:max-w-none">
+            <div className="w-2 h-2 rounded-full bg-[#c16d18] animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)] shrink-0" />
+            <span className="text-[10px] sm:text-sm font-medium leading-tight">Meeting started! Click record to record.</span>
+            <button onClick={() => setShowRecordPopup(false)} className="shrink-0 p-1.5 text-stone-400 hover:text-white rounded-full hover:bg-stone-800 transition-colors cursor-pointer">
+              <X size={16} />
             </button>
             {/* Tooltip arrow pointing down */}
             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-stone-900" />

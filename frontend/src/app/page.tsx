@@ -66,57 +66,57 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen bg-[#FBF9FA] flex-col text-stone-900">
       {/* Navbar */}
-      <nav className="flex items-center justify-between h-16 px-8 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
-        <div className="flex items-center">
+      <nav className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-6 md:px-8 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
+        <div className="flex items-center shrink-0">
           <Image
             src="/logo_betel.png"
             alt="BetelMeet Logo"
             width={160}
             height={40}
-            className="object-contain mix-blend-multiply"
+            className="object-contain mix-blend-multiply w-[100px] sm:w-[130px] md:w-[160px]"
             priority
           />
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {user ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Link
                 href="/meetings"
-                className="text-stone-600 hover:text-stone-900 font-semibold text-sm transition-colors hidden sm:block"
+                className="text-stone-600 hover:text-stone-900 font-semibold text-xs sm:text-sm transition-colors hidden sm:block"
               >
                 Meetings
               </Link>
               <Link
                 href="/profile"
-                className="text-stone-600 hover:text-stone-900 font-semibold text-sm transition-colors hidden sm:block mr-2"
+                className="text-stone-600 hover:text-stone-900 font-semibold text-xs sm:text-sm transition-colors hidden sm:block mr-1 sm:mr-2"
               >
                 Profile
               </Link>
               <div className="w-px h-5 bg-stone-200 hidden sm:block" />
 
-              <Link href="/profile" className="flex items-center gap-2 text-stone-700 text-sm hover:opacity-80 transition-opacity">
-                <div className="w-8.5 h-8.5 rounded-full bg-[#c16d18]/10 border border-[#c16d18]/20 flex items-center justify-center text-[#c16d18] font-bold text-sm">
+              <Link href="/profile" className="flex items-center gap-1.5 sm:gap-2 text-stone-700 text-sm hover:opacity-80 transition-opacity">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#c16d18]/10 border border-[#c16d18]/20 flex items-center justify-center text-[#c16d18] font-bold text-xs sm:text-sm">
                   {user.name[0].toUpperCase()}
                 </div>
-                <span className="hidden sm:block font-medium">{user.name}</span>
+                <span className="hidden sm:block font-medium text-sm">{user.name}</span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 text-stone-500 hover:text-stone-800 text-sm font-medium transition-colors ml-2"
+                className="flex items-center gap-1 sm:gap-1.5 text-stone-500 hover:text-stone-800 text-xs sm:text-sm font-medium transition-colors ml-1 sm:ml-2"
               >
-                <LogOut size={16} />
+                <LogOut size={14} className="sm:w-4 sm:h-4" />
                 <span className="hidden sm:block">Sign out</span>
               </button>
             </div>
           ) : (
             <>
-              <Link href="/login" className="text-stone-600 hover:text-stone-900 font-semibold text-sm transition-colors">
+              <Link href="/login" className="text-stone-600 hover:text-stone-900 font-semibold text-xs sm:text-sm transition-colors">
                 Sign in
               </Link>
               <Link
                 href="/signup"
-                className="bg-[#c16d18] hover:bg-[#a0560e] text-white text-sm px-4.5 py-2.5 rounded-xl font-bold shadow-md shadow-[#c16d18]/15 transition-all active:scale-95"
+                className="bg-[#c16d18] hover:bg-[#a0560e] text-white text-xs sm:text-sm px-3 py-2 sm:px-4.5 sm:py-2.5 rounded-lg sm:rounded-xl font-bold shadow-md shadow-[#c16d18]/15 transition-all active:scale-95"
               >
                 Sign up
               </Link>
@@ -126,7 +126,7 @@ export default function HomePage() {
       </nav>
 
       {/* Hero */}
-      <div className="flex-1 flex flex-col md:flex-row items-center justify-center px-6 md:px-24 gap-12 py-16 max-w-7xl mx-auto w-full">
+      <div className="flex-1 flex flex-col md:flex-row items-center justify-center px-4 sm:px-6 md:px-24 gap-8 sm:gap-12 py-8 sm:py-16 max-w-7xl mx-auto w-full">
         <div className="flex-1 max-w-2xl">
           {/* <div className="inline-flex items-center gap-2 bg-[#c16d18]/10 border border-[#c16d18]/20 rounded-full px-4 py-1.5 mb-6 shadow-sm">
             <div className="w-2 h-2 bg-[#c16d18] rounded-full animate-pulse" />
@@ -135,7 +135,7 @@ export default function HomePage() {
 
           <h1 className="text-4xl md:text-5.5xl font-extrabold mb-6 tracking-tight text-stone-900 leading-tight">
             Designed for seamless communication{" "}
-            <span className="text-[#c16d18] block mt-1">Connect, Collaborate,Record</span>
+            <span className="text-[#c16d18] block mt-1">Connect, Collaborate, Record</span>
           </h1>
 
           <p className="text-lg text-stone-600 mb-10 max-w-xl leading-relaxed">

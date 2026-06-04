@@ -138,10 +138,14 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
         }
       }
 
-      // Initialize session on backend
+      // Initialize session on backend — send auth token so backend uses the real user name
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      const initHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) initHeaders['Authorization'] = `Bearer ${authToken}`;
+
       const initRes = await fetch(getApiUrl('/api/recording/start'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: initHeaders,
         body: JSON.stringify({ roomId: roomName, createdBy: userName })
       });
       

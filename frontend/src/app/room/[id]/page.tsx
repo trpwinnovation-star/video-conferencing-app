@@ -203,19 +203,40 @@ export default function RoomPage() {
   }
 
   if (error && !token) {
+    const isRoomFull = error.toLowerCase().includes('room is full');
     return (
       <div className="flex h-screen items-center justify-center bg-[#FBF9FA] text-stone-900">
-        <div className="text-center p-8 bg-white border border-stone-200/80 rounded-2xl shadow-xl max-w-md">
-          <p className="text-red-600 mb-4 font-semibold">{error}</p>
-          <button
-            onClick={handleRetry}
-            className="text-[#c16d18] hover:underline font-bold mr-4 cursor-pointer"
-          >
-            Try again
-          </button>
-          <a href="/" className="text-stone-500 hover:underline font-medium">
-            Home
-          </a>
+        <div className="text-center p-8 bg-white border border-stone-200/80 rounded-2xl shadow-xl max-w-md w-full mx-4">
+          {isRoomFull ? (
+            <>
+              <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                🚫
+              </div>
+              <h2 className="text-xl font-extrabold text-stone-900 mb-2">Meeting Room Full</h2>
+              <p className="text-stone-500 mb-6 text-sm leading-relaxed">
+                This meeting has reached its maximum capacity of <strong>5 participants</strong>. 
+                Please ask the host to make space or try again later.
+              </p>
+              <div className="flex items-center justify-center gap-4">
+                <a href="/" className="bg-[#c16d18] hover:bg-[#a0560e] text-white font-bold py-2.5 px-6 rounded-xl transition-all shadow-md active:scale-95">
+                  Go Home
+                </a>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-red-600 mb-4 font-semibold">{error}</p>
+              <button
+                onClick={handleRetry}
+                className="text-[#c16d18] hover:underline font-bold mr-4 cursor-pointer"
+              >
+                Try again
+              </button>
+              <a href="/" className="text-stone-500 hover:underline font-medium">
+                Home
+              </a>
+            </>
+          )}
         </div>
       </div>
     );
@@ -295,7 +316,7 @@ export default function RoomPage() {
             </div>
 
             <div className="absolute bottom-8 left-0 right-0 flex justify-center pointer-events-auto px-4">
-              <MeetingControls roomName={roomName} onRecordingStateChange={handleRecordingStateChange} />
+              <MeetingControls roomName={roomName} userName={participantName} onRecordingStateChange={handleRecordingStateChange} />
             </div>
 
             <RecordingCountdown recordingDuration={recordingDuration} isRecording={isRecording} />

@@ -126,7 +126,9 @@ export const generateToken = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('DETAILED Error generating token:', error);
     const message = error instanceof Error ? error.message : 'Failed to generate token';
-    const status = message.includes('not found') ? 404 : 500;
+    const status = message.includes('not found')    ? 404
+                 : message.includes('Room is full') ? 403
+                 : 500;
     return res.status(status).json({
       error: message,
       details: error instanceof Error ? error.message : String(error),

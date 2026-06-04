@@ -87,7 +87,7 @@ export const scheduleNewMeeting = async (req: Request, res: Response) => {
 // Get scheduled meeting details
 export const getScheduledMeetingDetails = async (req: Request, res: Response) => {
   try {
-   const meetingId = String(req.params.meetingId);
+    const meetingId = String(req.params.meetingId);
 
     // if (!meetingId) {
     //   return res.status(400).json({
@@ -349,9 +349,10 @@ export const getAttendeeToken = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Get attendee token error:', error);
-
-    return res.status(500).json({
-      error: error.message || 'Failed to get token',
+    const message = error?.message || 'Failed to get token';
+    const status = message.includes('Room is full') ? 403 : 500;
+    return res.status(status).json({
+      error: message,
     });
   }
 };

@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Video, Download, Loader2, ArrowLeft, Calendar, Clock, AlertCircle, Plus } from "lucide-react";
+import { Video, Download, Loader2, ArrowLeft, Calendar, Clock, AlertCircle, Plus, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { apiGetMyRecordings } from "@/lib/api";
+import { apiGetMyRecordings, apiDownloadRecording } from "@/lib/api";
 import ScheduleMeetingModal from "@/components/ScheduleMeetingModal";
 import ScheduledMeetingsList from "@/components/ScheduledMeetingsList";
 
@@ -32,6 +32,9 @@ export default function MeetingsPage() {
   const [activeTab, setActiveTab] = useState<'scheduled' | 'recordings'>('scheduled');
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [refreshScheduledMeetings, setRefreshScheduledMeetings] = useState(false);
+  // Per-recording download state: 'idle' | 'loading' | 'done' | 'error'
+  const [downloadState, setDownloadState] = useState<Record<string, 'idle' | 'loading' | 'done' | 'error'>>({});
+  const [downloadError, setDownloadError] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -85,6 +88,38 @@ export default function MeetingsPage() {
     setTimeout(() => setRefreshScheduledMeetings(false), 100);
   };
 
+  /**
+   * Called when the host clicks "Download Recording".
+   * Fetches a signed URL from the backend (which increments downloadCount)
+   * then triggers a browser file download — no page navigation needed.
+   */
+  const handleDownload = async (rec: Recording) => {
+    setDownloadState(prev => ({ ...prev, [rec.id]: 'loading' }));
+    setDownloadError(prev => ({ ...prev, [rec.id]: '' }));
+    try {
+      const fileName = `Recording-${rec.roomId}-${new Date(rec.createdAt).toISOString().slice(0, 10)}.webm`;
+      // apiDownloadRecording now handles blob fetching, anchor creation, and cleanup internally
+      const { downloadCount } = await apiDownloadRecording(rec.id, fileName);
+
+      // Update local counter so the progress bar updates immediately
+      setRecordings(prev =>
+        prev.map(r => r.id === rec.id ? { ...r, downloadCount } : r)
+      );
+      setDownloadState(prev => ({ ...prev, [rec.id]: 'done' }));
+
+      // Reset "done" check mark after 3 seconds
+      setTimeout(() => {
+        setDownloadState(prev => ({ ...prev, [rec.id]: 'idle' }));
+      }, 3000);
+    } catch (err: any) {
+      setDownloadError(prev => ({ ...prev, [rec.id]: err.message || 'Download failed' }));
+      setDownloadState(prev => ({ ...prev, [rec.id]: 'error' }));
+      // Re-fetch to get the authoritative count from the server
+      const fresh = await apiGetMyRecordings().catch(() => null);
+      if (fresh) setRecordings(fresh.recordings || []);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FBF9FA] text-stone-900 pb-12">
       {/* Navbar */}
@@ -123,6 +158,7 @@ export default function MeetingsPage() {
         {/* Tabs */}
         <div className="flex gap-2 mb-8 border-b border-stone-200">
           <button
+            id="tab-scheduled"
             onClick={() => setActiveTab('scheduled')}
             className={`px-4 py-3 font-semibold transition-all border-b-2 ${activeTab === 'scheduled'
               ? 'border-[#c16d18] text-[#c16d18]'
@@ -132,7 +168,8 @@ export default function MeetingsPage() {
             <Calendar size={16} className="inline-block mr-2" />
             Scheduled Meetings
           </button>
-          {/* <button
+          <button
+            id="tab-recordings"
             onClick={() => setActiveTab('recordings')}
             className={`px-4 py-3 font-semibold transition-all border-b-2 ${activeTab === 'recordings'
                 ? 'border-[#c16d18] text-[#c16d18]'
@@ -141,7 +178,12 @@ export default function MeetingsPage() {
           >
             <Video size={16} className="inline-block mr-2" />
             Recordings
-          </button> */}
+            {recordings.length > 0 && (
+              <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-[#c16d18]/10 text-[#c16d18] rounded-full align-middle">
+                {recordings.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Scheduled Meetings Tab */}
@@ -171,67 +213,139 @@ export default function MeetingsPage() {
                 </Link>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                 {recordings.map((rec) => {
                   const isExpired = rec.downloadExpiresAt && new Date(rec.downloadExpiresAt) < new Date();
                   const limitReached = rec.downloadCount >= 3;
                   const canDownload = rec.status === 'completed' && !isExpired && !limitReached;
+                  const dlState = downloadState[rec.id] || 'idle';
+                  const dlErr = downloadError[rec.id] || '';
+
+                  // Days until expiry (null if no expiry date or already expired)
+                  const daysLeft = rec.downloadExpiresAt && !isExpired
+                    ? Math.ceil((new Date(rec.downloadExpiresAt).getTime() - Date.now()) / 86_400_000)
+                    : null;
 
                   return (
-                    <div key={rec.id} className="bg-white border border-stone-200/80 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow flex flex-col group relative overflow-hidden">
+                    <div
+                      key={rec.id}
+                      className="bg-white border border-stone-200/80 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow flex flex-col"
+                    >
+                      {/* ── Card Header ── */}
                       <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="font-bold text-stone-900 flex items-center gap-2">
-                            {rec.roomId}
-                          </h3>
-                          <p className="text-xs font-semibold text-stone-400 mt-1 uppercase tracking-wider">
-                            {new Date(rec.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        <div className="min-w-0 flex-1 pr-3">
+                          <h3 className="font-bold text-stone-900 truncate">{rec.roomId}</h3>
+                          <p className="text-xs font-semibold text-stone-400 mt-0.5 uppercase tracking-wider">
+                            {new Date(rec.createdAt).toLocaleDateString(undefined, {
+                              month: 'short', day: 'numeric', year: 'numeric',
+                            })}
                           </p>
                         </div>
-                        <div className="px-2 py-1 bg-stone-100 rounded-md text-[10px] font-bold text-stone-500 uppercase">
+                        <span className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
+                          rec.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+                          rec.status === 'failed'    ? 'bg-red-50 text-red-500' :
+                                                       'bg-stone-100 text-stone-500'
+                        }`}>
                           {rec.status}
-                        </div>
+                        </span>
                       </div>
 
-                      <div className="flex flex-col gap-2 mt-auto mb-5 text-sm text-stone-600">
+                      {/* ── File Metadata ── */}
+                      <div className="flex flex-col gap-1.5 mb-4 text-sm text-stone-600">
                         <div className="flex items-center gap-2">
-                          <Clock size={14} className="text-stone-400" />
+                          <Clock size={13} className="text-stone-400 shrink-0" />
                           <span>{formatDuration(rec.duration)}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Calendar size={14} className="text-stone-400" />
+                          <Video size={13} className="text-stone-400 shrink-0" />
                           <span>{formatFileSize(rec.fileSize)}</span>
                         </div>
-                        {rec.status === 'completed' && (
-                          <div className="text-xs font-medium text-stone-500 mt-1">
-                            Downloads: {rec.downloadCount} / 3
-                            {rec.downloadExpiresAt && !isExpired && (
-                              <div className="mt-0.5 text-[#c16d18]">
-                                Expires {new Date(rec.downloadExpiresAt).toLocaleDateString()}
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
 
+                      {/* ── Download Limit Panel (completed only) ── */}
+                      {rec.status === 'completed' && (
+                        <div className="mb-4 p-3 rounded-xl bg-stone-50 border border-stone-100">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[11px] font-semibold text-stone-500">Downloads used</span>
+                            <span className={`text-[11px] font-bold tabular-nums ${limitReached ? 'text-red-500' : 'text-[#c16d18]'}`}>
+                              {rec.downloadCount} / 3
+                            </span>
+                          </div>
+                          {/* Progress bar */}
+                          <div className="w-full h-1.5 bg-stone-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                limitReached          ? 'bg-red-400' :
+                                rec.downloadCount >= 2 ? 'bg-amber-400' : 'bg-[#c16d18]'
+                              }`}
+                              style={{ width: `${(rec.downloadCount / 3) * 100}%` }}
+                            />
+                          </div>
+                          {/* Expiry */}
+                          <div className="mt-2 text-[11px] font-medium">
+                            {isExpired ? (
+                              <span className="text-red-500">⛔ Link expired</span>
+                            ) : daysLeft !== null ? (
+                              <span className={daysLeft <= 1 ? 'text-amber-500' : 'text-stone-400'}>
+                                🕐 Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Download Error ── */}
+                      {dlErr && (
+                        <div className="mb-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 flex items-start gap-1.5">
+                          <AlertCircle size={12} className="mt-0.5 shrink-0" />
+                          {dlErr}
+                        </div>
+                      )}
+
+                      {/* ── Action Button ── */}
                       {rec.status === 'completed' ? (
                         canDownload ? (
-                          <Link
-                            href={`/recordings/${rec.id}`}
-                            className="w-full py-2.5 bg-[#c16d18]/10 hover:bg-[#c16d18] text-[#c16d18] hover:text-white border border-[#c16d18]/20 hover:border-[#c16d18] rounded-xl font-bold transition-all flex items-center justify-center gap-2 mt-auto"
+                          <button
+                            id={`download-btn-${rec.id}`}
+                            onClick={() => handleDownload(rec)}
+                            disabled={dlState === 'loading'}
+                            className={`w-full py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mt-auto border
+                              ${dlState === 'done'
+                                ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
+                                : dlState === 'loading'
+                                ? 'bg-stone-100 text-stone-400 border-stone-200 cursor-wait'
+                                : 'bg-[#c16d18]/10 hover:bg-[#c16d18] text-[#c16d18] hover:text-white border-[#c16d18]/20 hover:border-[#c16d18] active:scale-95 cursor-pointer'
+                              }`}
                           >
-                            <Download size={16} />
-                            View & Download
-                          </Link>
+                            {dlState === 'loading' ? (
+                              <><Loader2 size={15} className="animate-spin" /> Downloading…</>
+                            ) : dlState === 'done' ? (
+                              <><CheckCircle2 size={15} /> Downloaded!</>
+                            ) : (
+                              <><Download size={15} /> Download Recording</>
+                            )}
+                          </button>
                         ) : (
-                          <button disabled className="w-full py-2.5 bg-stone-100 text-stone-400 border border-stone-200 rounded-xl font-bold flex items-center justify-center gap-2 mt-auto cursor-not-allowed">
-                            {isExpired ? "Link Expired" : "Limit Reached"}
+                          <button
+                            disabled
+                            className="w-full py-2.5 bg-stone-100 text-stone-400 border border-stone-200 rounded-xl font-bold flex items-center justify-center gap-2 mt-auto cursor-not-allowed"
+                          >
+                            {isExpired ? '⛔ Link Expired' : '🚫 Limit Reached (3/3)'}
                           </button>
                         )
+                      ) : rec.status === 'failed' ? (
+                        <button
+                          disabled
+                          className="w-full py-2.5 bg-red-50 text-red-400 border border-red-100 rounded-xl font-bold flex items-center justify-center gap-2 mt-auto cursor-not-allowed"
+                        >
+                          <AlertCircle size={15} /> Processing Failed
+                        </button>
                       ) : (
-                        <button disabled className="w-full py-2.5 bg-stone-50 text-stone-400 border border-stone-200 rounded-xl font-bold flex items-center justify-center gap-2 mt-auto cursor-not-allowed">
-                          <Loader2 size={16} className="animate-spin" />
-                          Processing
+                        <button
+                          disabled
+                          className="w-full py-2.5 bg-stone-50 text-stone-400 border border-stone-200 rounded-xl font-bold flex items-center justify-center gap-2 mt-auto cursor-not-allowed"
+                        >
+                          <Loader2 size={15} className="animate-spin" /> Processing…
                         </button>
                       )}
                     </div>

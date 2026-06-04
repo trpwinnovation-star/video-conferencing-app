@@ -24,6 +24,28 @@ export class LivekitService {
   public async generateToken(roomName: string, participantName: string, isHost: boolean = false): Promise<string> {
     const config = getLivekitConfig();
     console.log(`[LiveKit] Generating token for ${participantName} in room ${roomName}, isHost=${isHost}`);
+
+    // ── Participant limit check ──────────────────────────────────────────────
+    // Count current participants in the room (0 if room doesn't exist yet).
+    // Limit: max 5 total (host + 4 attendees).
+    const MAX_PARTICIPANTS = 5;
+    try {
+      const roomService = getRoomService();
+      const participants = await roomService.listParticipants(roomName);
+      if (participants.length >= MAX_PARTICIPANTS) {
+        throw new Error(
+          `Room is full. This meeting allows a maximum of ${MAX_PARTICIPANTS} participants.`
+        );
+      }
+      console.log(`[LiveKit] Room ${roomName} has ${participants.length}/${MAX_PARTICIPANTS} participants — allowing join.`);
+    } catch (err: any) {
+      // If the error is our own capacity error, re-throw it
+      if (err.message?.includes('Room is full')) throw err;
+      // Otherwise the room doesn't exist yet (first participant) — allow it
+      console.log(`[LiveKit] Room ${roomName} not found in LiveKit yet (first participant) — allowing.`);
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     const at = new AccessToken(config.apiKey, config.apiSecret, {
       identity: participantName,
       name: participantName,
@@ -51,7 +73,7 @@ export class LivekitService {
     const room = await roomService.createRoom({
       name: roomName,
       emptyTimeout: 10 * 60, // 10 minutes
-      maxParticipants: 50,
+      maxParticipants: 5,    // Hard cap enforced by LiveKit as secondary guard
     });
     return room;
   }

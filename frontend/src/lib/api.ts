@@ -181,10 +181,69 @@ export async function apiGetMyRecordings() {
   return await response.json();
 }
 
-export async function stopRecording(id?: string) {
-  console.log('Local recording stopped');
-  return { status: 'mock_stopped' };
+/**
+ * Fetches recording metadata (status, downloadCount, expiresAt, etc.)
+ * WITHOUT incrementing the download counter. Safe to call on page load.
+ */
+export async function apiGetRecordingInfo(recordingId: string) {
+  const response = await fetch(`${RECORDINGS_URL}/${recordingId}/info`, {
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || 'Failed to fetch recording info');
+  }
+  return await response.json();
 }
+
+/**
+ * Strictly enforced download via backend proxy.
+ *
+ * - Calls GET /recording/:id/download (requires auth)
+ * - Backend checks count < 3 and expiry, then increments the counter
+ * - Backend fetches from S3 server-side and streams bytes back
+ * - We receive the raw video bytes as a Blob — the S3 URL never reaches the browser
+ * - A temporary blob:// URL is created, used to trigger the Save dialog, then revoked
+ *
+ * @returns the new downloadCount after this download
+ */
+export async function apiDownloadRecording(
+  recordingId: string,
+  fileName: string
+): Promise<{ downloadCount: number }> {
+  const response = await fetch(`${RECORDINGS_URL}/${recordingId}/download`, {
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    // Error responses are JSON
+    const err = await response.json();
+    throw new Error(err.error || 'Download failed');
+  }
+
+  // Read the full video as a binary blob
+  const blob = await response.blob();
+
+  // Create a temporary local URL and trigger the browser Save dialog
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  // Revoke immediately — the blob URL is now useless even if copied
+  URL.revokeObjectURL(blobUrl);
+
+  // Backend sends the new count in a response header
+  const newCount = parseInt(response.headers.get('X-Download-Count') || '0', 10);
+  return { downloadCount: newCount };
+}
+
+
 
 // ---- Auth APIs ----
 export interface User {

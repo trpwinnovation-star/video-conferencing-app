@@ -7,6 +7,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { NodeHttpHandler } from '@smithy/node-http-handler';
+import { Readable } from 'stream';
 import fs from 'fs';
 import path from 'path';
 require("dotenv").config({ path: path.join(__dirname, ".env") });
@@ -107,4 +108,29 @@ export const generateSignedUrl = async (
   });
 
   return getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
+};
+
+/**
+ * Fetches a file from S3 and returns a readable stream along with metadata.
+ * Used by the backend proxy download endpoint — the S3 URL is NEVER sent to the client.
+ */
+export const getS3ObjectStream = async (
+  s3Key: string
+): Promise<{ stream: Readable; contentLength?: number; contentType?: string }> => {
+  const command = new GetObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: s3Key,
+  });
+
+  const response = await s3Client.send(command);
+
+  if (!response.Body) {
+    throw new Error('S3 returned empty body');
+  }
+
+  return {
+    stream: response.Body as Readable,
+    contentLength: response.ContentLength,
+    contentType: response.ContentType || 'video/webm',
+  };
 };

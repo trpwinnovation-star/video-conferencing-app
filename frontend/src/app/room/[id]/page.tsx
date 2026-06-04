@@ -281,7 +281,7 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="h-screen w-screen bg-stone-950 overflow-hidden relative text-stone-900">
+    <div className="h-screen w-screen bg-[#FBF9FA] overflow-hidden relative text-stone-900">
       <LiveKitRoom
         video={false}
         audio={false}

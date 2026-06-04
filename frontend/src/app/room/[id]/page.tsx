@@ -190,7 +190,7 @@ export default function RoomPage() {
     );
   }
 
-  if (!accessPassword) {
+  if (!accessPassword && !token) {
     return (
       <RoomJoinGate
         roomId={roomName}

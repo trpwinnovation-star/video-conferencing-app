@@ -24,7 +24,7 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const localChunksRef = useRef<Blob[]>([]);
-  
+
   // Track continuous recording session
   const recordingSessionRef = useRef<{
     recordingId: string;
@@ -37,6 +37,8 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
   const warningShownRef = useRef(false);
   // Ref to access latest stopRecording in timer without circular deps
   const autoStopRef = useRef<(() => void) | null>(null);
+  // Ref to track active upload promises to prevent race condition on stop
+  const uploadPromisesRef = useRef<Promise<void>[]>([]);
 
   const startTimer = () => {
     setDuration(0);
@@ -104,13 +106,17 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
     localChunksRef.current = [];
     try {
       setError(null);
-      
+
       // Request screen capture (display media) - ONLY video
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           frameRate: 15,
         },
-        audio: false 
+        audio: false,
+        // @ts-ignore
+        selfBrowserSurface: "include", // Allows sharing the current tab without hiding Window/Screen options
+        // @ts-ignore
+        surfaceSwitching: "include"
       });
 
       streamRef.current = stream;
@@ -148,11 +154,11 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
         headers: initHeaders,
         body: JSON.stringify({ roomId: roomName, createdBy: userName })
       });
-      
+
       if (!initRes.ok) throw new Error('Could not establish server session');
-      
+
       const { recordingId, meetingId } = await initRes.json();
-      
+
       recordingSessionRef.current = {
         recordingId,
         meetingId,
@@ -160,23 +166,32 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
         totalChunks: 0
       };
 
+      uploadPromisesRef.current = [];
+
       // Use modern mimeTypes
       const options = { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 1000000 };
       const mediaRecorder = new MediaRecorder(stream, options);
-      
+
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = async (event) => {
         if (event.data.size > 0) {
           // Keep a local copy for immediate download
           localChunksRef.current.push(event.data);
-          
-          if (recordingSessionRef.current) {
+
+          if (recordingSessionRef.current && recordingSessionRef.current.recordingId === recordingId) {
             const currentIndex = recordingSessionRef.current.chunkIndex;
             recordingSessionRef.current.chunkIndex++;
             recordingSessionRef.current.totalChunks++;
+
+            const uploadPromise = uploadChunk(event.data, currentIndex, recordingSessionRef.current.meetingId);
+            uploadPromisesRef.current.push(uploadPromise);
             
-            await uploadChunk(event.data, currentIndex, recordingSessionRef.current.meetingId);
+            try {
+              await uploadPromise;
+            } catch (err) {
+              console.error(`[RECORDING] Failed to upload chunk ${currentIndex}`, err);
+            }
           }
         }
       };
@@ -186,31 +201,43 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
         const finalDuration = duration;
         stopTimer();
         setIsUploading(true);
-        
+
+        // Capture the session that is actually stopping
+        const stoppingSession = recordingSessionRef.current?.recordingId === recordingId
+          ? recordingSessionRef.current
+          : { recordingId, meetingId, totalChunks: recordingSessionRef.current?.totalChunks || 0 };
+
         // Create local blob for immediate download
         if (localChunksRef.current.length > 0) {
-          const localBlob = new Blob(localChunksRef.current, { type: 'video/webm' });
+          const localBlob = new Blob(localChunksRef.current, { type: 'video/x-matroska' });
           onRecordingReady?.(localBlob, finalDuration);
           localChunksRef.current = [];
         }
-        
+
         stream.getTracks().forEach(track => track.stop());
-        
+
         if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
           audioContextRef.current.close().catch(console.error);
           audioContextRef.current = null;
         }
 
-        if (recordingSessionRef.current) {
+        // CRITICAL FIX: Wait for all pending chunk uploads to finish BEFORE sending the finish signal!
+        if (uploadPromisesRef.current.length > 0) {
+          console.log(`[RECORDING] Waiting for ${uploadPromisesRef.current.length} chunks to finish uploading...`);
+          await Promise.allSettled(uploadPromisesRef.current);
+          console.log(`[RECORDING] All chunks uploaded. Finishing session.`);
+        }
+
+        if (stoppingSession) {
           try {
             await fetch(getApiUrl('/api/recording/finish'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                recordingId: recordingSessionRef.current.recordingId,
+                recordingId: stoppingSession.recordingId,
                 roomId: roomName,
-                meetingId: recordingSessionRef.current.meetingId,
-                totalChunks: recordingSessionRef.current.totalChunks,
+                meetingId: stoppingSession.meetingId,
+                totalChunks: stoppingSession.totalChunks,
                 email: userEmail
               })
             });
@@ -220,13 +247,16 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
             onError?.('Server failed to receive recording final signal');
           }
         }
-        
+
         setIsUploading(false);
-        recordingSessionRef.current = null;
+        // Only clear the ref if it hasn't been overwritten by a new recording session
+        if (recordingSessionRef.current?.recordingId === recordingId) {
+          recordingSessionRef.current = null;
+        }
       };
 
-      // 5-second increments for chunks
-      mediaRecorder.start(5000);
+      // 30-second increments for chunks to drastically reduce network load
+      mediaRecorder.start(30000);
       setIsRecording(true);
       startTimer();
 
@@ -240,8 +270,8 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
 
     } catch (err: any) {
       console.error("[RECORDING] Startup Error:", err);
-      const errorMessage = err.name === 'NotAllowedError' 
-        ? 'Permission denied. Please allow screen sharing.' 
+      const errorMessage = err.name === 'NotAllowedError'
+        ? 'Permission denied. Please allow screen sharing.'
         : (err.message || 'Failed to start recording');
       setError(errorMessage);
       onError?.(errorMessage);
@@ -260,7 +290,31 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
   }, [stopRecording]);
 
   useEffect(() => {
+    // Attempt graceful shutdown if user closes tab
+    const handleBeforeUnload = () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        // We can't await in beforeunload, but we can stop which triggers final chunks
+        mediaRecorderRef.current.stop();
+
+        // If we have an active session, try to tell the server we're done
+        if (recordingSessionRef.current) {
+          const payload = JSON.stringify({
+            recordingId: recordingSessionRef.current.recordingId,
+            roomId: roomName,
+            meetingId: recordingSessionRef.current.meetingId,
+            totalChunks: recordingSessionRef.current.totalChunks,
+            email: userEmail
+          });
+          // sendBeacon is non-blocking and works reliably during page unload
+          navigator.sendBeacon(getApiUrl('/api/recording/finish'), new Blob([payload], { type: 'application/json' }));
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       stopTimer();
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
@@ -269,7 +323,8 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
         audioContextRef.current.close().catch(console.error);
       }
     };
-  }, []);
+  }, [roomName, userEmail]);
+
 
   return {
     isRecording,

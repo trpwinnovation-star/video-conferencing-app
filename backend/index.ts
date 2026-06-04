@@ -5,6 +5,7 @@ import "dotenv/config";
 import roomRoutes from "./src/routes/room.routes";
 import authRoutes from "./src/routes/auth.routes";
 import recordingRoutes from "./src/routes/recording.routes";
+import { startRecordingAutoCompleter } from "./src/services/recording.service";
 import egressRoutes from "./src/routes/egress.routes";
 import scheduledMeetingRoutes from "./src/routes/scheduled-meeting.routes";
 import path from "path";
@@ -78,4 +79,7 @@ app.use((err, req, res, next) => {
 
 app.listen(port,  () => {
   console.log(`Server running on port ${port}`);
+  
+  // Start the background job to auto-complete abandoned recordings
+  startRecordingAutoCompleter();
 });

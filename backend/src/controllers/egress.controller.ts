@@ -17,7 +17,7 @@ export const startRecording = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error in startRecording controller:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Failed to start recording',
       details: error.message || 'No error message',
       fullError: error,
@@ -41,9 +41,9 @@ export const stopRecording = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error in stopRecording controller:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Failed to stop recording',
-      details: error.message 
+      details: error.message
     });
   }
 };

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from "@prisma/client";
+import { prisma } from '../lib/db';
 
 
 import {
@@ -21,8 +21,6 @@ import {
 } from '../services/scheduled-meeting.service';
 import { LivekitService } from '../services/livekit.service';
 import { createProtectedRoom, deleteRoomFromDb } from '../services/room.service';
-
-const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 const livekitService = new LivekitService();
@@ -159,9 +157,11 @@ export const joinScheduledMeeting = async (req: Request, res: Response) => {
 
     await hostJoinedMeeting(meetingId);
 
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
     const livekitToken = await livekitService.generateToken(
       meeting.roomId,
-      'Host',
+      user?.name || 'Host',
       true
     );
 

@@ -97,7 +97,7 @@ export default function MeetingsPage() {
     setDownloadState(prev => ({ ...prev, [rec.id]: 'loading' }));
     setDownloadError(prev => ({ ...prev, [rec.id]: '' }));
     try {
-      const fileName = `Recording-${rec.roomId}-${new Date(rec.createdAt).toISOString().slice(0, 10)}.webm`;
+      const fileName = `Recording-${rec.roomId}-${new Date(rec.createdAt).toISOString().slice(0, 10)}.mp4`;
       // apiDownloadRecording now handles blob fetching, anchor creation, and cleanup internally
       const { downloadCount } = await apiDownloadRecording(rec.id, fileName);
 

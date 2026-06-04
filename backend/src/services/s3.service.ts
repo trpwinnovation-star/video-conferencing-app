@@ -51,7 +51,7 @@ export const ensureBucketExists = async () => {
   } catch (error: unknown) {
     const err = error as { name?: string; $metadata?: { httpStatusCode?: number }; message?: string };
 
-   
+
 
     if (err.name === 'NotFound' || err.$metadata?.httpStatusCode === 404) {
       console.log(`[S3] Bucket '${BUCKET_NAME}' not found. Creating...`);
@@ -80,7 +80,7 @@ export const uploadFileToS3 = async (localFilePath: string, s3Key: string): Prom
     Bucket: BUCKET_NAME,
     Key: s3Key,
     Body: fileStream,
-    ContentType: 'video/webm',
+    ContentType: 'video/mp4',
   };
 
   console.log(`[S3] Uploading to bucket: ${BUCKET_NAME}, key: ${s3Key}, region: ${region}`);
@@ -131,6 +131,6 @@ export const getS3ObjectStream = async (
   return {
     stream: response.Body as Readable,
     contentLength: response.ContentLength,
-    contentType: response.ContentType || 'video/webm',
+    contentType: response.ContentType || 'video/mp4',
   };
 };

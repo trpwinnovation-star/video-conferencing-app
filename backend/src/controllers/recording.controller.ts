@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/db';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -11,7 +11,6 @@ import { getS3ObjectStream } from '../services/s3.service';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
-const prisma = new PrismaClient();
 const CHUNKS_DIR = path.join(os.tmpdir(), 'video-app-chunks');
 
 export const startRecording = async (req: Request, res: Response) => {
@@ -53,7 +52,7 @@ export const startRecording = async (req: Request, res: Response) => {
 export const uploadChunk = async (req: Request, res: Response) => {
   try {
     const { meetingId, chunkIndex } = req.body;
-    
+
     if (!req.file || !meetingId || chunkIndex === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -63,11 +62,18 @@ export const uploadChunk = async (req: Request, res: Response) => {
       fs.mkdirSync(meetingChunksDir, { recursive: true });
     }
 
-    const chunkPath = path.join(meetingChunksDir, `${chunkIndex}.webm`);
-    
+    const chunkPath = path.join(meetingChunksDir, `${chunkIndex}.mkv`);
+
     // Move file using copy + unlink to support cross-device moves on Render
     fs.copyFileSync(req.file.path, chunkPath);
     fs.unlinkSync(req.file.path);
+
+    // Heartbeat: Touch the database record to update the `updatedAt` timestamp
+    // This tells the auto-finisher cron job that the recording is still alive
+    await prisma.recording.updateMany({
+      where: { meetingId, status: 'recording' },
+      data: { updatedAt: new Date() },
+    });
 
     res.status(200).json({ message: 'Chunk uploaded successfully' });
   } catch (error) {
@@ -180,9 +186,9 @@ export const downloadRecording = async (req: Request, res: Response) => {
     // ── 6. Fetch from S3 and stream directly to browser ──────────────────
     const { stream, contentLength, contentType } = await getS3ObjectStream(recording.s3Key);
 
-    const fileName = `Recording-${recording.roomId}-${recording.createdAt.toISOString().slice(0, 10)}.webm`;
+    const fileName = `Recording-${recording.roomId}-${recording.createdAt.toISOString().slice(0, 10)}.mp4`;
 
-    res.setHeader('Content-Type', contentType || 'video/webm');
+    res.setHeader('Content-Type', 'video/mp4');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.setHeader('X-Download-Count', updated.downloadCount);
     res.setHeader('X-Downloads-Remaining', Math.max(0, 3 - updated.downloadCount));
@@ -223,13 +229,13 @@ export const getMyRecordings = async (req: Request, res: Response) => {
     if (!token && req.headers.authorization?.startsWith('Bearer ')) {
       token = req.headers.authorization.substring(7);
     }
-    
+
     if (!token) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as { name: string };
-    
+
     const recordings = await prisma.recording.findMany({
       where: { createdBy: decoded.name },
       orderBy: { createdAt: 'desc' },

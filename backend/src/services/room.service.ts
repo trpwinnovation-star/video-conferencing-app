@@ -1,8 +1,7 @@
 import bcrypt from 'bcrypt';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/db';
 import { LivekitService } from './livekit.service';
 
-const prisma = new PrismaClient();
 const livekitService = new LivekitService();
 
 const ROOM_ID_REGEX = /^[a-zA-Z0-9_-]{3,64}$/;
@@ -83,7 +82,7 @@ export async function deleteRoomFromDb(roomId: string) {
   try {
     // Also mark any corresponding ScheduledMeeting as completed
     await prisma.scheduledMeeting.updateMany({
-      where: { 
+      where: {
         roomId: id,
         status: { in: ['scheduled', 'in_progress'] }
       },

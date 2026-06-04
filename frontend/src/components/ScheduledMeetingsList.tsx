@@ -5,6 +5,7 @@ import { Clock, Users, Share2, Play, MoreVertical, Loader } from 'lucide-react';
 import { apiGetUserMeetings, apiJoinScheduledMeeting, ScheduledMeeting } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth';
 
 interface ScheduledMeetingsListProps {
   refresh?: boolean;
@@ -16,6 +17,7 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
   const [error, setError] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
     loadMeetings();
@@ -43,7 +45,7 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
     try {
       const result = await apiJoinScheduledMeeting(meeting.id);
       sessionStorage.setItem(`room_token_${result.roomId}`, result.token);
-      const hostName = encodeURIComponent(meeting.host?.name || 'Host');
+      const hostName = encodeURIComponent(user?.name || meeting.host?.name || 'Host');
       router.push(`/room/${result.roomId}?name=${hostName}`);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to join meeting');

@@ -133,9 +133,9 @@ export function SaveRecordingModal({ isOpen, onClose, blob, roomName, duration }
           </div>
 
           {/* Server download limit info */}
-          <p className="text-xs text-stone-400 text-center">
-            The cloud recording link allows up to 3 downloads and expires in 5 days.
-            This local download has no such limits.
+          <p className="text-stone-400 text-sm mb-6 text-center">
+            A raw backup of your recording is ready. <br />
+            <span className="text-[#c16d18] font-bold">Note: A highly compatible MP4 is being processed on the server and will be available in your Dashboard.</span>
           </p>
         </div>
 

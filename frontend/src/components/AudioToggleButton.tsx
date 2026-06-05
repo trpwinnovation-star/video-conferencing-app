@@ -11,7 +11,7 @@ export function AudioToggleButton() {
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={() => toggle()}
       className={cn(
         "p-2.5 md:p-4 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer border",
         enabled

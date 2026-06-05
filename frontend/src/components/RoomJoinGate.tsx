@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { getToken } from "@/lib/api";
 import { saveRoomPassword } from "@/lib/roomAccess";
@@ -12,6 +12,7 @@ interface RoomJoinGateProps {
   onNameChange: (name: string) => void;
   onVerified: (password: string, token: string) => void;
   initialPassword?: string;
+  serverError?: string; // error passed from parent (e.g. after failed reconnect)
 }
 
 export function RoomJoinGate({
@@ -20,11 +21,17 @@ export function RoomJoinGate({
   onNameChange,
   onVerified,
   initialPassword = "",
+  serverError = "",
 }: RoomJoinGateProps) {
   const [password, setPassword] = useState(initialPassword);
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(serverError);
   const [loading, setLoading] = useState(false);
+
+  // Update local error when parent passes a new serverError
+  useEffect(() => {
+    if (serverError) setError(serverError);
+  }, [serverError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

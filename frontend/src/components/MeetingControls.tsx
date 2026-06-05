@@ -17,9 +17,10 @@ interface MeetingControlsProps {
   roomName: string;
   userName?: string;
   onRecordingStateChange?: (isRecording: boolean, duration: number) => void;
+  onHostStatusKnown?: (isHost: boolean) => void;
 }
 
-export function MeetingControls({ roomName, userName, onRecordingStateChange }: MeetingControlsProps) {
+export function MeetingControls({ roomName, userName, onRecordingStateChange, onHostStatusKnown }: MeetingControlsProps) {
   const room = useRoomContext();
   const router = useRouter();
   // Obtain the local participant from the hook
@@ -58,7 +59,12 @@ export function MeetingControls({ roomName, userName, onRecordingStateChange }: 
     }
   }, [participantMeta]);
 
-  // Record popup logic
+  // Report host status to the parent page (used for reconnect logic)
+  React.useEffect(() => {
+    if (isHost) {
+      onHostStatusKnown?.(true);
+    }
+  }, [isHost, onHostStatusKnown]);
   const [showRecordPopup, setShowRecordPopup] = React.useState(false);
   const [hasShownPopup, setHasShownPopup] = React.useState(false);
 

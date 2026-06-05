@@ -20,21 +20,24 @@ import { RoomJoinGate } from "@/components/RoomJoinGate";
 import { RoomPinProvider } from "@/contexts/RoomPinContext";
 import { Loader2 } from "lucide-react";
 
-function MeetingEndListener({ onMeetingEnded, roomName }: { onMeetingEnded: () => void; roomName: string }) {
+// --------------------------------------------------------------------------
+// MeetingEndListener
+// Handles two cases:
+//   1. Host broadcasts MEETING_ENDED via data channel → kick everyone
+//   2. Non-host polls every 5 s to see if the room still exists in LiveKit
+// --------------------------------------------------------------------------
+function MeetingEndListener({
+  onMeetingEnded,
+  roomName,
+  isHostRef,
+}: {
+  onMeetingEnded: () => void;
+  roomName: string;
+  isHostRef: React.MutableRefObject<boolean>;
+}) {
   const room = useRoomContext();
 
-  // Derive isHost from room data without storing in state
-  const isHost = (() => {
-    if (!room?.localParticipant?.metadata) return false;
-    try {
-      const meta = JSON.parse(room.localParticipant.metadata);
-      return meta.isHost === true;
-    } catch {
-      return false;
-    }
-  })();
-
-  // Data channel listener (for when host deliberately ends meeting)
+  // ── 1. Data channel: ALL participants listen for MEETING_ENDED ──────────
   useEffect(() => {
     if (!room) return;
 
@@ -43,11 +46,11 @@ function MeetingEndListener({ onMeetingEnded, roomName }: { onMeetingEnded: () =
         const str = new TextDecoder().decode(payload);
         const msg = JSON.parse(str);
         if (msg?.type === "MEETING_ENDED") {
-          console.log("Received MEETING_ENDED signal from host");
+          console.log("[Room] Received MEETING_ENDED broadcast from host");
           onMeetingEnded();
           room.disconnect(true);
         }
-      } catch (e) {
+      } catch {
         // ignore parse errors
       }
     };
@@ -58,43 +61,47 @@ function MeetingEndListener({ onMeetingEnded, roomName }: { onMeetingEnded: () =
     };
   }, [room, onMeetingEnded]);
 
-  // Room status polling for non-host participants
-  // This ensures they're kicked out if the host ends the meeting or the room is deleted
+  // ── 2. Poll only for NON-HOST participants ──────────────────────────────
+  // We use the isHostRef (set once on token generation) rather than reading
+  // metadata from the room, which can be null during reconnection.
   useEffect(() => {
-    if (!room || isHost) return; // Only poll for non-host participants
+    if (!room) return;
+    // Give the room a moment to stabilise, then check the ref
+    const initTimer = setTimeout(() => {
+      if (isHostRef.current) return; // host never polls
 
-    let pollInterval: NodeJS.Timeout | null = null;
-
-    const startPolling = async () => {
-      // Start polling after 3 seconds (give the meeting time to start)
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      let pollInterval: NodeJS.Timeout | null = null;
 
       pollInterval = setInterval(async () => {
         try {
           const status = await checkRoomStatus(roomName);
           if (!status.exists) {
-            console.log("Room no longer exists - meeting ended by host");
+            console.log("[Room] Poll: room no longer exists → meeting ended");
             onMeetingEnded();
             if (room && room.state !== "disconnected") {
               await room.disconnect(true);
             }
           }
         } catch (error) {
-          console.warn("Error polling room status:", error);
+          // Network error while polling — treat as room still alive (fail safe)
+          console.warn("[Room] Poll: error checking room status:", error);
         }
-      }, 5000); // Poll every 5 seconds
-    };
+      }, 5000);
 
-    startPolling();
+      return () => {
+        if (pollInterval) clearInterval(pollInterval);
+      };
+    }, 3000);
 
-    return () => {
-      if (pollInterval) clearInterval(pollInterval);
-    };
-  }, [room, roomName, isHost, onMeetingEnded]);
+    return () => clearTimeout(initTimer);
+  }, [room, roomName, isHostRef, onMeetingEnded]);
 
   return null;
 }
 
+// --------------------------------------------------------------------------
+// RoomPage
+// --------------------------------------------------------------------------
 export default function RoomPage() {
   const params = useParams();
   const roomName = decodeURIComponent(params.id as string);
@@ -110,13 +117,22 @@ export default function RoomPage() {
   const [storageChecked, setStorageChecked] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
-  const meetingEndedRef = useRef(false); // tracks if host deliberately ended the meeting
 
-  const handleRecordingStateChange = (isRecording: boolean, duration: number) => {
-    setIsRecording(isRecording);
-    setRecordingDuration(duration);
+  // ── Refs that survive re-renders without triggering them ─────────────────
+  // meetingEndedRef: true only when host deliberately broadcasts MEETING_ENDED
+  const meetingEndedRef = useRef(false);
+  // isHostRef: set once when we receive the token, used by the poll loop
+  const isHostRef = useRef(false);
+  // passwordRef: mirror of accessPassword so the reconnect logic always has
+  // the latest password even without re-running effects
+  const passwordRef = useRef<string | null>(null);
+
+  const handleRecordingStateChange = (rec: boolean, dur: number) => {
+    setIsRecording(rec);
+    setRecordingDuration(dur);
   };
 
+  // ── Restore password from localStorage on first load ─────────────────────
   useEffect(() => {
     const storedToken = sessionStorage.getItem(`room_token_${roomName}`);
     if (storedToken) {
@@ -127,10 +143,14 @@ export default function RoomPage() {
     }
 
     const stored = getStoredRoomPassword(roomName);
-    if (stored) setAccessPassword(stored);
+    if (stored) {
+      setAccessPassword(stored);
+      passwordRef.current = stored;
+    }
     setStorageChecked(true);
   }, [roomName]);
 
+  // ── Fetch a LiveKit token whenever we have a password but no token ────────
   useEffect(() => {
     if (!accessPassword || token) return;
     if (!participantName.trim()) return;
@@ -143,9 +163,7 @@ export default function RoomPage() {
       try {
         const t = await getToken(roomName, participantName.trim(), accessPassword);
         if (!cancelled) {
-          if (!t) {
-            throw new Error("No token received from server");
-          }
+          if (!t) throw new Error("No token received from server");
           setToken(t);
           const url = new URL(window.location.href);
           url.searchParams.set("name", participantName.trim());
@@ -153,11 +171,19 @@ export default function RoomPage() {
         }
       } catch (e: unknown) {
         if (!cancelled) {
-          clearRoomPassword(roomName);
-          setAccessPassword(null);
-          setError(
-            e instanceof Error ? e.message : "Failed to join the room. Please try again."
-          );
+          // If the room is gone (404/400) this is a legitimate "meeting ended"
+          const msg = e instanceof Error ? e.message : "Failed to join the room. Please try again.";
+          const roomGone = msg.toLowerCase().includes("not found") || msg.includes("404");
+          if (roomGone && meetingEndedRef.current) {
+            // Already flagged as ended — don't clear the password, just show error
+            setError("The meeting has been ended by the host.");
+            setToken("");
+          } else {
+            clearRoomPassword(roomName);
+            setAccessPassword(null);
+            passwordRef.current = null;
+            setError(msg);
+          }
         }
       } finally {
         if (!cancelled) setConnecting(false);
@@ -165,23 +191,27 @@ export default function RoomPage() {
     };
 
     connect();
-    return () => {
-      cancelled = true;
-    };
-    // Do not include `connecting` or `error` — updating them re-ran this effect and cancelled the token request mid-flight.
+    return () => { cancelled = true; };
+    // Intentionally omit connecting/error to avoid re-triggering mid-flight
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessPassword, token, roomName, participantName, router]);
 
   const handleVerified = (password: string) => {
     setError("");
     setAccessPassword(password);
+    passwordRef.current = password;
   };
 
   const handleRetry = () => {
     setError("");
     setToken("");
+    meetingEndedRef.current = false;
     setAccessPassword(null);
+    passwordRef.current = null;
     clearRoomPassword(roomName);
   };
+
+  // ── Render guards ─────────────────────────────────────────────────────────
 
   if (!storageChecked) {
     return (
@@ -203,8 +233,10 @@ export default function RoomPage() {
     );
   }
 
-  if (error && !token) {
-    const isRoomFull = error.toLowerCase().includes('room is full');
+  // Only show the error screen when the meeting was deliberately ended.
+  // For transient disconnects we just show a reconnecting spinner.
+  if (error && !token && meetingEndedRef.current) {
+    const isRoomFull = error.toLowerCase().includes("room is full");
     return (
       <div className="flex h-screen items-center justify-center bg-[#FBF9FA] text-stone-900">
         <div className="text-center p-8 bg-white border border-stone-200/80 rounded-2xl shadow-xl max-w-md w-full mx-4">
@@ -215,7 +247,7 @@ export default function RoomPage() {
               </div>
               <h2 className="text-xl font-extrabold text-stone-900 mb-2">Meeting Room Full</h2>
               <p className="text-stone-500 mb-6 text-sm leading-relaxed">
-                This meeting has reached its maximum capacity of <strong>5 participants</strong>. 
+                This meeting has reached its maximum capacity of <strong>5 participants</strong>.
                 Please ask the host to make space or try again later.
               </p>
               <div className="flex items-center justify-center gap-4">
@@ -260,7 +292,7 @@ export default function RoomPage() {
       <div className="flex h-screen items-center justify-center bg-[#FBF9FA] text-stone-900">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="animate-spin text-[#c16d18]" size={32} />
-          <p className="font-bold">{connecting ? "Joining room..." : "Preparing to join..."}</p>
+          <p className="font-bold">{connecting ? "Joining room..." : "Reconnecting..."}</p>
         </div>
       </div>
     );
@@ -289,24 +321,36 @@ export default function RoomPage() {
         token={token}
         serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || "ws://localhost:7880"}
         className="h-full w-full relative"
+        options={{
+          // Tell LiveKit to attempt automatic reconnection before giving up.
+          // This handles phone-sleep / network blips transparently.
+          disconnectOnPageLeave: false,
+        }}
         onDisconnected={() => {
-          // Voluntary leave: user clicked "Leave"
+          // ── Case 1: voluntary leave (user pressed Leave button) ──────────
           if (sessionStorage.getItem("voluntary_leave")) {
             sessionStorage.removeItem("voluntary_leave");
             router.push("/");
             return;
           }
-          // Host deliberately ended the meeting via data channel
+
+          // ── Case 2: host deliberately ended the meeting ──────────────────
           if (meetingEndedRef.current) {
             setError("The meeting has been ended by the host.");
             setToken("");
             return;
           }
-          // Unexpected disconnect (phone sleep, network blip, app switch on mobile)
-          // Don't show error — just reset the token so the page automatically re-fetches
-          // a new token and reconnects silently.
-          console.warn("[Room] Unexpected disconnect — attempting to reconnect...");
+
+          // ── Case 3: unexpected disconnect (phone sleep / network blip) ───
+          // Silently clear the token; the token-fetch effect will immediately
+          // re-request a fresh token using the passwordRef and reconnect.
+          console.warn("[Room] Unexpected disconnect — reconnecting silently...");
+          const pwd = passwordRef.current;
           setToken("");
+          if (pwd) {
+            // Re-set accessPassword so the token-fetch effect fires again
+            setAccessPassword(pwd);
+          }
         }}
       >
         <RoomPinProvider>
@@ -315,20 +359,26 @@ export default function RoomPage() {
           </div>
 
           <div className="absolute inset-0 pointer-events-none z-50">
-            <MeetingEndListener 
+            <MeetingEndListener
               onMeetingEnded={() => {
                 meetingEndedRef.current = true;
                 setError("The meeting has been ended by the host.");
                 setToken("");
-              }} 
+              }}
               roomName={roomName}
+              isHostRef={isHostRef}
             />
             <div className="absolute top-0 left-0 right-0 h-14 sm:h-16 pointer-events-auto">
               <RoomHeader roomName={roomName} />
             </div>
 
             <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center pointer-events-auto px-2 sm:px-4">
-              <MeetingControls roomName={roomName} userName={participantName} onRecordingStateChange={handleRecordingStateChange} />
+              <MeetingControls
+                roomName={roomName}
+                userName={participantName}
+                onRecordingStateChange={handleRecordingStateChange}
+                onHostStatusKnown={(host) => { isHostRef.current = host; }}
+              />
             </div>
 
             <RecordingCountdown recordingDuration={recordingDuration} isRecording={isRecording} />

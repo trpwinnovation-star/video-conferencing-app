@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useParams, useRouter } from "next/navigation";
 import {
   LiveKitRoom,
@@ -110,6 +110,7 @@ export default function RoomPage() {
   const [storageChecked, setStorageChecked] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const meetingEndedRef = useRef(false); // tracks if host deliberately ended the meeting
 
   const handleRecordingStateChange = (isRecording: boolean, duration: number) => {
     setIsRecording(isRecording);
@@ -289,12 +290,22 @@ export default function RoomPage() {
         serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || "ws://localhost:7880"}
         className="h-full w-full relative"
         onDisconnected={() => {
+          // Voluntary leave: user clicked "Leave"
           if (sessionStorage.getItem("voluntary_leave")) {
             sessionStorage.removeItem("voluntary_leave");
             router.push("/");
             return;
           }
-          setError("The meeting has ended or you were disconnected.");
+          // Host deliberately ended the meeting via data channel
+          if (meetingEndedRef.current) {
+            setError("The meeting has been ended by the host.");
+            setToken("");
+            return;
+          }
+          // Unexpected disconnect (phone sleep, network blip, app switch on mobile)
+          // Don't show error — just reset the token so the page automatically re-fetches
+          // a new token and reconnects silently.
+          console.warn("[Room] Unexpected disconnect — attempting to reconnect...");
           setToken("");
         }}
       >
@@ -306,6 +317,7 @@ export default function RoomPage() {
           <div className="absolute inset-0 pointer-events-none z-50">
             <MeetingEndListener 
               onMeetingEnded={() => {
+                meetingEndedRef.current = true;
                 setError("The meeting has been ended by the host.");
                 setToken("");
               }} 

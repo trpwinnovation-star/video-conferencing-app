@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Lock, Loader2, Eye, EyeOff } from "lucide-react";
-import { verifyRoomPassword } from "@/lib/api";
+import { getToken } from "@/lib/api";
 import { saveRoomPassword } from "@/lib/roomAccess";
 import Link from "next/link";
 
@@ -10,7 +10,7 @@ interface RoomJoinGateProps {
   roomId: string;
   participantName: string;
   onNameChange: (name: string) => void;
-  onVerified: (password: string) => void;
+  onVerified: (password: string, token: string) => void;
   initialPassword?: string;
 }
 
@@ -41,9 +41,11 @@ export function RoomJoinGate({
 
     setLoading(true);
     try {
-      await verifyRoomPassword(roomId, password);
+      // Fetch the token directly — this verifies the password AND returns the token
+      // in a single round trip. The token is passed up to the parent to avoid a second call.
+      const token = await getToken(roomId, participantName.trim(), password);
       saveRoomPassword(roomId, password);
-      onVerified(password);
+      onVerified(password, token);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Could not join room");
     } finally {

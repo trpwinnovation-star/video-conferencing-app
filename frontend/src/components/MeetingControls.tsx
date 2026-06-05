@@ -79,6 +79,18 @@ export function MeetingControls({ roomName, userName, onRecordingStateChange, on
 
   // Leave confirmation state
   const [showLeaveConfirm, setShowLeaveConfirm] = React.useState(false);
+  const [confirmReady, setConfirmReady] = React.useState(false);
+  const isLeavingRef = React.useRef(false);
+
+  // Small delay before the confirm button is active — prevents ghost touch on mobile
+  // (the same touch that opens the modal from triggering the confirm immediately)
+  React.useEffect(() => {
+    if (showLeaveConfirm) {
+      setConfirmReady(false);
+      const t = setTimeout(() => setConfirmReady(true), 350);
+      return () => clearTimeout(t);
+    }
+  }, [showLeaveConfirm]);
 
   // Recording save modal state
   const [recordingBlob, setRecordingBlob] = React.useState<Blob | null>(null);
@@ -92,6 +104,9 @@ export function MeetingControls({ roomName, userName, onRecordingStateChange, on
   };
 
   const handleLeave = async () => {
+    if (isLeavingRef.current) return; // prevent double-fire
+    isLeavingRef.current = true;
+
     // Safety net: always redirect home after 3 seconds no matter what
     const safetyTimer = setTimeout(() => {
       router.push("/");
@@ -216,10 +231,12 @@ export function MeetingControls({ roomName, userName, onRecordingStateChange, on
               </button>
               <button
                 onClick={() => {
+                  if (!confirmReady) return;
                   setShowLeaveConfirm(false);
                   handleLeave();
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm transition-colors shadow-md shadow-red-200 cursor-pointer"
+                disabled={!confirmReady}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white font-bold text-sm transition-colors shadow-md shadow-red-200 cursor-pointer"
               >
                 {isHost ? "End Meeting" : "Yes, Leave"}
               </button>

@@ -10,12 +10,13 @@ export function AudioToggleButton() {
 
   return (
     <button
-      onClick={() => toggle()}
+      type="button"
+      onClick={toggle}
       className={cn(
         "p-2.5 md:p-4 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer border",
         enabled
           ? "bg-white hover:bg-stone-50 text-[#c16d18] border-stone-200"
-          : "bg-[#c16d18] text-white"
+          : "bg-[#c16d18] text-white border-[#c16d18]"
       )}
       title={enabled ? "Mute Microphone" : "Unmute Microphone"}
     >

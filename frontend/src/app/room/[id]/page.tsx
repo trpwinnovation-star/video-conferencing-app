@@ -196,10 +196,12 @@ export default function RoomPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessPassword, token, roomName, participantName, router]);
 
-  const handleVerified = (password: string) => {
+  const handleVerified = (password: string, preloadedToken: string) => {
     setError("");
     setAccessPassword(password);
     passwordRef.current = password;
+    // Use the token already fetched during password verification — no second API call needed
+    setToken(preloadedToken);
   };
 
   const handleRetry = () => {

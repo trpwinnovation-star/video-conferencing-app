@@ -5,7 +5,6 @@ import { useSearchParams, useParams, useRouter } from "next/navigation";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
-  StartAudio,
   useRoomContext,
 } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
@@ -18,6 +17,7 @@ import { MeetingControls } from "@/components/MeetingControls";
 import { RecordingCountdown } from "@/components/RecordingCountdown";
 import { RoomJoinGate } from "@/components/RoomJoinGate";
 import { RoomPinProvider } from "@/contexts/RoomPinContext";
+import { MobileAudioGate } from "@/components/MobileAudioGate";
 import { Loader2 } from "lucide-react";
 
 // --------------------------------------------------------------------------
@@ -354,7 +354,7 @@ export default function RoomPage() {
         </RoomPinProvider>
 
         <RoomAudioRenderer />
-        <StartAudio label="Click to enable audio" />
+        <MobileAudioGate />
       </LiveKitRoom>
     </div>
   );

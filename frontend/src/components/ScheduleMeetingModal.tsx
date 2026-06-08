@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, Copy, Check, Loader } from 'lucide-react';
 import { apiScheduleMeeting } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 
 interface ScheduleMeetingModalProps {
   isOpen: boolean;
@@ -15,18 +16,25 @@ export default function ScheduleMeetingModal({
   onClose,
   onMeetingScheduled,
 }: ScheduleMeetingModalProps) {
+  const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('10:00');
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [attendeeEmails, setAttendeeEmails] = useState('');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(user?.meetingDefaultPassword || '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [shareableLink, setShareableLink] = useState('');
   const [meetingCode, setMeetingCode] = useState('');
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (user?.meetingDefaultPassword && !password) {
+      setPassword(user.meetingDefaultPassword);
+    }
+  }, [user, password]);
 
   if (!isOpen) return null;
 

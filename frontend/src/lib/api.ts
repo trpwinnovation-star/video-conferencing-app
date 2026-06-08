@@ -250,6 +250,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  meetingDefaultPassword?: string;
 }
 
 export async function apiRegister(name: string, email: string, password: string): Promise<User> {
@@ -296,6 +297,21 @@ export async function apiChangePassword(currentPassword: string, newPassword: st
   }
 }
 
+export async function apiUpdateDefaultPassword(meetingDefaultPassword: string): Promise<User> {
+  const res = await fetch(`${AUTH_URL}/default-password`, {
+    method: 'PATCH',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include',
+    body: JSON.stringify({ meetingDefaultPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to update default meeting password');
+  }
+  return data.user;
+}
+
+
 export async function apiForgotPassword(email: string): Promise<string> {
   const res = await fetch(`${AUTH_URL}/forgot-password`, {
     method: 'POST',
@@ -320,9 +336,9 @@ export async function apiResetPassword(token: string, newPassword: string): Prom
 
 export async function apiGetMe(): Promise<User | null> {
   try {
-    const res = await fetch(`${AUTH_URL}/me`, { 
+    const res = await fetch(`${AUTH_URL}/me`, {
       headers: getAuthHeaders(),
-      credentials: 'include' 
+      credentials: 'include'
     });
     if (!res.ok) return null;
     const data = await res.json();

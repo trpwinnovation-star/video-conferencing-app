@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../lib/db';
 import 'dotenv/config';
 
@@ -19,7 +20,7 @@ const authCookieOptions = {
 export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
-    
+
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required' });
     }
@@ -31,11 +32,16 @@ export const register = async (req: Request, res: Response) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const auditId = uuidv4();
+    const auditCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
+        auditId,
+        auditCode,
       },
     });
 
@@ -43,7 +49,15 @@ export const register = async (req: Request, res: Response) => {
 
     res.cookie('token', token, authCookieOptions);
 
-    return res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    return res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        meetingDefaultPassword: user.meetingDefaultPassword,
+      },
+    });
   } catch (error) {
     console.error('Registration error:', error);
     return res.status(500).json({ error: 'Failed to register' });
@@ -72,7 +86,15 @@ export const login = async (req: Request, res: Response) => {
 
     res.cookie('token', token, authCookieOptions);
 
-    return res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    return res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        meetingDefaultPassword: user.meetingDefaultPassword,
+      },
+    });
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({ error: 'Failed to login' });
@@ -90,13 +112,13 @@ export const getMe = async (req: Request, res: Response) => {
     if (!token && req.headers.authorization?.startsWith('Bearer ')) {
       token = req.headers.authorization.substring(7);
     }
-    
+
     if (!token) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string, email: string, name: string };
-    
+
     // Optional: verify user still exists in DB
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!user) {
@@ -104,7 +126,14 @@ export const getMe = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User no longer exists' });
     }
 
-    return res.json({ user: { id: user.id, email: user.email, name: user.name } });
+    return res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        meetingDefaultPassword: user.meetingDefaultPassword,
+      },
+    });
   } catch (error) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
@@ -113,7 +142,7 @@ export const getMe = async (req: Request, res: Response) => {
 export const changePassword = async (req: Request, res: Response) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    
+
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ error: 'Current password and new password are required' });
     }
@@ -122,13 +151,13 @@ export const changePassword = async (req: Request, res: Response) => {
     if (!token && req.headers.authorization?.startsWith('Bearer ')) {
       token = req.headers.authorization.substring(7);
     }
-    
+
     if (!token) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
-    
+
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -206,3 +235,43 @@ export const resetPassword = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Failed to reset password' });
   }
 };
+
+export const updateDefaultPassword = async (req: Request, res: Response) => {
+  try {
+    const { meetingDefaultPassword } = req.body;
+    
+    if (meetingDefaultPassword === undefined || meetingDefaultPassword === null) {
+      return res.status(400).json({ error: 'meetingDefaultPassword is required' });
+    }
+
+    let token = req.cookies?.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.substring(7);
+    }
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    
+    const user = await prisma.user.update({
+      where: { id: decoded.id },
+      data: { meetingDefaultPassword: String(meetingDefaultPassword) }
+    });
+
+    return res.json({ 
+      message: 'Default meeting password updated successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        meetingDefaultPassword: user.meetingDefaultPassword,
+      }
+    });
+  } catch (error) {
+    console.error('Update default password error:', error);
+    return res.status(500).json({ error: 'Failed to update default meeting password' });
+  }
+};
+

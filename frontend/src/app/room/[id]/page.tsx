@@ -306,6 +306,9 @@ export default function RoomPage() {
           // Case 1: user pressed Leave
           if (sessionStorage.getItem("voluntary_leave")) {
             sessionStorage.removeItem("voluntary_leave");
+            // Clear stored password on deliberate exit — prevents lingering
+            // credentials on shared devices.
+            clearRoomPassword(roomName);
             router.push("/");
             return;
           }

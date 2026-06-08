@@ -172,8 +172,8 @@ export default function MeetingsPage() {
             id="tab-recordings"
             onClick={() => setActiveTab('recordings')}
             className={`px-4 py-3 font-semibold transition-all border-b-2 ${activeTab === 'recordings'
-                ? 'border-[#c16d18] text-[#c16d18]'
-                : 'border-transparent text-stone-600 hover:text-stone-900'
+              ? 'border-[#c16d18] text-[#c16d18]'
+              : 'border-transparent text-stone-600 hover:text-stone-900'
               }`}
           >
             <Video size={16} className="inline-block mr-2" />
@@ -241,21 +241,20 @@ export default function MeetingsPage() {
                             })}
                           </p>
                         </div>
-                        <span className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
-                          rec.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
-                          rec.status === 'failed'    ? 'bg-red-50 text-red-500' :
-                                                       'bg-stone-100 text-stone-500'
-                        }`}>
+                        <span className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold uppercase ${rec.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+                            rec.status === 'failed' ? 'bg-red-50 text-red-500' :
+                              'bg-stone-100 text-stone-500'
+                          }`}>
                           {rec.status}
                         </span>
                       </div>
 
                       {/* ── File Metadata ── */}
                       <div className="flex flex-col gap-1.5 mb-4 text-sm text-stone-600">
-                        <div className="flex items-center gap-2">
+                        {/* <div className="flex items-center gap-2">
                           <Clock size={13} className="text-stone-400 shrink-0" />
                           <span>{formatDuration(rec.duration)}</span>
-                        </div>
+                        </div> */}
                         <div className="flex items-center gap-2">
                           <Video size={13} className="text-stone-400 shrink-0" />
                           <span>{formatFileSize(rec.fileSize)}</span>
@@ -274,10 +273,9 @@ export default function MeetingsPage() {
                           {/* Progress bar */}
                           <div className="w-full h-1.5 bg-stone-200 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                limitReached          ? 'bg-red-400' :
-                                rec.downloadCount >= 2 ? 'bg-amber-400' : 'bg-[#c16d18]'
-                              }`}
+                              className={`h-full rounded-full transition-all duration-500 ${limitReached ? 'bg-red-400' :
+                                  rec.downloadCount >= 2 ? 'bg-amber-400' : 'bg-[#c16d18]'
+                                }`}
                               style={{ width: `${(rec.downloadCount / 3) * 100}%` }}
                             />
                           </div>
@@ -313,8 +311,8 @@ export default function MeetingsPage() {
                               ${dlState === 'done'
                                 ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
                                 : dlState === 'loading'
-                                ? 'bg-stone-100 text-stone-400 border-stone-200 cursor-wait'
-                                : 'bg-[#c16d18]/10 hover:bg-[#c16d18] text-[#c16d18] hover:text-white border-[#c16d18]/20 hover:border-[#c16d18] active:scale-95 cursor-pointer'
+                                  ? 'bg-stone-100 text-stone-400 border-stone-200 cursor-wait'
+                                  : 'bg-[#c16d18]/10 hover:bg-[#c16d18] text-[#c16d18] hover:text-white border-[#c16d18]/20 hover:border-[#c16d18] active:scale-95 cursor-pointer'
                               }`}
                           >
                             {dlState === 'loading' ? (

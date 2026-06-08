@@ -12,12 +12,16 @@ model User {
   email     String   @unique
   password  String
   name      String
+  meetingDefaultPassword String @default("1234")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  auditId   String    
+  auditCode String   
   
   scheduledMeetings ScheduledMeeting[] @relation("HostedMeetings")
   meetingAttendees  MeetingAttendee[]
-  notifications     Notification[]
+  notifications     Notification[] 
+  @@unique([auditId,auditCode])
 }
 
 model Room {
@@ -45,6 +49,10 @@ model Recording {
   downloadExpiresAt DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([roomId])
+  @@index([meetingId])
+  @@index([status])
 }
 
 model ScheduledMeeting {

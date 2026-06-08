@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { User as UserIcon, Lock, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { User as UserIcon, Lock, Loader2, ArrowLeft, CheckCircle2, Key } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { apiChangePassword } from "@/lib/api";
+import { apiChangePassword, apiUpdateDefaultPassword } from "@/lib/api";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, refresh } = useAuth();
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -19,6 +19,39 @@ export default function ProfilePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const [defaultPassword, setDefaultPassword] = useState(user?.meetingDefaultPassword || "");
+  const [isUpdatingDefault, setIsUpdatingDefault] = useState(false);
+  const [defaultError, setDefaultError] = useState("");
+  const [defaultSuccess, setDefaultSuccess] = useState("");
+
+  useEffect(() => {
+    if (user?.meetingDefaultPassword) {
+      setDefaultPassword(user.meetingDefaultPassword);
+    }
+  }, [user]);
+
+  const handleUpdateDefaultPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDefaultError("");
+    setDefaultSuccess("");
+
+    if (!defaultPassword) {
+      setDefaultError("Password cannot be empty.");
+      return;
+    }
+
+    setIsUpdatingDefault(true);
+    try {
+      await apiUpdateDefaultPassword(defaultPassword);
+      setDefaultSuccess("Default meeting password updated successfully!");
+      await refresh();
+    } catch (err: any) {
+      setDefaultError(err.message || "Failed to update default meeting password");
+    } finally {
+      setIsUpdatingDefault(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -122,8 +155,9 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Change Password Card */}
-          <div className="md:col-span-8 lg:col-span-8">
+          {/* Right Column containing both cards */}
+          <div className="md:col-span-8 lg:col-span-8 space-y-8">
+            {/* Change Password Card */}
             <div className="bg-white border border-stone-200/80 rounded-2xl p-8 sm:p-10 shadow-sm">
               <div className="mb-8 border-b border-stone-100 pb-5">
                 <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2.5">
@@ -194,6 +228,57 @@ export default function ProfilePage() {
                   >
                     {isSubmitting && <Loader2 size={18} className="animate-spin" />}
                     {isSubmitting ? "Updating..." : "Update Password"}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Default Meeting Password Card */}
+            <div className="bg-white border border-stone-200/80 rounded-2xl p-8 sm:p-10 shadow-sm">
+              <div className="mb-8 border-b border-stone-100 pb-5">
+                <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2.5">
+                  <Key size={20} className="text-[#c16d18]" />
+                  Default Meeting Password
+                </h2>
+                <p className="text-sm text-stone-500 mt-2">
+                  Set a default password that will automatically secure new meetings you create.
+                </p>
+              </div>
+
+              <form onSubmit={handleUpdateDefaultPassword} className="space-y-6 max-w-xl">
+                <div>
+                  <label className="block text-sm font-semibold text-stone-700 mb-1.5">Default Password</label>
+                  <input
+                    type="text"
+                    required
+                    value={defaultPassword}
+                    onChange={(e) => setDefaultPassword(e.target.value)}
+                    placeholder="Enter default password (e.g. 1234)"
+                    className="w-full px-4 py-2.5 bg-white border border-stone-300 rounded-lg text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#c16d18]/20 focus:border-[#c16d18] transition-all shadow-sm"
+                  />
+                </div>
+
+                {defaultError && (
+                  <div className="bg-red-50 border-l-4 border-red-500 px-4 py-3 text-red-700 text-sm font-medium flex items-center gap-2 rounded-r-md">
+                    {defaultError}
+                  </div>
+                )}
+
+                {defaultSuccess && (
+                  <div className="bg-green-50 border-l-4 border-green-500 px-4 py-3 text-green-700 text-sm font-medium flex items-center gap-2 rounded-r-md">
+                    <CheckCircle2 size={18} />
+                    {defaultSuccess}
+                  </div>
+                )}
+
+                <div className="pt-4 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isUpdatingDefault || !defaultPassword || defaultPassword === user.meetingDefaultPassword}
+                    className="py-2.5 px-6 bg-[#c16d18] hover:bg-[#a0560e] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-bold transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 cursor-pointer"
+                  >
+                    {isUpdatingDefault && <Loader2 size={18} className="animate-spin" />}
+                    {isUpdatingDefault ? "Updating..." : "Save Default Password"}
                   </button>
                 </div>
               </form>

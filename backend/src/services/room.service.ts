@@ -63,6 +63,25 @@ export async function getRoomOrThrow(roomId: string) {
   return room;
 }
 
+/**
+ * Single-query helper: fetches the room and verifies the password in one round-trip.
+ * Returns the room object on success; throws descriptive errors on failure.
+ * Replaces the previous pattern of getRoomOrThrow() + verifyRoomPassword() (2 queries).
+ */
+export async function getRoomAndVerifyPassword(roomId: string, password: string) {
+  const id = normalizeRoomId(roomId);
+  const room = await prisma.room.findUnique({ where: { roomId: id } });
+  if (!room) {
+    throw new Error('Room not found. Check the code or create a new meeting.');
+  }
+  const valid = await bcrypt.compare(password, room.passwordHash);
+  if (!valid) {
+    throw new Error('Incorrect password');
+  }
+  return room;
+}
+
+
 export async function ensureLivekitRoom(roomId: string) {
   try {
     await livekitService.createRoom(normalizeRoomId(roomId));

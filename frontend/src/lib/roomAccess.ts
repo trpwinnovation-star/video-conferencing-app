@@ -1,18 +1,52 @@
 const STORAGE_PREFIX = 'room_access_';
+const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+interface StoredPassword {
+  password: string;
+  expiresAt: number; // Unix timestamp ms
+}
 
 export function saveRoomPassword(roomId: string, password: string) {
   if (typeof window === 'undefined') return;
-  sessionStorage.setItem(`${STORAGE_PREFIX}${roomId}`, password);
+  const entry: StoredPassword = {
+    password,
+    expiresAt: Date.now() + TTL_MS,
+  };
+  try {
+    localStorage.setItem(`${STORAGE_PREFIX}${roomId}`, JSON.stringify(entry));
+  } catch {
+    // localStorage unavailable (private mode, storage full)
+  }
 }
 
 export function getStoredRoomPassword(roomId: string): string | null {
   if (typeof window === 'undefined') return null;
-  return sessionStorage.getItem(`${STORAGE_PREFIX}${roomId}`);
+  try {
+    const raw = localStorage.getItem(`${STORAGE_PREFIX}${roomId}`);
+    if (!raw) return null;
+
+    // Support old format (plain string) gracefully
+    if (!raw.startsWith('{')) return raw;
+
+    const entry: StoredPassword = JSON.parse(raw);
+    if (Date.now() > entry.expiresAt) {
+      // Expired — clean up and return null
+      localStorage.removeItem(`${STORAGE_PREFIX}${roomId}`);
+      return null;
+    }
+    return entry.password;
+  } catch {
+    return null;
+  }
 }
 
 export function clearRoomPassword(roomId: string) {
   if (typeof window === 'undefined') return;
-  sessionStorage.removeItem(`${STORAGE_PREFIX}${roomId}`);
+  try {
+    localStorage.removeItem(`${STORAGE_PREFIX}${roomId}`);
+  } catch {
+    // ignore
+  }
 }
 
 /** Parse room code from pasted link or raw code */

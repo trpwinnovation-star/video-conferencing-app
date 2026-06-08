@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { createProtectedRoom } from "@/lib/api";
 import { saveRoomPassword } from "@/lib/roomAccess";
+import { useAuth } from "@/lib/auth";
 
 interface CreateRoomModalProps {
   roomId: string;
@@ -12,8 +13,9 @@ interface CreateRoomModalProps {
 }
 
 export function CreateRoomModal({ roomId, onClose, onCreated }: CreateRoomModalProps) {
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const { user } = useAuth();
+  const [password, setPassword] = useState(user?.meetingDefaultPassword || "");
+  const [confirmPassword, setConfirmPassword] = useState(user?.meetingDefaultPassword || "");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

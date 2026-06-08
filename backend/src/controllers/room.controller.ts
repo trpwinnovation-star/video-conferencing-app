@@ -5,6 +5,7 @@ import {
   createProtectedRoom,
   verifyRoomPassword,
   getRoomOrThrow,
+  getRoomAndVerifyPassword,
   ensureLivekitRoom,
   isValidRoomId,
   normalizeRoomId,
@@ -86,53 +87,52 @@ export const generateToken = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Room password is required' });
     }
 
+    // Validate participantName: max 50 chars, alphanumeric + spaces + common punctuation only
+    const trimmedName = String(participantName).trim();
+    if (trimmedName.length === 0 || trimmedName.length > 50) {
+      return res.status(400).json({ error: 'Participant name must be 1–50 characters.' });
+    }
+    // Strip anything that looks like HTML tags to prevent XSS in the room UI
+    if (/<[^>]+>/.test(trimmedName)) {
+      return res.status(400).json({ error: 'Participant name must not contain HTML.' });
+    }
+
     const roomId = normalizeRoomId(roomName);
     if (!isValidRoomId(roomId)) {
       return res.status(400).json({ error: 'Invalid room ID' });
     }
 
-    const room = await getRoomOrThrow(roomId);
-    const valid = await verifyRoomPassword(roomId, password);
-    if (!valid) {
-      return res.status(401).json({ error: 'Incorrect password' });
-    }
+    // Single DB query: fetch room + verify password (was 2 separate queries before)
+    const room = await getRoomAndVerifyPassword(roomId, password);
 
+    // Determine if the requesting user is the room host
     let isHost = false;
     let jwtToken = req.cookies?.token;
     if (!jwtToken && req.headers.authorization?.startsWith('Bearer ')) {
       jwtToken = req.headers.authorization.substring(7);
     }
-    
-    console.log(`[Token] Room createdBy: ${room.createdBy}, JWT token present: ${!!jwtToken}`);
     if (jwtToken) {
       try {
         const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET || 'supersecret') as { id: string };
-        console.log(`[Token] Decoded user ID: ${decoded.id}, room.createdBy: ${room.createdBy}, match: ${room.createdBy === decoded.id}`);
-        if (room.createdBy === decoded.id) {
-          isHost = true;
-        }
-      } catch (e) {
-        console.log(`[Token] JWT verification failed:`, e);
+        isHost = room.createdBy === decoded.id;
+      } catch {
+        // Invalid or expired auth token — participant joins as non-host
       }
     }
-    console.log(`[Token] Final isHost=${isHost} for participant ${participantName}`);
 
-    // Generate token with host flag
-    const token = await livekitService.generateToken(roomId, participantName, isHost);
-    console.log(`[Token] Generated token (first 100 chars): ${token?.substring(0, 100)}`);
-
-    // Respond with token
+    const token = await livekitService.generateToken(roomId, trimmedName, isHost);
     return res.json({ token });
   } catch (error) {
-    console.error('DETAILED Error generating token:', error);
+    // Only log full error detail in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[Token] Error generating token:', error);
+    }
     const message = error instanceof Error ? error.message : 'Failed to generate token';
-    const status = message.includes('not found')    ? 404
-                 : message.includes('Room is full') ? 403
+    const status = message.includes('not found')      ? 404
+                 : message.includes('Incorrect')      ? 401
+                 : message.includes('Room is full')   ? 403
                  : 500;
-    return res.status(status).json({
-      error: message,
-      details: error instanceof Error ? error.message : String(error),
-    });
+    return res.status(status).json({ error: message });
   }
 };
 

@@ -5,7 +5,7 @@ const getApiBase = () => {
   return url;
 };
 
-const API_ROOT = getApiBase();
+export const API_ROOT = getApiBase();
 const API_BASE = `${API_ROOT}/api`;
 const ROOMS_URL = `${API_BASE}/rooms`;
 const AUTH_URL = `${API_BASE}/auth`;
@@ -557,3 +557,24 @@ export async function apiMarkAllNotificationsAsRead(): Promise<{ message: string
   if (!res.ok) throw new Error(data.error || 'Failed to update notifications');
   return data;
 }
+
+export async function apiUploadSharedFile(file: File): Promise<{
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+}> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${ROOMS_URL}/upload-file`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to upload file');
+  return data;
+}
+

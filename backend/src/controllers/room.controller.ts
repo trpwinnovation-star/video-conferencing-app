@@ -255,3 +255,24 @@ export const checkRoomStatus = async (req: Request, res: Response) => {
     return res.status(500).json({ error: error.message || 'Failed to check room status' });
   }
 };
+
+export const uploadSharedFileHandler = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+    
+    return res.status(200).json({
+      message: 'File uploaded successfully',
+      fileUrl,
+      fileName: req.file.originalname,
+      fileSize: req.file.size
+    });
+  } catch (error: any) {
+    console.error('Error uploading file:', error);
+    return res.status(500).json({ error: error.message || 'Failed to upload file' });
+  }
+};
+

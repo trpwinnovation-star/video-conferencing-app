@@ -19,6 +19,7 @@ import { RoomJoinGate } from "@/components/RoomJoinGate";
 import { RoomPinProvider } from "@/contexts/RoomPinContext";
 import { MobileAudioGate } from "@/components/MobileAudioGate";
 import { Loader2 } from "lucide-react";
+import { ChatPanel, ChatMessage } from "@/components/ChatPanel";
 
 // --------------------------------------------------------------------------
 // MeetingEndListener — only the data-channel path.
@@ -46,6 +47,176 @@ function MeetingEndListener({ onMeetingEnded }: { onMeetingEnded: () => void }) 
   }, [room, onMeetingEnded]);
 
   return null;
+}
+
+// --------------------------------------------------------------------------
+// ActiveRoomContent — Handles real-time chat, file sharing, and grid layout
+// --------------------------------------------------------------------------
+interface ActiveRoomContentProps {
+  roomName: string;
+  participantName: string;
+  onRecordingStateChange: (rec: boolean, dur: number) => void;
+  isRecording: boolean;
+  recordingDuration: number;
+  onMeetingEnded: () => void;
+}
+
+function ActiveRoomContent({
+  roomName,
+  participantName,
+  onRecordingStateChange,
+  isRecording,
+  recordingDuration,
+  onMeetingEnded,
+}: ActiveRoomContentProps) {
+  const room = useRoomContext();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Listen to data channel for incoming messages or files
+  useEffect(() => {
+    if (!room) return;
+
+    const handleDataReceived = (payload: Uint8Array, participant?: any) => {
+      try {
+        const str = new TextDecoder().decode(payload);
+        const msg = JSON.parse(str);
+
+        if (msg.type === "CHAT_MESSAGE" || msg.type === "FILE_SHARE") {
+          const isLocal = participant?.identity === room.localParticipant.identity;
+          const newMsg: ChatMessage = {
+            id: msg.id,
+            sender: msg.sender,
+            text: msg.text,
+            file: msg.file,
+            timestamp: msg.timestamp,
+            isLocal,
+          };
+          setMessages((prev) => [...prev, newMsg]);
+
+          if (!isChatOpen && !isLocal) {
+            setUnreadCount((prev) => prev + 1);
+          }
+        }
+      } catch (err) {
+        console.error("Error parsing incoming message:", err);
+      }
+    };
+
+    room.on(RoomEvent.DataReceived, handleDataReceived);
+    return () => {
+      room.off(RoomEvent.DataReceived, handleDataReceived);
+    };
+  }, [room, isChatOpen]);
+
+  // Clear unread badge when chat is opened
+  useEffect(() => {
+    if (isChatOpen) {
+      setUnreadCount(0);
+    }
+  }, [isChatOpen]);
+
+  const handleSendMessage = async (text: string) => {
+    if (!room) return;
+    const msgId = Math.random().toString(36).substring(2, 9);
+    const payload = {
+      id: msgId,
+      type: "CHAT_MESSAGE",
+      sender: participantName,
+      text,
+      timestamp: Date.now(),
+    };
+
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify(payload));
+    
+    // Broadcast text message
+    await room.localParticipant.publishData(data, { reliable: true });
+
+    // Append locally
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: msgId,
+        sender: participantName,
+        text,
+        timestamp: Date.now(),
+        isLocal: true,
+      },
+    ]);
+  };
+
+  const handleSendFile = async (fileInfo: { name: string; size: number; url: string }) => {
+    if (!room) return;
+    const msgId = Math.random().toString(36).substring(2, 9);
+    const payload = {
+      id: msgId,
+      type: "FILE_SHARE",
+      sender: participantName,
+      file: fileInfo,
+      timestamp: Date.now(),
+    };
+
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify(payload));
+
+    // Broadcast file sharing details
+    await room.localParticipant.publishData(data, { reliable: true });
+
+    // Append locally
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: msgId,
+        sender: participantName,
+        file: fileInfo,
+        timestamp: Date.now(),
+        isLocal: true,
+      },
+    ]);
+  };
+
+  return (
+    <div className="h-full w-full relative flex overflow-hidden bg-[#FBF9FA]">
+      {/* Main meeting area */}
+      <div className="flex-grow flex flex-col relative h-full min-w-0">
+        <div className="flex-grow relative z-0 pt-14 sm:pt-16 pb-20 sm:pb-24 md:pb-28">
+          <ParticipantGrid />
+        </div>
+
+        <div className="absolute inset-0 pointer-events-none z-40">
+          <MeetingEndListener onMeetingEnded={onMeetingEnded} />
+
+          <div className="absolute top-0 left-0 right-0 h-14 sm:h-16 pointer-events-auto">
+            <RoomHeader roomName={roomName} />
+          </div>
+
+          <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center pointer-events-auto px-2 sm:px-4">
+            <MeetingControls
+              roomName={roomName}
+              userName={participantName}
+              onRecordingStateChange={onRecordingStateChange}
+              onToggleChat={() => setIsChatOpen((prev) => !prev)}
+              isChatOpen={isChatOpen}
+              unreadChatCount={unreadCount}
+            />
+          </div>
+
+          <RecordingCountdown recordingDuration={recordingDuration} isRecording={isRecording} />
+        </div>
+      </div>
+
+      {/* Slide-out Chat Panel */}
+      <ChatPanel
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        messages={messages}
+        onSendMessage={handleSendMessage}
+        onSendFile={handleSendFile}
+      />
+    </div>
+  );
 }
 
 // --------------------------------------------------------------------------
@@ -326,34 +497,18 @@ export default function RoomPage() {
         }}
       >
         <RoomPinProvider>
-          <div className="h-full w-full relative z-0 pt-14 sm:pt-16 pb-20 sm:pb-24 md:pb-28">
-            <ParticipantGrid />
-          </div>
-
-          <div className="absolute inset-0 pointer-events-none z-50">
-            <MeetingEndListener
-              onMeetingEnded={() => {
-                // This is the ONLY place meetingEndedRef is set to true.
-                meetingEndedRef.current = true;
-                setError("The meeting has been ended by the host.");
-                setToken("");
-              }}
-            />
-
-            <div className="absolute top-0 left-0 right-0 h-14 sm:h-16 pointer-events-auto">
-              <RoomHeader roomName={roomName} />
-            </div>
-
-            <div className="absolute bottom-4 sm:bottom-8 left-0 right-0 flex justify-center pointer-events-auto px-2 sm:px-4">
-              <MeetingControls
-                roomName={roomName}
-                userName={participantName}
-                onRecordingStateChange={handleRecordingStateChange}
-              />
-            </div>
-
-            <RecordingCountdown recordingDuration={recordingDuration} isRecording={isRecording} />
-          </div>
+          <ActiveRoomContent
+            roomName={roomName}
+            participantName={participantName}
+            onRecordingStateChange={handleRecordingStateChange}
+            isRecording={isRecording}
+            recordingDuration={recordingDuration}
+            onMeetingEnded={() => {
+              meetingEndedRef.current = true;
+              setError("The meeting has been ended by the host.");
+              setToken("");
+            }}
+          />
         </RoomPinProvider>
 
         <RoomAudioRenderer />

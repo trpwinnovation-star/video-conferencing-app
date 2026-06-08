@@ -120,7 +120,7 @@ app.use("/api/egress", egressRoutes);
 app.use("/api/scheduled-meetings", scheduledMeetingRoutes);
 
 // Static files for recordings
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Health check
 app.get("/api/health", (req, res) => {

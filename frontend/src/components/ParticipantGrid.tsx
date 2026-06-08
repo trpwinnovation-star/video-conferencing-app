@@ -8,16 +8,7 @@ import { cn } from "@/lib/utils";
 import { ChevronUp, ChevronDown, Monitor, PinOff } from "lucide-react";
 import { useRoomPin } from "@/contexts/RoomPinContext";
 
-/**
- * Zoom/Google Meet-style participant grid.
- * - 1 participant: Large centered tile
- * - 2 participants: Side-by-side desktop, stacked mobile
- * - 3 participants: 2 on top + 1 centered below
- * - 4 participants: Perfect 2×2 grid
- * - 5-6 participants: 3×2 grid
- * - 7+ participants: Auto-fill grid
- * All tiles maintain consistent aspect ratios and equal sizes.
- */
+
 export function ParticipantGrid() {
   const { pinnedIdentity, unpinParticipant } = useRoomPin();
 

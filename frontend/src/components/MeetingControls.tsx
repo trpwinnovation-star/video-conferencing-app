@@ -3,7 +3,7 @@
 import React from "react";
 import { useRoomContext, useLocalParticipant } from "@livekit/components-react";
 import { ParticipantEvent } from "livekit-client";
-import { PhoneOff, X } from "lucide-react";
+import { PhoneOff, X, MessageSquare } from "lucide-react";
 import { AudioToggleButton } from "./AudioToggleButton";
 import { VideoToggleButton } from "./VideoToggleButton";
 import { CameraFlipButton } from "./CameraFlipButton";
@@ -17,9 +17,19 @@ interface MeetingControlsProps {
   roomName: string;
   userName?: string;
   onRecordingStateChange?: (isRecording: boolean, duration: number) => void;
+  onToggleChat?: () => void;
+  isChatOpen?: boolean;
+  unreadChatCount?: number;
 }
 
-export function MeetingControls({ roomName, userName, onRecordingStateChange }: MeetingControlsProps) {
+export function MeetingControls({
+  roomName,
+  userName,
+  onRecordingStateChange,
+  onToggleChat,
+  isChatOpen = false,
+  unreadChatCount = 0,
+}: MeetingControlsProps) {
   const room = useRoomContext();
   const router = useRouter();
   // Obtain the local participant from the hook
@@ -189,6 +199,26 @@ export function MeetingControls({ roomName, userName, onRecordingStateChange }: 
             <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Record</span>
           </div>
         )}
+
+        <div className="flex flex-col items-center gap-1 group">
+          <button
+            onClick={onToggleChat}
+            className={cn(
+              "h-10 w-14 md:h-12 md:w-20 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer relative border",
+              isChatOpen
+                ? "bg-[#c16d18] text-white border-[#c16d18] shadow-[#c16d18]/25"
+                : "bg-white border-stone-200 text-stone-700 hover:text-stone-900 hover:bg-stone-50"
+            )}
+          >
+            <MessageSquare size={20} className="md:w-[22px] md:h-[22px]" />
+            {unreadChatCount > 0 ? (
+              <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 bg-red-500 border border-white text-white text-[9px] font-black rounded-full flex items-center justify-center animate-bounce">
+                {unreadChatCount}
+              </span>
+            ) : null}
+          </button>
+          <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Chat</span>
+        </div>
 
         <div className="hidden md:block w-px h-10 bg-stone-200 mx-1" />
 

@@ -58,7 +58,7 @@ export default function ScheduleMeetingModal({
       if (scheduledDateTime <= now) {
         throw new Error('Scheduled time must be in the future');
       }
-      
+
       if (!password || password.length < 4) {
         throw new Error('Password is required and must be at least 4 characters');
       }
@@ -234,7 +234,7 @@ export default function ScheduleMeetingModal({
           </div>
 
           {/* Attendees */}
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
               <Users size={16} /> Invite Attendees
             </label>
@@ -247,7 +247,7 @@ export default function ScheduleMeetingModal({
               disabled={isLoading}
             />
             <p className="text-xs text-gray-500 mt-1">example@email.com, another@email.com</p>
-          </div>
+          </div> */}
 
           {/* Password */}
           <div>

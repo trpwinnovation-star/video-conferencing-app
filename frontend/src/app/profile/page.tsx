@@ -108,7 +108,7 @@ export default function ProfilePage() {
         </Link>
       </nav>
 
-      <div className="max-w-3xl mx-auto mt-12 px-6">
+      <div className="max-w-5xl mx-auto mt-12 px-6">
         <h1 className="text-3xl font-extrabold mb-8 tracking-tight text-stone-900">Your Profile</h1>
 
         <div className="grid md:grid-cols-12 gap-8">
@@ -169,7 +169,7 @@ export default function ProfilePage() {
                 </p>
               </div>
 
-              <form onSubmit={handleChangePassword} className="space-y-6 max-w-xl">
+              <form onSubmit={handleChangePassword} className="space-y-6 w-full">
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-1.5">Current Password</label>
                   <input
@@ -245,7 +245,7 @@ export default function ProfilePage() {
                 </p>
               </div>
 
-              <form onSubmit={handleUpdateDefaultPassword} className="space-y-6 max-w-xl">
+              <form onSubmit={handleUpdateDefaultPassword} className="space-y-6 w-full">
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-1.5">Default Password</label>
                   <input

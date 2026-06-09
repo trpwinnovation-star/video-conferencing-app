@@ -199,6 +199,12 @@ export const endScheduledMeeting = async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Only host can end meeting' });
     }
 
+    try {
+      await livekitService.deleteRoom(meeting.roomId);
+    } catch (livekitError: any) {
+      console.warn('LiveKit room delete warning in scheduled meeting:', livekitError.message);
+    }
+
     await endMeeting(meetingId);
     await deleteRoomFromDb(meeting.roomId);
 

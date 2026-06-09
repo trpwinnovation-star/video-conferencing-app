@@ -118,16 +118,7 @@ export function MeetingControls({
     try {
       sessionStorage.setItem("voluntary_leave", "true");
       if (isHost) {
-        // Fire the backend API to end the meeting for ALL participants
-        try {
-          const { apiEndMeeting } = await import("@/lib/api");
-          await apiEndMeeting(roomName);
-          console.log("Meeting ended successfully via API");
-        } catch (e) {
-          console.warn("Failed to end meeting via API:", e);
-        }
-
-        // Broadcast MEETING_ENDED signal to all participants via Data Channel as backup
+        // Broadcast MEETING_ENDED signal to all participants via Data Channel first
         if (room && room.localParticipant) {
           try {
             const encoder = new TextEncoder();
@@ -139,8 +130,17 @@ export function MeetingControls({
           }
         }
 
-        // Wait 400ms to give signals time to emit before we leave
+        // Wait 400ms to give signals time to emit before we trigger backend cleanup
         await new Promise(resolve => setTimeout(resolve, 400));
+
+        // Fire the backend API to end the meeting for ALL participants and clean up DB/LiveKit
+        try {
+          const { apiEndMeeting } = await import("@/lib/api");
+          await apiEndMeeting(roomName);
+          console.log("Meeting ended successfully via API");
+        } catch (e) {
+          console.warn("Failed to end meeting via API:", e);
+        }
       }
     } catch (e) {
       console.warn("Error during leave:", e);

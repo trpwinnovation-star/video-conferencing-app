@@ -14,14 +14,16 @@ export async function createScheduledMeeting(
   attendeeEmails: string[] = [],
   password?: string
 ) {
-  // Generate unique meeting code and shareable link
+  // Generate unique meeting code
   const meetingCode = generateMeetingCode();
   const roomId = meetingCode;
-  const shareableLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/meeting/${roomId}`;
 
   // Create password-protected room
   const roomPassword = password || generateMeetingPassword();
   await createProtectedRoom(roomId, roomPassword, hostId);
+
+  const frontendUrl = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const shareableLink = `${frontendUrl}/meeting/${roomId}`;
 
   // Create scheduled meeting record
   const scheduledMeeting = await prisma.scheduledMeeting.create({

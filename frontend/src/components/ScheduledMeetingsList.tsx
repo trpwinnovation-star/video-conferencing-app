@@ -36,7 +36,14 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
   };
 
   const handleCopyLink = (link: string, id: string) => {
-    navigator.clipboard.writeText(link);
+    let finalLink = link;
+    if (typeof window !== 'undefined') {
+      const currentOrigin = window.location.origin;
+      if (link.includes('localhost:3000') && !currentOrigin.includes('localhost')) {
+        finalLink = link.replace('http://localhost:3000', currentOrigin);
+      }
+    }
+    navigator.clipboard.writeText(finalLink);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
@@ -161,11 +168,7 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
                   )}
                 </div>
 
-                {/* Meeting Code */}
-                <div className="bg-gray-50 p-3 rounded-lg mb-4">
-                  <p className="text-xs text-gray-600 mb-1">Meeting Code</p>
-                  <p className="font-mono font-bold text-gray-900">{meeting.meetingCode}</p>
-                </div>
+                {/* Meeting details end */}
               </div>
 
               {/* Dropdown Menu */}
@@ -176,48 +179,58 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200">
-              {/* Copy Link Button */}
-              <button
-                onClick={() => handleCopyLink(meeting.shareableLink, meeting.id)}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
-              >
-                <Share2 size={16} />
-                {copiedId === meeting.id ? 'Copied!' : 'Copy Link'}
-              </button>
-
-              {/* Join Button (only if meeting is happening now) */}
-              {canJoinMeeting(meeting) && (
+            {/* Bottom Actions Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4 pt-4 border-t border-stone-100">
+              {/* Left Side: Code block with Copy action */}
+              <div className="flex items-center justify-between bg-stone-50 border border-stone-200/80 rounded-xl px-4 py-2 w-full sm:w-auto sm:min-w-[240px]">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Meeting Code</span>
+                  <span className="font-mono text-sm font-bold text-stone-900">{meeting.meetingCode}</span>
+                </div>
                 <button
-                  onClick={() => handleJoinMeeting(meeting)}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
+                  onClick={() => handleCopyLink(meeting.shareableLink, meeting.id)}
+                  className="p-1.5 px-3 bg-white hover:bg-stone-100 text-stone-700 hover:text-stone-900 border border-stone-200 rounded-lg shadow-sm flex items-center justify-center transition-all cursor-pointer text-xs font-semibold gap-1.5"
+                  title="Copy meeting link"
                 >
-                  <Play size={16} />
-                  Join Now
+                  <Share2 size={13} />
+                  <span>{copiedId === meeting.id ? 'Copied!' : 'Copy'}</span>
                 </button>
-              )}
+              </div>
 
-              {/* Future Join Button (if upcoming) */}
-              {isFuture && !canJoinMeeting(meeting) && (
-                <button
-                  disabled
-                  className="flex-1 bg-gray-300 text-gray-600 font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 cursor-not-allowed"
-                >
-                  <Clock size={16} />
-                  Starts {new Date(meeting.scheduledTime).toLocaleDateString()}
-                </button>
-              )}
+              {/* Right Side: Primary Action Button */}
+              <div className="flex justify-end">
+                {/* Join Button */}
+                {canJoinMeeting(meeting) && (
+                  <button
+                    onClick={() => handleJoinMeeting(meeting)}
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer text-sm"
+                  >
+                    <Play size={15} />
+                    <span>Join Now</span>
+                  </button>
+                )}
 
-              {/* View Details Button (if past) */}
-              {isPast && meeting.status !== 'in_progress' && (
-                <Link
-                  href={`/meetings/${meeting.id}`}
-                  className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-900 font-medium py-2 px-4 rounded-lg flex items-center justify-center transition"
-                >
-                  View Details
-                </Link>
-              )}
+                {/* Future Starts */}
+                {isFuture && !canJoinMeeting(meeting) && (
+                  <button
+                    disabled
+                    className="bg-stone-100 text-stone-500 border border-stone-200 font-bold py-2.5 px-5 rounded-xl flex items-center justify-center gap-2 cursor-not-allowed text-sm"
+                  >
+                    <Clock size={14} />
+                    <span>Starts {new Date(meeting.scheduledTime).toLocaleDateString()}</span>
+                  </button>
+                )}
+
+                {/* View Details */}
+                {isPast && meeting.status !== 'in_progress' && (
+                  <Link
+                    href={`/meetings/${meeting.id}`}
+                    className="bg-[#c16d18]/10 hover:bg-[#c16d18]/20 text-[#c16d18] font-bold py-2.5 px-6 rounded-xl flex items-center justify-center transition-all text-sm border border-[#c16d18]/20"
+                  >
+                    View Details
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         );

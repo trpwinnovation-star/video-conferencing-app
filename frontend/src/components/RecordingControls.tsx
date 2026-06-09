@@ -24,7 +24,7 @@ export function RecordingControls({ roomName, userEmail, userName, onRecordStart
   const [showModeMenu, setShowModeMenu] = useState(false);
   // New state to toggle audio recording
   const [recordAudio, setRecordAudio] = useState(true);
-  
+
   // Get all active audio tracks in the room (microphones and screen share audio)
   const audioTracks = useTracks([Track.Source.Microphone, Track.Source.ScreenShareAudio]);
 
@@ -90,13 +90,13 @@ export function RecordingControls({ roomName, userEmail, userName, onRecordStart
 
       // Extract all underlying MediaStreamTracks
       let mediaStreamTracks: MediaStreamTrack[] = [];
-      
+
       if (recordAudio) {
         mediaStreamTracks = audioTracks
           .map(t => t.publication?.track?.mediaStreamTrack)
           .filter((t): t is MediaStreamTrack => t !== undefined);
       }
-      
+
       localRecorder.startRecording(mediaStreamTracks);
       setToastMessage("Recording started!");
       setToastType("success");
@@ -121,7 +121,7 @@ export function RecordingControls({ roomName, userEmail, userName, onRecordStart
         )}>
           {toastType === "success" ? <CheckCircle2 size={14} className="text-green-600 shrink-0" /> : <AlertCircle size={14} className="text-red-600 shrink-0" />}
           <span className="text-[10px] sm:text-xs font-bold flex-1 pr-1 leading-tight">{toastMessage}</span>
-          <button 
+          <button
             onClick={() => setShowToast(false)}
             className="p-1 rounded-full hover:bg-stone-200/50 transition-colors shrink-0"
           >
@@ -135,7 +135,7 @@ export function RecordingControls({ roomName, userEmail, userName, onRecordStart
         <div className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-white border border-stone-200 shadow-md px-2 py-0.5 md:px-3 md:py-1 rounded-full">
           <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[#c16d18] animate-pulse" />
           <span className="text-[10px] md:text-xs font-mono text-[#c16d18] font-extrabold">
-            LOCAL {formatDuration(currentDuration)}
+            {formatDuration(currentDuration)}
           </span>
         </div>
       )}

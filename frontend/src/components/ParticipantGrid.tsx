@@ -59,19 +59,19 @@ export function ParticipantGrid() {
     const otherTracks = cameraTracks;
 
     return (
-      <div className="w-full h-full relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl group bg-black">
+      <div className="w-full h-full flex flex-col md:flex-row gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden bg-[#FBF9FA] border border-stone-200/80 p-2 md:p-3 relative group">
         {/* Main Track (Screen Share) */}
-        <div className="absolute inset-0">
+        <div className="flex-1 relative rounded-xl sm:rounded-2xl overflow-hidden h-full bg-white border border-stone-200/80 shadow-sm">
           <VideoTile trackRef={mainTrack} />
         </div>
 
-        {/* PIP Floating Filmstrip (Bottom Right) */}
+        {/* Partitioned Filmstrip (Side panel on desktop, bottom panel on mobile) */}
         {showFilmstrip && otherTracks.length > 0 && (
-          <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 z-20 flex gap-1.5 sm:gap-2 md:gap-3 max-w-[calc(100%-1rem)] overflow-x-auto no-scrollbar pointer-events-auto p-1">
+          <div className="w-full md:w-44 lg:w-52 xl:w-60 flex-shrink-0 flex md:flex-col gap-2 md:gap-3 overflow-x-auto md:overflow-y-auto no-scrollbar p-1 max-h-[100px] md:max-h-none h-auto md:h-full justify-center items-center">
             {otherTracks.map((track) => (
               <div
                 key={`${track.participant.identity}_${track.source}`}
-                className="w-24 sm:w-32 md:w-48 aspect-video flex-shrink-0 rounded-lg sm:rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black hover:scale-105 transition-transform"
+                className="w-24 sm:w-28 md:w-full aspect-video flex-shrink-0 rounded-lg sm:rounded-xl overflow-hidden shadow-md border border-stone-200/80 bg-white hover:scale-[1.02] transition-transform"
               >
                 <VideoTile trackRef={track} />
               </div>
@@ -81,13 +81,13 @@ export function ParticipantGrid() {
 
         {/* Toggle filmstrip button */}
         {otherTracks.length > 0 && (
-          <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-4 right-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={() => setShowFilmstrip(!showFilmstrip)}
-              className="p-1.5 sm:p-2 rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md transition-all shadow-lg cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-[#c16d18] hover:bg-[#965310] text-white text-xs font-bold transition-all shadow-md cursor-pointer border-none flex items-center gap-1.5"
               title={showFilmstrip ? "Hide participants" : "Show participants"}
             >
-              {showFilmstrip ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              {showFilmstrip ? "Hide People" : "Show People"}
             </button>
           </div>
         )}
@@ -102,30 +102,30 @@ export function ParticipantGrid() {
     );
 
     return (
-      <div className="w-full h-full relative overflow-hidden rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl group bg-black">
+      <div className="w-full h-full flex flex-col md:flex-row gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden bg-[#FBF9FA] border border-stone-200/80 p-2 md:p-3 relative group">
         {/* Main Pinned Track */}
-        <div className="absolute inset-0">
+        <div className="flex-1 relative rounded-xl sm:rounded-2xl overflow-hidden h-full bg-white border border-stone-200/80 shadow-sm">
           <VideoTile trackRef={pinnedTrack} isPinned />
+          
+          {/* Explicit Unpin Button — always visible */}
+          <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-40">
+            <button
+              onClick={() => unpinParticipant()}
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white/85 hover:bg-white text-stone-700 text-[10px] sm:text-xs font-bold backdrop-blur-md shadow-lg transition-all active:scale-95 cursor-pointer border border-stone-200"
+            >
+              <PinOff size={12} className="sm:w-3.5 sm:h-3.5" />
+              <span>Unpin</span>
+            </button>
+          </div>
         </div>
 
-        {/* Explicit Unpin Button — always visible */}
-        <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-40">
-          <button
-            onClick={() => unpinParticipant()}
-            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white/80 hover:bg-white text-stone-700 text-[10px] sm:text-xs font-bold backdrop-blur-md shadow-lg transition-all active:scale-95 cursor-pointer border border-stone-200"
-          >
-            <PinOff size={12} className="sm:w-3.5 sm:h-3.5" />
-            <span>Unpin</span>
-          </button>
-        </div>
-
-        {/* PIP Floating Filmstrip (Bottom Right) */}
+        {/* Partitioned Filmstrip (Side panel on desktop, bottom panel on mobile) */}
         {showFilmstrip && filmstripTracks.length > 0 && (
-          <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 z-20 flex gap-1.5 sm:gap-2 md:gap-3 max-w-[calc(100%-1rem)] overflow-x-auto no-scrollbar pointer-events-auto p-1">
+          <div className="w-full md:w-44 lg:w-52 xl:w-60 flex-shrink-0 flex md:flex-col gap-2 md:gap-3 overflow-x-auto md:overflow-y-auto no-scrollbar p-1 max-h-[100px] md:max-h-none h-auto md:h-full justify-center items-center">
             {filmstripTracks.map((track) => (
               <div
                 key={`${track.participant.identity}_${track.source}`}
-                className="w-24 sm:w-32 md:w-48 aspect-video flex-shrink-0 rounded-lg sm:rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black hover:scale-105 transition-transform"
+                className="w-24 sm:w-28 md:w-full aspect-video flex-shrink-0 rounded-lg sm:rounded-xl overflow-hidden shadow-md border border-stone-200/80 bg-white hover:scale-[1.02] transition-transform"
               >
                 <VideoTile trackRef={track} />
               </div>
@@ -135,13 +135,13 @@ export function ParticipantGrid() {
 
         {/* Toggle filmstrip button */}
         {filmstripTracks.length > 0 && (
-          <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-4 right-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={() => setShowFilmstrip(!showFilmstrip)}
-              className="p-1.5 sm:p-2 rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md transition-all shadow-lg cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-[#c16d18] hover:bg-[#965310] text-white text-xs font-bold transition-all shadow-md cursor-pointer border-none flex items-center gap-1.5"
               title={showFilmstrip ? "Hide participants" : "Show participants"}
             >
-              {showFilmstrip ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              {showFilmstrip ? "Hide People" : "Show People"}
             </button>
           </div>
         )}

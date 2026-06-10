@@ -98,7 +98,7 @@ export default function ScheduleMeetingModal({
   if (shareableLink) {
     return (
       <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg max-w-md w-full p-8 shadow-xl">
+        <div className="bg-white rounded-2xl max-w-md sm:max-w-lg w-full p-6 sm:p-8 shadow-xl">
           <h2 className="text-2xl font-bold mb-4 text-green-600">Meeting Scheduled!</h2>
 
           <div className="mb-6 space-y-4">
@@ -152,7 +152,7 @@ export default function ScheduleMeetingModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full p-8 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-2xl md:max-w-3xl w-full p-6 sm:p-8 shadow-xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-3xl font-bold mb-6 text-gray-900">Schedule a Meeting</h2>
 
         <form onSubmit={handleScheduleMeeting} className="space-y-6">

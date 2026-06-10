@@ -236,7 +236,7 @@ export function MeetingControls({
       {/* Leave Confirmation Modal */}
       {showLeaveConfirm && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl border border-stone-200/80 p-6 max-w-sm w-full mx-4 animate-in zoom-in-95 duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl border border-stone-200/80 p-6 sm:p-8 max-w-sm sm:max-w-md w-full mx-4 animate-in zoom-in-95 duration-300">
             <h3 className="text-lg font-bold text-stone-900 mb-2">
               {isHost ? "End meeting?" : "Leave meeting?"}
             </h3>

@@ -10,9 +10,37 @@ const inter = Inter({
   weight: ["400", "500", "600", "700", "800", "900"],
 });
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://video-confrencing-frontend.onrender.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
+  icons: {
+    icon: "/betel.jpeg",
+  },
   title: "BetelMeet",
-  description: "Secure real-time video conferencing with screen sharing, recording, and more. Powered by LiveKit.",
+  description: "Real-time meetings by BetelMeet. Using your browser, share your video, desktop, and presentations with teammates and customers.",
+  openGraph: {
+    title: "BetelMeet",
+    description: "Real-time meetings by BetelMeet. Using your browser, share your video, desktop, and presentations with teammates and customers.",
+    url: appUrl,
+    siteName: "BetelMeet",
+    images: [
+      {
+        url: "/betel.jpeg",
+        width: 800,
+        height: 800,
+        alt: "BetelMeet Logo",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BetelMeet",
+    description: "Real-time meetings by BetelMeet. Using your browser, share your video, desktop, and presentations with teammates and customers.",
+    images: ["/betel.jpeg"],
+  },
 };
 
 export default function RootLayout({

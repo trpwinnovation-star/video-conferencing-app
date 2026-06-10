@@ -188,7 +188,7 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
 
             const uploadPromise = uploadChunk(event.data, currentIndex, recordingSessionRef.current.meetingId);
             uploadPromisesRef.current.push(uploadPromise);
-            
+
             try {
               await uploadPromise;
             } catch (err) {
@@ -273,7 +273,7 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
     } catch (err: any) {
       console.error("[RECORDING] Startup Error:", err);
       const errorMessage = err.name === 'NotAllowedError'
-        ? 'Permission denied. Please allow screen sharing.'
+        ? 'Permission denied. Please alloW sharing.'
         : (err.message || 'Failed to start recording');
       setError(errorMessage);
       onError?.(errorMessage);

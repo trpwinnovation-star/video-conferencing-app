@@ -47,7 +47,7 @@ export function CreateRoomModal({ roomId, onClose, onCreated }: CreateRoomModalP
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-stone-200/80 p-6 relative">
+      <div className="w-full sm:max-w-lg md:max-w-xl bg-white rounded-2xl shadow-2xl border border-stone-200/80 p-6 sm:p-8 relative">
         <button
           type="button"
           onClick={onClose}
@@ -102,8 +102,11 @@ export function CreateRoomModal({ roomId, onClose, onCreated }: CreateRoomModalP
             />
           </div>
 
-          <p className="text-xs text-stone-500">
-            Share the invite link from the meeting room. Guests will need this password to join.
+          <p className="text-xs font-bold text-stone-500">
+            Password is default password generated while signing up.
+          </p>
+          <p className="text-xs font-bold text-stone-500">
+            To change it please go to profile/settings page.
           </p>
 
           {error && (

@@ -48,7 +48,7 @@ export function SaveRecordingModal({ isOpen, onClose, blob, roomName, duration }
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 p-3 sm:p-4">
-      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-stone-200/80 w-full max-w-md animate-in zoom-in-95 duration-300 overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-stone-200/80 w-full sm:max-w-lg md:max-w-xl animate-in zoom-in-95 duration-300 overflow-hidden max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#c16d18] to-[#e8943a] px-4 sm:px-6 py-4 sm:py-5 text-white relative">
           <button
@@ -122,15 +122,15 @@ export function SaveRecordingModal({ isOpen, onClose, blob, roomName, duration }
           </button>
 
           {/* Email Info */}
-          <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-            <Mail size={18} className="text-blue-500 mt-0.5 flex-shrink-0" />
-            {/* <div>
+          {/* <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+            <Mail size={18} className="text-blue-500 mt-0.5 flex-shrink-0" /> */}
+          {/* <div>
               <p className="text-sm font-semibold text-blue-900">Email copy processing</p>
               <p className="text-xs text-blue-600 mt-0.5">
                 A copy is being uploaded to the cloud. You'll receive an email with the recording link once it's ready.
               </p>
             </div> */}
-          </div>
+          {/* </div> */}
 
           {/* Server download limit info */}
           {/* <p className="text-stone-400 text-sm mb-6 text-center">
@@ -149,6 +149,6 @@ export function SaveRecordingModal({ isOpen, onClose, blob, roomName, duration }
           </button>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

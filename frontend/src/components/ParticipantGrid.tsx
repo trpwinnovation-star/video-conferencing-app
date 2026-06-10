@@ -81,7 +81,7 @@ export function ParticipantGrid() {
 
         {/* Toggle filmstrip button */}
         {otherTracks.length > 0 && (
-          <div className="absolute top-4 right-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="absolute top-4 right-4 z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={() => setShowFilmstrip(!showFilmstrip)}
               className="px-3 py-1.5 rounded-xl bg-[#c16d18] hover:bg-[#965310] text-white text-xs font-bold transition-all shadow-md cursor-pointer border-none flex items-center gap-1.5"
@@ -135,7 +135,7 @@ export function ParticipantGrid() {
 
         {/* Toggle filmstrip button */}
         {filmstripTracks.length > 0 && (
-          <div className="absolute top-4 right-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="absolute top-4 right-4 z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={() => setShowFilmstrip(!showFilmstrip)}
               className="px-3 py-1.5 rounded-xl bg-[#c16d18] hover:bg-[#965310] text-white text-xs font-bold transition-all shadow-md cursor-pointer border-none flex items-center gap-1.5"

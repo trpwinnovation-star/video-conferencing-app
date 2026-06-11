@@ -32,16 +32,16 @@ export const register = async (req: Request, res: Response) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const auditId = uuidv4();
-    const auditCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+    // const auditId = uuidv4();
+    // const auditCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
-        auditId,
-        auditCode,
+        // auditId,
+        // auditCode,
       },
     });
 
@@ -100,6 +100,60 @@ export const login = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Failed to login' });
   }
 };
+
+export const authRegister = async (req: Request, res: Response) => {
+
+  console.log("authRegister called with body:", req.body);
+  const { tkn } = req.body;
+  if (!tkn) {
+    return res.status(400).json({ error: 'Token is required' });
+  }
+  const { _Id, _TenantKey, _Email, _Name } = jwt.verify(tkn, JWT_SECRET) as { _Id: number, _TenantKey: string, _Email: string, _Name: string }
+  console.log("Decoded token:", _Id, _TenantKey, _Email, _Name);
+
+
+
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      email: _Email,
+      auditId: _Id.toString(),
+      auditCode: _TenantKey
+    },
+  })
+  const Password = _TenantKey + _Name;
+  const hashedPassword = await bcrypt.hash(Password, 10);
+  let user;
+
+  if (existingUser) {
+
+    user = existingUser;
+
+  } else {
+    user = await prisma.user.create({
+      data: {
+        email: _Email,
+        password: hashedPassword,
+        name: _Name,
+        auditId: _Id.toString(),
+        auditCode: _TenantKey,
+      },
+    });
+  }
+
+  const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '1d' });
+
+  res.cookie('token', token, authCookieOptions);
+
+  return res.json({
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      meetingDefaultPassword: user.meetingDefaultPassword,
+    },
+  });
+}
 
 export const logout = (req: Request, res: Response) => {
   res.clearCookie('token', authCookieOptions);
@@ -239,7 +293,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 export const updateDefaultPassword = async (req: Request, res: Response) => {
   try {
     const { meetingDefaultPassword } = req.body;
-    
+
     if (meetingDefaultPassword === undefined || meetingDefaultPassword === null) {
       return res.status(400).json({ error: 'meetingDefaultPassword is required' });
     }
@@ -248,19 +302,19 @@ export const updateDefaultPassword = async (req: Request, res: Response) => {
     if (!token && req.headers.authorization?.startsWith('Bearer ')) {
       token = req.headers.authorization.substring(7);
     }
-    
+
     if (!token) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
-    
+
     const user = await prisma.user.update({
       where: { id: decoded.id },
       data: { meetingDefaultPassword: String(meetingDefaultPassword) }
     });
 
-    return res.json({ 
+    return res.json({
       message: 'Default meeting password updated successfully',
       user: {
         id: user.id,

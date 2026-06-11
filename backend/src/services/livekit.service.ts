@@ -68,15 +68,39 @@ export class LivekitService {
   /**
    * Create a new room or get an existing one
    */
+  // public async createRoom(roomName: string) {
+  //   const roomService = getRoomService();
+  //   console.log("Room service initialized")
+  //   const room = await roomService.createRoom({
+  //     name: roomName,
+  //     emptyTimeout: 10 * 60, // 10 minutes
+  //     maxParticipants: 5,    // Hard cap enforced by LiveKit as secondary guard
+  //   });
+  //   console.log("LiveKit room created or already exists:", room.sid);
+  //   return room;
+  // }
+
   public async createRoom(roomName: string) {
+  try {
     const roomService = getRoomService();
+
+    console.log("LIVEKIT_URL:", process.env.LIVEKIT_URL);
+    console.log("Creating room:", roomName);
+
     const room = await roomService.createRoom({
       name: roomName,
-      emptyTimeout: 10 * 60, // 10 minutes
-      maxParticipants: 5,    // Hard cap enforced by LiveKit as secondary guard
+      emptyTimeout: 600,
+      maxParticipants: 5,
     });
+
+    console.log("Room response:", room);
+
     return room;
+  } catch (error) {
+    console.error("LiveKit createRoom error:", error);
+    throw error;
   }
+}
 
   /**
    * List rooms

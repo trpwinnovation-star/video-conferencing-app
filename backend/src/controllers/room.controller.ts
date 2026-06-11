@@ -31,6 +31,7 @@ export const createProtectedRoomHandler = async (req: Request, res: Response) =>
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecret') as { id: string };
         createdBy = decoded.id;
+        console.log("token veified")
       } catch {
         // Invalid token
       }

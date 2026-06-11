@@ -40,8 +40,10 @@ export async function createProtectedRoom(
       createdBy: createdBy ?? null,
     },
   });
+  console.log("room created:", room.roomId);
 
   await livekitService.createRoom(id);
+  console.log("LiveKit room ensured for:", id);
   return room;
 }
 

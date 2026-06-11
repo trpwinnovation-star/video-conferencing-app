@@ -15,8 +15,8 @@ model User {
   meetingDefaultPassword String @default("1234")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  auditId   String?
-  auditCode String?
+  auditId   String? 
+  auditCode String? 
   
   scheduledMeetings ScheduledMeeting[] @relation("HostedMeetings")
   meetingAttendees  MeetingAttendee[]

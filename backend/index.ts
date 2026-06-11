@@ -101,7 +101,7 @@ const tokenLimiter = rateLimit({
 // Room create: 5 rooms per 15 minutes per IP
 const createRoomLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 50,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many rooms created. Please try again in 15 minutes." },

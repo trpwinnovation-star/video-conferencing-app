@@ -362,3 +362,56 @@ export const getAttendeeToken = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getAuditMeetStatus = async (req: Request, res: Response) => {
+  try {
+    console.log("Api hited for Betel Audit for Meet")
+    console.log(req.body)
+    const { token, RefVisit } = req.body
+
+    if (!token) {
+      return res.status(400).json({ error: 'Token is required' });
+    }
+    const { _Id, _TenantKey, _Email, _Name } = jwt.verify(token, JWT_SECRET) as { _Id: number, _TenantKey: string, _Email: string, _Name: string }
+    console.log("Decoded token:", _Id, _TenantKey, _Email, _Name);
+
+    const User = await prisma.user.findFirst({
+      where: {
+        email: _Email,
+        auditId: _Id.toString(),
+        auditCode: _TenantKey
+      },
+    })
+
+    if (!User) {
+      console.log("user not found")
+      return res.status(400).json({
+        success: false,
+        message: "user not exist"
+      })
+    }
+    console.log("user found")
+
+    const meeting = await prisma.scheduledMeeting.findFirst({
+      where: {
+        hostId: User.id,
+        auditVisit: RefVisit.toString(),
+        auditCode: _TenantKey
+      }
+    })
+
+    if (!meeting) {
+      console.log("meeting not found")
+      return res.status(400).json({
+        success: false,
+        message: "Meeting not scheduled"
+      })
+    }
+    console.log("Meeting found", meeting)
+
+    return res.json({success: true, data: meeting, message: "Meeting found for the audit"});
+  } catch (error: any) {
+    console.log(error)
+    return res.status(500).json({ error: error.message || 'Failed to fetch meeting' });
+  }
+}

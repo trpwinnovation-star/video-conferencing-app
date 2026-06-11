@@ -11,6 +11,7 @@ import {
   markAllNotificationsRead,
   getMeetingByCode,
   getAttendeeToken,
+  getAuditMeetStatus
 } from '../controllers/scheduled-meeting.controller';
 
 const router = express.Router();
@@ -31,5 +32,9 @@ router.post('/code/:roomId/token', getAttendeeToken);              // POST /api/
 router.get('/notifications', getNotifications);                    // GET /api/scheduled-meetings/notifications
 router.post('/notifications/:notificationId/read', markNotificationRead);  // POST /api/scheduled-meetings/notifications/:id/read
 router.post('/notifications/read-all', markAllNotificationsRead);  // POST /api/scheduled-meetings/notifications/read-all
+
+// BetelAudit endpoints
+
+router.post('/auditMeetStatus', getAuditMeetStatus)
 
 export default router;

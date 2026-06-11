@@ -8,20 +8,21 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  meetingDefaultPassword String @default("1234")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  auditId   String? 
-  auditCode String? 
-  
+  id                     String   @id @default(uuid())
+  email                  String   @unique
+  password               String
+  name                   String
+  meetingDefaultPassword String   @default("1234")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  auditId                String?
+  auditCode              String?
+
   scheduledMeetings ScheduledMeeting[] @relation("HostedMeetings")
   meetingAttendees  MeetingAttendee[]
-  notifications     Notification[] 
-  @@unique([auditId,auditCode])
+  notifications     Notification[]
+
+  @@unique([auditId, auditCode])
 }
 
 model Room {
@@ -34,21 +35,21 @@ model Room {
 }
 
 model Recording {
-  id        String   @id @default(uuid())
-  roomId    String
-  meetingId String
-  createdBy String?
-  participants String?
-  duration  Int?
-  fileSize  Int?
-  s3Key     String?
-  signedUrl String?
-  status        String   // 'processing', 'completed', 'failed'
-  failureReason String?
-  downloadCount Int      @default(0)
+  id                String    @id @default(uuid())
+  roomId            String
+  meetingId         String
+  createdBy         String?
+  participants      String?
+  duration          Int?
+  fileSize          Int?
+  s3Key             String?
+  signedUrl         String?
+  status            String // 'processing', 'completed', 'failed'
+  failureReason     String?
+  downloadCount     Int       @default(0)
   downloadExpiresAt DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([roomId])
   @@index([meetingId])
@@ -56,64 +57,66 @@ model Recording {
 }
 
 model ScheduledMeeting {
-  id              String   @id @default(uuid())
-  title           String
-  description     String?
-  roomId          String   @unique
-  hostId          String
-  host            User     @relation("HostedMeetings", fields: [hostId], references: [id], onDelete: Cascade)
-  
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+  roomId      String  @unique
+  hostId      String
+  host        User    @relation("HostedMeetings", fields: [hostId], references: [id], onDelete: Cascade)
+
   scheduledTime   DateTime
   durationMinutes Int      @default(60)
-  
-  status          String   @default("scheduled")  // 'scheduled', 'in_progress', 'completed', 'cancelled'
-  
-  shareableLink   String   @unique
-  meetingCode     String   @unique
-  
-  attendees       MeetingAttendee[]
-  
+
+  status String @default("scheduled") // 'scheduled', 'in_progress', 'completed', 'cancelled'
+
+  shareableLink String @unique
+  meetingCode   String @unique
+
+  attendees MeetingAttendee[]
+
   hostJoinedAt    DateTime?
   actualStartTime DateTime?
   actualEndTime   DateTime?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+
+  auditVisit String?
+  auditCode  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model MeetingAttendee {
-  id              String   @id @default(uuid())
-  meetingId       String
-  meeting         ScheduledMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  
-  userId          String?
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
-  email           String?
-  name            String?
-  
-  joinedAt        DateTime?
-  leftAt          DateTime?
-  
-  invitationSent  Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id        String           @id @default(uuid())
+  meetingId String
+  meeting   ScheduledMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  email String?
+  name  String?
+
+  joinedAt DateTime?
+  leftAt   DateTime?
+
+  invitationSent Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
-
 model Notification {
-  id               String   @id @default(uuid())
-  userId           String
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   type             String
   title            String
   message          String
   relatedMeetingId String?
 
-  isRead           Boolean  @default(false)
-  readAt           DateTime?
+  isRead Boolean   @default(false)
+  readAt DateTime?
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -7,6 +7,7 @@ import roomRoutes from "./src/routes/room.routes";
 import authRoutes from "./src/routes/auth.routes";
 import recordingRoutes from "./src/routes/recording.routes";
 import { startRecordingAutoCompleter } from "./src/services/recording.service";
+import { startScheduledMeetingAutoCompleter } from "./src/services/scheduled-meeting.service";
 import egressRoutes from "./src/routes/egress.routes";
 import scheduledMeetingRoutes from "./src/routes/scheduled-meeting.routes";
 import path from "path";
@@ -139,4 +140,5 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   startRecordingAutoCompleter();
+  startScheduledMeetingAutoCompleter();
 });

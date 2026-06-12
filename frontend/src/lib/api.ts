@@ -181,6 +181,18 @@ export async function apiGetMyRecordings() {
   return await response.json();
 }
 
+export async function apiGetMeetingRecordings(meetingId: string) {
+  const response = await fetch(`${RECORDINGS_URL}/meeting/${meetingId}`, {
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || 'Failed to fetch recordings for this meeting');
+  }
+  return await response.json();
+}
+
 /**
  * Fetches recording metadata (status, downloadCount, expiresAt, etc.)
  * WITHOUT incrementing the download counter. Safe to call on page load.
@@ -442,6 +454,29 @@ export async function apiGetScheduledMeeting(meetingId: string): Promise<Schedul
 
 export async function apiGetScheduledMeetingDetails(meetingId: string): Promise<ScheduledMeeting> {
   return apiGetScheduledMeeting(meetingId);
+}
+
+export async function apiUpdateScheduledMeeting(
+  meetingId: string,
+  data: {
+    title?: string;
+    description?: string;
+    scheduledTime?: string;
+    durationMinutes?: number;
+    password?: string;
+    attendeeEmails?: string[];
+  }
+): Promise<{ meeting: ScheduledMeeting }> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/meeting/${meetingId}`, {
+    method: 'PUT',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  const resData = await res.json();
+  if (!res.ok) throw new Error(resData.error || 'Failed to update meeting');
+  return resData;
 }
 
 export async function apiJoinScheduledMeeting(meetingId: string): Promise<{

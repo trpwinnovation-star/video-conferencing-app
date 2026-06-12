@@ -94,11 +94,8 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
   const canJoinMeeting = (meeting: ScheduledMeeting) => {
     const now = new Date();
     const meetingStart = new Date(meeting.scheduledTime);
-    const meetingEnd = new Date(
-      meetingStart.getTime() + meeting.durationMinutes * 60000
-    );
     const isStatusValid = meeting.status === 'scheduled' || meeting.status === 'in_progress';
-    const isTimeValid = now >= new Date(meetingStart.getTime() - 15 * 60000) && now <= meetingEnd;
+    const isTimeValid = now >= new Date(meetingStart.getTime() - 15 * 60000);
     return isStatusValid && isTimeValid;
   };
 
@@ -198,7 +195,17 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
               </div>
 
               {/* Right Side: Primary Action Button */}
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                {/* Edit Button for Host */}
+                {meeting.hostId === user?.id && meeting.status !== 'completed' && meeting.status !== 'cancelled' && (
+                  <Link
+                    href={`/meetings/${meeting.id}/edit`}
+                    className="bg-stone-50 hover:bg-stone-100 text-stone-700 font-bold py-2.5 px-4 rounded-xl flex items-center justify-center transition-all text-sm border border-stone-200"
+                  >
+                    Edit
+                  </Link>
+                )}
+
                 {/* Join Button */}
                 {canJoinMeeting(meeting) && (
                   <button

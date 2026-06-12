@@ -16,7 +16,14 @@ const CHUNKS_DIR = path.join(os.tmpdir(), 'video-app-chunks');
 export const startRecording = async (req: Request, res: Response) => {
   try {
     const { roomId, createdBy: bodyCreatedBy } = req.body;
-    const meetingId = uuidv4();
+    let meetingId = uuidv4();
+
+    const scheduledMeeting = await prisma.scheduledMeeting.findUnique({
+      where: { roomId }
+    });
+    if (scheduledMeeting) {
+      meetingId = scheduledMeeting.id;
+    }
 
     // Prefer the authenticated user's name from JWT over the client-supplied value
     let createdBy = bodyCreatedBy;
@@ -245,5 +252,19 @@ export const getMyRecordings = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error fetching my recordings:', error);
     return res.status(500).json({ error: 'Failed to fetch recordings' });
+  }
+};
+
+export const getRecordingsByMeetingId = async (req: Request, res: Response) => {
+  try {
+    const { meetingId } = req.params;
+    const recordings = await prisma.recording.findMany({
+      where: { meetingId: String(meetingId) },
+      orderBy: { createdAt: 'desc' },
+    });
+    return res.json({ recordings });
+  } catch (error: any) {
+    console.error('Error fetching meeting recordings:', error);
+    return res.status(500).json({ error: 'Failed to fetch recordings for this meeting' });
   }
 };

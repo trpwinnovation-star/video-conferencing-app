@@ -18,6 +18,7 @@ import {
   getUserNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  updateScheduledMeeting,
 } from '../services/scheduled-meeting.service';
 import { LivekitService } from '../services/livekit.service';
 import { createProtectedRoom, deleteRoomFromDb } from '../services/room.service';
@@ -326,13 +327,23 @@ export const getAttendeeToken = async (req: Request, res: Response) => {
 
     const now = new Date();
     const meetingStart = new Date(meeting.scheduledTime);
+    const fifteenMinsBefore = new Date(meetingStart.getTime() - 15 * 60 * 1000);
 
-    if (
-      now < meetingStart ||
-      meeting.status === 'cancelled'
-    ) {
+    if (meeting.status === 'cancelled') {
       return res.status(403).json({
-        error: 'Meeting has not started yet',
+        error: 'This meeting has been cancelled',
+      });
+    }
+
+    if (meeting.status === 'completed') {
+      return res.status(403).json({
+        error: 'This meeting has already ended',
+      });
+    }
+
+    if (now < fifteenMinsBefore) {
+      return res.status(403).json({
+        error: 'Meeting has not started yet. You can join 15 minutes before the scheduled time.',
         startsAt: meeting.scheduledTime,
       });
     }
@@ -414,4 +425,40 @@ export const getAuditMeetStatus = async (req: Request, res: Response) => {
     console.log(error)
     return res.status(500).json({ error: error.message || 'Failed to fetch meeting' });
   }
-}
+};
+
+export const updateMeeting = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromToken(req);
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const meetingId = String(req.params.meetingId);
+    const meeting = await getScheduledMeeting(meetingId);
+
+    if (!meeting) {
+      return res.status(404).json({ error: 'Meeting not found' });
+    }
+
+    if (meeting.hostId !== userId) {
+      return res.status(403).json({ error: 'Only the host can edit this meeting' });
+    }
+
+    const { title, description, scheduledTime, durationMinutes, password, attendeeEmails } = req.body;
+
+    const updated = await updateScheduledMeeting(meetingId, {
+      title,
+      description,
+      scheduledTime,
+      durationMinutes,
+      password,
+      attendeeEmails,
+    });
+
+    return res.json({ meeting: updated });
+  } catch (error: any) {
+    console.error('Update meeting error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to update meeting' });
+  }
+};

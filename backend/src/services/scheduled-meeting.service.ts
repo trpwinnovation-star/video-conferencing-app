@@ -1,5 +1,6 @@
 import { prisma } from '../lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcrypt';
 import { LivekitService } from './livekit.service';
 import { createProtectedRoom, deleteRoomFromDb } from './room.service';
 
@@ -317,4 +318,153 @@ export async function checkHostNoShowAndNotify() {
       }
     }
   }
+}
+
+/**
+ * Update scheduled meeting details
+ */
+export async function updateScheduledMeeting(
+  meetingId: string,
+  data: {
+    title?: string;
+    description?: string;
+    scheduledTime?: Date | string;
+    durationMinutes?: number;
+    password?: string;
+    attendeeEmails?: string[];
+  }
+) {
+  const meeting = await prisma.scheduledMeeting.findUnique({
+    where: { id: meetingId },
+  });
+
+  if (!meeting) {
+    throw new Error('Meeting not found');
+  }
+
+  // Update ScheduledMeeting record
+  const updateData: any = {};
+  if (data.title !== undefined) updateData.title = data.title;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.scheduledTime !== undefined) updateData.scheduledTime = new Date(data.scheduledTime);
+  if (data.durationMinutes !== undefined) updateData.durationMinutes = data.durationMinutes;
+
+  const updatedMeeting = await prisma.scheduledMeeting.update({
+    where: { id: meetingId },
+    data: updateData,
+  });
+
+  // Update password if provided
+  if (data.password) {
+    const passwordHash = await bcrypt.hash(data.password, 10);
+    await prisma.room.update({
+      where: { roomId: meeting.roomId },
+      data: { passwordHash },
+    });
+  }
+
+  // Update attendees list if provided
+  if (data.attendeeEmails !== undefined) {
+    // Delete existing attendees
+    await prisma.meetingAttendee.deleteMany({
+      where: { meetingId },
+    });
+
+    // Create new attendees
+    for (const email of data.attendeeEmails) {
+      await prisma.meetingAttendee.create({
+        data: {
+          meetingId,
+          email,
+          name: email.split('@')[0],
+        },
+      });
+    }
+  }
+
+  return updatedMeeting;
+}
+
+/**
+ * Background worker to auto-complete expired or abandoned meetings
+ */
+export function startScheduledMeetingAutoCompleter() {
+  console.log('[Auto-Completer] Starting Scheduled Meeting Auto-Completer loop (every 5 minutes)...');
+  
+  setInterval(async () => {
+    try {
+      const now = new Date();
+      const gracePeriodMs = 30 * 60 * 1000; // 30 minutes grace period
+
+      // Fetch all scheduled or in-progress meetings
+      const activeMeetings = await prisma.scheduledMeeting.findMany({
+        where: {
+          status: { in: ['scheduled', 'in_progress'] },
+        },
+      });
+
+      for (const meeting of activeMeetings) {
+        const scheduledStart = new Date(meeting.scheduledTime);
+        const scheduledEnd = new Date(scheduledStart.getTime() + (meeting.durationMinutes * 60 * 1000));
+        
+        // If we are past scheduled end time + grace period
+        if (now.getTime() > (scheduledEnd.getTime() + gracePeriodMs)) {
+          console.log(`[Auto-Completer] Checking expired meeting: ${meeting.title} (${meeting.id})`);
+          
+          let shouldEnd = false;
+          let reason = '';
+
+          if (meeting.status === 'scheduled') {
+            // Host never joined to transition it to in_progress, and the meeting is long past its end time.
+            shouldEnd = true;
+            reason = 'Meeting expired (host never joined)';
+          } else if (meeting.status === 'in_progress') {
+            // Meeting is in progress but past scheduled end time + grace period.
+            // Check LiveKit participant list to see if the host is still there or if the room is empty.
+            try {
+              const participants = await livekitService.listParticipants(meeting.roomId);
+              
+              if (participants.length === 0) {
+                shouldEnd = true;
+                reason = 'Meeting expired (no participants remaining)';
+              } else {
+                // Check if host is present in the participant list
+                const hasHost = participants.some(p => {
+                  try {
+                    const meta = JSON.parse(p.metadata || '{}');
+                    return meta.isHost === true;
+                  } catch {
+                    return false;
+                  }
+                });
+
+                if (!hasHost) {
+                  shouldEnd = true;
+                  reason = 'Meeting expired (host left the meeting)';
+                }
+              }
+            } catch (err: any) {
+              console.error(`[Auto-Completer] Error checking room ${meeting.roomId}:`, err.message);
+              // If the room doesn't exist on LiveKit at all, we should complete it
+              shouldEnd = true;
+              reason = 'Meeting expired (room does not exist on LiveKit)';
+            }
+          }
+
+          if (shouldEnd) {
+            console.log(`[Auto-Completer] Ending meeting "${meeting.title}": ${reason}`);
+            try {
+              await livekitService.deleteRoom(meeting.roomId);
+            } catch (lkErr: any) {
+              // Ignore if room already deleted or not found
+            }
+            await deleteRoomFromDb(meeting.roomId);
+            // deleteRoomFromDb already marks the ScheduledMeeting as completed in the database.
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('[Auto-Completer] Error in background worker loop:', error.message);
+    }
+  }, 5 * 60 * 1000); // Check every 5 minutes
 }

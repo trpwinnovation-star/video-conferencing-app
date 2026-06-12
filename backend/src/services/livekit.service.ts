@@ -164,4 +164,17 @@ export class LivekitService {
       throw error;
     }
   }
+
+  /**
+   * List participants in a room
+   */
+  public async listParticipants(roomName: string) {
+    const roomService = getRoomService();
+    try {
+      return await roomService.listParticipants(roomName);
+    } catch (error) {
+      // Return empty list if the room doesn't exist
+      return [];
+    }
+  }
 }

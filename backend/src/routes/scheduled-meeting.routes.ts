@@ -11,7 +11,8 @@ import {
   markAllNotificationsRead,
   getMeetingByCode,
   getAttendeeToken,
-  getAuditMeetStatus
+  getAuditMeetStatus,
+  updateMeeting,
 } from '../controllers/scheduled-meeting.controller';
 
 const router = express.Router();
@@ -21,6 +22,7 @@ router.post('/schedule', scheduleNewMeeting);                      // POST /api/
 router.get('/meetings', getUserMeetings);                          // GET /api/scheduled-meetings/meetings
 router.get('/upcoming', getUpcomingUserMeetings);                  // GET /api/scheduled-meetings/upcoming
 router.get('/meeting/:meetingId', getScheduledMeetingDetails);     // GET /api/scheduled-meetings/meeting/:id
+router.put('/meeting/:meetingId', updateMeeting);                 // PUT /api/scheduled-meetings/meeting/:id
 router.post('/meeting/:meetingId/join', joinScheduledMeeting);     // POST /api/scheduled-meetings/meeting/:id/join
 router.post('/meeting/:meetingId/end', endScheduledMeeting);       // POST /api/scheduled-meetings/meeting/:id/end
 

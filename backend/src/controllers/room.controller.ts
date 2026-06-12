@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../lib/db';
 import { LivekitService } from '../services/livekit.service';
 import {
   createProtectedRoom,
@@ -116,6 +117,24 @@ export const generateToken = async (req: Request, res: Response) => {
       try {
         const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET || 'supersecret') as { id: string };
         isHost = room.createdBy === decoded.id;
+
+        if (isHost) {
+          // If it's a scheduled meeting, transition status to in_progress
+          const scheduledMeeting = await prisma.scheduledMeeting.findUnique({
+            where: { roomId }
+          });
+          if (scheduledMeeting && scheduledMeeting.status === 'scheduled') {
+            await prisma.scheduledMeeting.update({
+              where: { id: scheduledMeeting.id },
+              data: {
+                status: 'in_progress',
+                hostJoinedAt: new Date(),
+                actualStartTime: new Date(),
+              }
+            });
+            console.log(`[Token] Updated scheduled meeting ${scheduledMeeting.id} to in_progress because host joined`);
+          }
+        }
       } catch {
         // Invalid or expired auth token — participant joins as non-host
       }

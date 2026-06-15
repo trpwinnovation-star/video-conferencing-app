@@ -9,12 +9,8 @@ import {
   getScheduledMeetingByRoomId,
   getUserScheduledMeetings,
   getUpcomingMeetings,
-  updateMeetingStatus,
   hostJoinedMeeting,
   endMeeting,
-  addMeetingAttendee,
-  recordAttendeeJoin,
-  recordAttendeeLeft,
   getUserNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
@@ -420,7 +416,7 @@ export const getAuditMeetStatus = async (req: Request, res: Response) => {
     }
     console.log("Meeting found", meeting)
 
-    return res.json({success: true, data: meeting, message: "Meeting found for the audit"});
+    return res.json({ success: true, data: meeting, message: "Meeting found for the audit" });
   } catch (error: any) {
     console.log(error)
     return res.status(500).json({ error: error.message || 'Failed to fetch meeting' });
@@ -460,5 +456,65 @@ export const updateMeeting = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Update meeting error:', error);
     return res.status(500).json({ error: error.message || 'Failed to update meeting' });
+  }
+};
+
+export const scheduleAuditMeeting = async (req: Request, res: Response) => {
+  try {
+
+    const { title, description, scheduledTime, auditId, token } = req.body
+
+    if (!title || !description || !scheduledTime || !auditId || !token) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required feilds"
+      })
+    }
+
+    const { _Id, _TenantKey, _Email, _Name } = jwt.verify(token, JWT_SECRET) as { _Id: number, _TenantKey: string, _Email: string, _Name: string }
+
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email: _Email,
+        auditId: _Id.toString(),
+        auditCode: _TenantKey
+      },
+    })
+
+    if(!existingUser){
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Authorization of BetelAudit. Kindly Create Your account frist"
+      })
+    }
+
+    console.log("user found", existingUser)
+
+
+    const scheduledDate = new Date(scheduledTime);
+    if (scheduledDate <= new Date()) {
+      return res.status(400).json({ error: 'Scheduled time must be in the future' });
+    }
+
+    const meeting = await createScheduledMeeting(
+      title,
+      description,
+      existingUser.id,
+      scheduledDate,
+      60,
+      [],
+      existingUser.meetingDefaultPassword,
+      auditId.toString(),
+      existingUser.auditCode
+    );
+
+    return res.status(201).json({
+      meeting,
+      shareableLink: meeting.shareableLink,
+      meetingCode: meeting.meetingCode,
+    });
+  } catch (error: any) {
+    console.error('Schedule meeting error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to schedule meeting' });
   }
 };

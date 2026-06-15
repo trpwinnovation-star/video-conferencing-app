@@ -16,7 +16,6 @@ function TokenVerifier() {
 
   useEffect(() => {
     const token = searchParams.get('tkn');
-
     if (!token) {
       router.push('/login');
       return;
@@ -86,6 +85,7 @@ function TokenVerifier() {
 }
 
 export default function TokenAuthPage() {
+  
   return (
     <Suspense fallback={
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">

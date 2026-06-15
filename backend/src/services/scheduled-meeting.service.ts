@@ -13,7 +13,9 @@ export async function createScheduledMeeting(
   scheduledTime: Date,
   durationMinutes: number = 60,
   attendeeEmails: string[] = [],
-  password?: string
+  password?: string,
+  auditVisit: string | null = null,
+  auditCode: string | null = null,
 ) {
   // Generate unique meeting code
   const meetingCode = generateMeetingCode();
@@ -38,6 +40,8 @@ export async function createScheduledMeeting(
       shareableLink,
       meetingCode,
       status: 'scheduled',
+      auditVisit,
+      auditCode
     },
   });
 
@@ -390,7 +394,7 @@ export async function updateScheduledMeeting(
  */
 export function startScheduledMeetingAutoCompleter() {
   console.log('[Auto-Completer] Starting Scheduled Meeting Auto-Completer loop (every 5 minutes)...');
-  
+
   setInterval(async () => {
     try {
       const now = new Date();
@@ -406,11 +410,11 @@ export function startScheduledMeetingAutoCompleter() {
       for (const meeting of activeMeetings) {
         const scheduledStart = new Date(meeting.scheduledTime);
         const scheduledEnd = new Date(scheduledStart.getTime() + (meeting.durationMinutes * 60 * 1000));
-        
+
         // If we are past scheduled end time + grace period
         if (now.getTime() > (scheduledEnd.getTime() + gracePeriodMs)) {
           console.log(`[Auto-Completer] Checking expired meeting: ${meeting.title} (${meeting.id})`);
-          
+
           let shouldEnd = false;
           let reason = '';
 
@@ -423,7 +427,7 @@ export function startScheduledMeetingAutoCompleter() {
             // Check LiveKit participant list to see if the host is still there or if the room is empty.
             try {
               const participants = await livekitService.listParticipants(meeting.roomId);
-              
+
               if (participants.length === 0) {
                 shouldEnd = true;
                 reason = 'Meeting expired (no participants remaining)';

@@ -109,12 +109,12 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
     try {
       setError(null);
 
-      // Request screen capture (display media) - ONLY video
+      // Request screen capture (display media) - with audio enabled
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           frameRate: 15,
         },
-        audio: false,
+        audio: true, // Capture audio from the selected tab/screen
         // @ts-ignore
         selfBrowserSurface: "include", // Allows sharing the current tab without hiding Window/Screen options
         // @ts-ignore
@@ -123,14 +123,21 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
 
       streamRef.current = stream;
 
-      // Mix all provided audio tracks using Web Audio API
-      if (audioTracks.length > 0) {
+      // Extract any audio tracks captured from the screen share
+      const displayAudioTracks = stream.getAudioTracks();
+      const allAudioTracks = [...displayAudioTracks, ...audioTracks];
+
+      // Mix all audio tracks (screen audio + room audio) using Web Audio API
+      if (allAudioTracks.length > 0) {
         try {
+          // Remove raw display audio tracks from stream so we can add the mixed track
+          displayAudioTracks.forEach(track => stream.removeTrack(track));
+
           const audioContext = new AudioContext();
           audioContextRef.current = audioContext;
           const destination = audioContext.createMediaStreamDestination();
 
-          audioTracks.forEach(track => {
+          allAudioTracks.forEach(track => {
             if (track.readyState === 'live') {
               const source = audioContext.createMediaStreamSource(new MediaStream([track]));
               source.connect(destination);
@@ -142,7 +149,8 @@ export function useRecording({ roomName, userEmail, userName = 'local-user', onS
             stream.addTrack(mixedTracks[0]);
           }
         } catch (e) {
-          console.warn("[RECORDING] Could not mix audio, proceeding without audio", e);
+          console.warn("[RECORDING] Could not mix audio, proceeding with original screen audio", e);
+          displayAudioTracks.forEach(track => stream.addTrack(track));
         }
       }
 

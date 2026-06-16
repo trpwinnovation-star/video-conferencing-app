@@ -6,7 +6,12 @@ import { MonitorUp, MonitorOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ScreenShareButton() {
-  const { toggle, enabled } = useTrackToggle({ source: Track.Source.ScreenShare });
+  const { toggle, enabled } = useTrackToggle({
+    source: Track.Source.ScreenShare,
+    captureOptions: {
+      audio: true,
+    },
+  });
 
   return (
     <button

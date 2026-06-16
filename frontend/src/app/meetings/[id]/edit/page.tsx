@@ -62,30 +62,30 @@ export default function EditMeetingPage() {
       try {
         setIsLoading(true);
         const meeting = await apiGetScheduledMeetingDetails(id);
-        
+
         setTitle(meeting.title || '');
         setDescription(meeting.description || '');
         setHostId(meeting.hostId || '');
-        
+
         // Parse date and time from scheduledTime
         if (meeting.scheduledTime) {
           const scheduledDate = new Date(meeting.scheduledTime);
-          
+
           // Format date as YYYY-MM-DD
           const year = scheduledDate.getFullYear();
           const month = String(scheduledDate.getMonth() + 1).padStart(2, '0');
           const day = String(scheduledDate.getDate()).padStart(2, '0');
           setDate(`${year}-${month}-${day}`);
-          
+
           // Format time as HH:MM
           const hours = String(scheduledDate.getHours()).padStart(2, '0');
           const minutes = String(scheduledDate.getMinutes()).padStart(2, '0');
           setTime(`${hours}:${minutes}`);
         }
-        
+
         setDurationMinutes(meeting.durationMinutes || 60);
         setPassword('');
-        
+
         if (meeting.attendees) {
           const emails = meeting.attendees.map((a: any) => a.email).join(', ');
           setAttendeeEmails(emails);
@@ -191,7 +191,7 @@ export default function EditMeetingPage() {
 
       await apiUpdateScheduledMeeting(id, updatePayload);
       setSuccess(true);
-      
+
       setTimeout(() => {
         router.push('/meetings');
       }, 1500);
@@ -253,22 +253,20 @@ export default function EditMeetingPage() {
             <button
               type="button"
               onClick={() => setActiveTab('details')}
-              className={`px-4 py-2.5 font-bold transition-all border-b-2 text-sm ${
-                activeTab === 'details'
+              className={`px-4 py-2.5 font-bold transition-all border-b-2 text-sm ${activeTab === 'details'
                   ? 'border-[#c16d18] text-[#c16d18]'
                   : 'border-transparent text-stone-500 hover:text-stone-900'
-              }`}
+                }`}
             >
               Edit Details
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('recordings')}
-              className={`px-4 py-2.5 font-bold transition-all border-b-2 text-sm ${
-                activeTab === 'recordings'
+              className={`px-4 py-2.5 font-bold transition-all border-b-2 text-sm ${activeTab === 'recordings'
                   ? 'border-[#c16d18] text-[#c16d18]'
                   : 'border-transparent text-stone-500 hover:text-stone-900'
-              }`}
+                }`}
             >
               Recordings ({recordings.length})
             </button>
@@ -368,20 +366,6 @@ export default function EditMeetingPage() {
                 />
               </div>
 
-              {/* Attendees */}
-              <div>
-                <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2">
-                  <Users size={16} className="text-[#c16d18]" /> Attendee Emails (comma-separated)
-                </label>
-                <textarea
-                  value={attendeeEmails}
-                  onChange={(e) => setAttendeeEmails(e.target.value)}
-                  placeholder="email1@example.com, email2@example.com"
-                  rows={3}
-                  className="w-full px-4 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#c16d18]/40 focus:border-[#c16d18] bg-stone-50/50"
-                  disabled={isSaving}
-                />
-              </div>
 
               {/* Error Message */}
               {error && (
@@ -458,11 +442,10 @@ export default function EditMeetingPage() {
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
-                              rec.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
-                              rec.status === 'failed' ? 'bg-red-50 text-red-500' :
-                              'bg-stone-100 text-stone-500'
-                            }`}>
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${rec.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+                                rec.status === 'failed' ? 'bg-red-50 text-red-500' :
+                                  'bg-stone-100 text-stone-500'
+                              }`}>
                               {rec.status}
                             </span>
                             <span className="text-xs text-stone-400 font-bold uppercase">
@@ -490,13 +473,12 @@ export default function EditMeetingPage() {
                               <button
                                 onClick={() => handleDownload(rec)}
                                 disabled={dlState === 'loading'}
-                                className={`py-2 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border ${
-                                  dlState === 'done'
+                                className={`py-2 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border ${dlState === 'done'
                                     ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
                                     : dlState === 'loading'
                                       ? 'bg-stone-100 text-stone-400 border-stone-200 cursor-wait'
                                       : 'bg-[#c16d18]/10 hover:bg-[#c16d18] text-[#c16d18] hover:text-white border-[#c16d18]/20 hover:border-[#c16d18] active:scale-95 cursor-pointer'
-                                }`}
+                                  }`}
                               >
                                 {dlState === 'loading' ? (
                                   <>

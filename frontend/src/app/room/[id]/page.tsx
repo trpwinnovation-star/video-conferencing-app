@@ -9,7 +9,7 @@ import {
 } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
 import "@livekit/components-styles";
-import { getToken } from "@/lib/api";
+import { getToken, apiUploadSharedFile } from "@/lib/api";
 import { getStoredRoomPassword, clearRoomPassword } from "@/lib/roomAccess";
 import { RoomHeader } from "@/components/RoomHeader";
 import { ParticipantGrid } from "@/components/ParticipantGrid";
@@ -78,7 +78,7 @@ function ActiveRoomContent({
   useEffect(() => {
     if (!room) return;
 
-    const handleDataReceived = (payload: Uint8Array, participant?: any) => {
+    const handleDataReceived = async (payload: Uint8Array, participant?: any) => {
       try {
         const str = new TextDecoder().decode(payload);
         const msg = JSON.parse(str);
@@ -99,6 +99,202 @@ function ActiveRoomContent({
             setUnreadCount((prev) => prev + 1);
           }
         }
+
+        // --- Geo Capture Signals ---
+        if (msg.type === "REQUEST_LOCATION" && msg.targetIdentity === room.localParticipant.identity) {
+          console.log("[GeoCapture] Location request received from host");
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const { latitude, longitude } = position.coords;
+              let address = "Unknown Location";
+              try {
+                // Fetch location details from Nominatim (OpenStreetMap)
+                const geoRes = await fetch(
+                  `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+                );
+                if (geoRes.ok) {
+                  const geoData = await geoRes.json();
+                  address = geoData.display_name || geoData.address?.city || geoData.address?.town || "Unknown Location";
+                }
+              } catch (geoErr) {
+                console.warn("[GeoCapture] Failed to resolve address name:", geoErr);
+              }
+
+              // Reply back to host
+              const replyPayload = {
+                type: "RESPOND_LOCATION",
+                targetIdentity: room.localParticipant.identity,
+                latitude,
+                longitude,
+                address,
+              };
+              const encoder = new TextEncoder();
+              const replyData = encoder.encode(JSON.stringify(replyPayload));
+              await room.localParticipant.publishData(replyData, { reliable: true });
+            },
+            async (err) => {
+              console.error("[GeoCapture] Geolocation error:", err);
+              // Send error fallback response
+              const replyPayload = {
+                type: "RESPOND_LOCATION",
+                targetIdentity: room.localParticipant.identity,
+                latitude: 0,
+                longitude: 0,
+                address: `Geolocation Error: ${err.message}`,
+              };
+              const encoder = new TextEncoder();
+              const replyData = encoder.encode(JSON.stringify(replyPayload));
+              await room.localParticipant.publishData(replyData, { reliable: true });
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+        }
+
+        if (msg.type === "RESPOND_LOCATION") {
+          // Verify if local participant is host
+          let isLocalHost = false;
+          try {
+            const meta = JSON.parse(room.localParticipant.metadata || '{}');
+            isLocalHost = meta.isHost === true;
+          } catch { }
+
+          if (isLocalHost) {
+            console.log(`[GeoCapture] Received location from ${msg.targetIdentity}`);
+
+            // 1. Locate the video element for this participant
+            const tileElement = document.querySelector(`[data-participant-identity="${msg.targetIdentity}"]`);
+            const videoElement = tileElement?.querySelector("video");
+
+            if (!videoElement) {
+              console.error("[GeoCapture] Could not find video element for participant:", msg.targetIdentity);
+              return;
+            }
+
+            // 2. Draw frame on canvas
+            const canvas = document.createElement("canvas");
+            const width = videoElement.videoWidth || 640;
+            const height = videoElement.videoHeight || 480;
+            const bannerHeight = 105;
+            canvas.width = width;
+            canvas.height = height + bannerHeight; // Append footer space
+
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+
+            // Draw video frame (completely untouched)
+            ctx.drawImage(videoElement, 0, 0, width, height);
+
+            // 3. Draw watermarked footer banner below the video
+            ctx.fillStyle = "#1e1e1e"; // Sleek dark theme
+            ctx.fillRect(0, height, width, bannerHeight);
+
+            // Draw border line separating video and footer
+            ctx.strokeStyle = "#c16d18";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, height);
+            ctx.lineTo(width, height);
+            ctx.stroke();
+
+            // Text styling
+            ctx.fillStyle = "#ffffff";
+            const fontSize = Math.max(11, Math.floor(width * 0.02));
+            ctx.font = `bold ${fontSize}px sans-serif`;
+
+            const padding = 15;
+            const lineSpacing = fontSize + 5;
+            let currentY = height + padding + 5;
+
+            const targetName = participant?.name || msg.targetIdentity;
+            ctx.fillText(`TARGET IDENTITY: ${targetName}`, padding, currentY);
+
+            ctx.fillStyle = "#c16d18";
+            currentY += lineSpacing;
+            ctx.fillText(`COORDINATES: Lat ${msg.latitude.toFixed(6)}, Lon ${msg.longitude.toFixed(6)}`, padding, currentY);
+
+            ctx.fillStyle = "#ffffff";
+            currentY += lineSpacing;
+
+            // Wrap address text if it's too long
+            const maxTextWidth = width - (padding * 2);
+            const addressText = `LOCATION: ${msg.address}`;
+            const words = addressText.split(" ");
+            let line = "";
+            let addressLines = [];
+
+            for (let n = 0; n < words.length; n++) {
+              let testLine = line + words[n] + " ";
+              let metrics = ctx.measureText(testLine);
+              let testWidth = metrics.width;
+              if (testWidth > maxTextWidth && n > 0) {
+                addressLines.push(line);
+                line = words[n] + " ";
+              } else {
+                line = testLine;
+              }
+            }
+            addressLines.push(line);
+
+            addressLines.slice(0, 2).forEach((addrLine) => {
+              ctx.fillText(addrLine, padding, currentY);
+              currentY += lineSpacing;
+            });
+
+            ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+            ctx.font = `italic ${Math.max(9, fontSize - 2)}px sans-serif`;
+            ctx.fillText(`Time: ${new Date().toLocaleString()}`, padding, height + bannerHeight - 10);
+
+            // 4. Convert canvas to blob and upload
+            canvas.toBlob(async (blob) => {
+              if (!blob) return;
+
+              try {
+                // Convert blob to File object
+                const fileName = `verification-${msg.targetIdentity}-${Date.now()}.jpg`;
+                const file = new File([blob], fileName, { type: "image/jpeg" });
+
+                // Upload via API
+                const uploaded = await apiUploadSharedFile(file, roomName);
+
+                // Construct file share message
+                const fileSharePayload = {
+                  id: Math.random().toString(36).substring(2, 9),
+                  type: "FILE_SHARE",
+                  sender: participantName,
+                  file: {
+                    name: `GeoCapture - ${targetName}.jpg`,
+                    size: blob.size,
+                    url: uploaded.fileUrl
+                  },
+                  timestamp: Date.now()
+                };
+
+                // Broadcast file share message only to the target participant for privacy
+                const encoder = new TextEncoder();
+                const shareData = encoder.encode(JSON.stringify(fileSharePayload));
+                await room.localParticipant.publishData(shareData, {
+                  reliable: true,
+                  destinationIdentities: [msg.targetIdentity]
+                });
+
+                // Append locally in host chat
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: fileSharePayload.id,
+                    sender: participantName,
+                    file: fileSharePayload.file,
+                    timestamp: Date.now(),
+                    isLocal: true,
+                  }
+                ]);
+
+              } catch (uploadErr) {
+                console.error("[GeoCapture] Failed to upload captured image:", uploadErr);
+              }
+            }, "image/jpeg", 0.85);
+          }
+        }
       } catch (err) {
         console.error("Error parsing incoming message:", err);
       }
@@ -108,7 +304,7 @@ function ActiveRoomContent({
     return () => {
       room.off(RoomEvent.DataReceived, handleDataReceived);
     };
-  }, [room, isChatOpen]);
+  }, [room, isChatOpen, roomName, participantName]);
 
   // Clear unread badge when chat is opened
   useEffect(() => {
@@ -130,7 +326,7 @@ function ActiveRoomContent({
 
     const encoder = new TextEncoder();
     const data = encoder.encode(JSON.stringify(payload));
-    
+
     // Broadcast text message
     await room.localParticipant.publishData(data, { reliable: true });
 
@@ -177,6 +373,18 @@ function ActiveRoomContent({
     ]);
   };
 
+  const handleTriggerGeoCapture = async (targetIdentity: string) => {
+    if (!room) return;
+    console.log(`[GeoCapture] Host requesting geolocation for: ${targetIdentity}`);
+    const payload = {
+      type: "REQUEST_LOCATION",
+      targetIdentity,
+    };
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify(payload));
+    await room.localParticipant.publishData(data, { reliable: true });
+  };
+
   return (
     <div className="h-full w-full relative flex overflow-hidden bg-[#FBF9FA]">
       {/* Main meeting area */}
@@ -214,6 +422,8 @@ function ActiveRoomContent({
         messages={messages}
         onSendMessage={handleSendMessage}
         onSendFile={handleSendFile}
+        roomId={roomName}
+        onTriggerGeoCapture={handleTriggerGeoCapture}
       />
     </div>
   );

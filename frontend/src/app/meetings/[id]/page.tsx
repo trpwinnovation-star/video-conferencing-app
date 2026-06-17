@@ -53,8 +53,8 @@ export default function MeetingDetailsPage() {
           <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
             {error || 'Meeting not found'}
           </div>
-          <button 
-            onClick={() => router.back()} 
+          <button
+            onClick={() => router.back()}
             className="mt-4 flex items-center text-blue-600 hover:underline font-medium"
           >
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
@@ -82,8 +82,8 @@ export default function MeetingDetailsPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6 font-medium transition"
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
@@ -95,7 +95,7 @@ export default function MeetingDetailsPage() {
               <h1 className="text-3xl font-bold text-gray-900">{meeting.title}</h1>
               {getStatusBadge(meeting.status)}
             </div>
-            
+
             {meeting.description && (
               <p className="text-gray-600 mt-2">{meeting.description}</p>
             )}
@@ -107,7 +107,7 @@ export default function MeetingDetailsPage() {
               </div>
               <div className="flex items-center">
                 <Clock className="w-5 h-5 mr-2 text-gray-400" />
-                {meetingTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} 
+                {meetingTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                 <span className="ml-1">({meeting.durationMinutes} min)</span>
               </div>
               <div className="flex items-center">
@@ -134,8 +134,8 @@ export default function MeetingDetailsPage() {
               </button>
             </div>
             <div className="mt-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-               <p className="text-sm font-medium text-gray-500 mb-1">Meeting Code</p>
-               <p className="font-mono text-gray-900 font-bold">{meeting.meetingCode}</p>
+              <p className="text-sm font-medium text-gray-500 mb-1">Meeting Code</p>
+              <p className="font-mono text-gray-900 font-bold">{meeting.meetingCode}</p>
             </div>
           </div>
 

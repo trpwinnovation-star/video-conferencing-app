@@ -26,8 +26,9 @@ const fileStorage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
+    const roomId = String(req.query.roomId || 'unknown');
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'shared-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, `room-${roomId}-shared-${uniqueSuffix}${path.extname(file.originalname)}`);
   }
 });
 

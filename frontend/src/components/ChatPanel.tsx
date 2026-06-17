@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { X, Send, Paperclip, FileText, Download, Loader2 } from "lucide-react";
+import { X, Send, Paperclip, FileText, Download, Loader2, MapPin } from "lucide-react";
 import { apiUploadSharedFile, API_ROOT } from "@/lib/api";
+import { useParticipants, useLocalParticipant } from "@livekit/components-react";
+import { ParticipantEvent } from "livekit-client";
 
 export interface ChatMessage {
   id: string;
@@ -23,14 +25,53 @@ interface ChatPanelProps {
   messages: ChatMessage[];
   onSendMessage: (text: string) => void;
   onSendFile: (fileInfo: { name: string; size: number; url: string }) => void;
+  roomId: string;
+  onTriggerGeoCapture?: (targetIdentity: string) => void;
 }
 
-export function ChatPanel({ isOpen, onClose, messages, onSendMessage, onSendFile }: ChatPanelProps) {
+export function ChatPanel({ isOpen, onClose, messages, onSendMessage, onSendFile, roomId, onTriggerGeoCapture }: ChatPanelProps) {
   const [inputText, setInputText] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [showGeoDropdown, setShowGeoDropdown] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const participants = useParticipants();
+  const { localParticipant } = useLocalParticipant();
+
+  const [participantMeta, setParticipantMeta] = useState<string | undefined>(
+    localParticipant?.metadata
+  );
+
+  useEffect(() => {
+    if (!localParticipant) return;
+    setParticipantMeta(localParticipant.metadata);
+
+    const handleMetadataChanged = () => {
+      setParticipantMeta(localParticipant.metadata);
+    };
+
+    localParticipant.on(ParticipantEvent.ParticipantMetadataChanged, handleMetadataChanged);
+    return () => {
+      localParticipant.off(ParticipantEvent.ParticipantMetadataChanged, handleMetadataChanged);
+    };
+  }, [localParticipant]);
+
+  const isHost = React.useMemo(() => {
+    if (!participantMeta) return false;
+    try {
+      const meta = JSON.parse(participantMeta);
+      return meta.isHost === true;
+    } catch {
+      return false;
+    }
+  }, [participantMeta]);
+
+  const otherParticipants = React.useMemo(() => {
+    if (!localParticipant) return [];
+    return participants.filter(p => p.identity !== localParticipant.identity);
+  }, [participants, localParticipant]);
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
@@ -58,7 +99,7 @@ export function ChatPanel({ isOpen, onClose, messages, onSendMessage, onSendFile
 
     setIsUploading(true);
     try {
-      const data = await apiUploadSharedFile(file);
+      const data = await apiUploadSharedFile(file, roomId);
       onSendFile({
         name: data.fileName,
         size: data.fileSize,
@@ -189,6 +230,48 @@ export function ChatPanel({ isOpen, onClose, messages, onSendMessage, onSendFile
             className="hidden"
             disabled={isUploading}
           />
+          {/* Geo Capture button (Host only) */}
+          {isHost && (
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowGeoDropdown(!showGeoDropdown)}
+                disabled={isUploading}
+                className="h-10 w-10 rounded-xl bg-white border border-stone-200 hover:bg-stone-50 text-[#c16d18] hover:text-[#a0560e] flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                title="Geo-capture participant image"
+              >
+                <MapPin size={16} />
+              </button>
+
+              {showGeoDropdown && (
+                <div className="absolute bottom-full mb-2 left-0 bg-white border border-stone-200/80 rounded-2xl p-1.5 shadow-2xl min-w-[180px] z-50 max-h-48 overflow-y-auto no-scrollbar">
+                  <div className="text-[10px] font-bold text-stone-400 px-2.5 py-1 uppercase tracking-wider select-none border-b border-stone-100 mb-1">
+                    Capture Participant
+                  </div>
+                  {otherParticipants.length === 0 ? (
+                    <div className="text-[10px] text-stone-500 px-2.5 py-2">
+                      No other participants
+                    </div>
+                  ) : (
+                    otherParticipants.map((p) => (
+                      <button
+                        key={p.identity}
+                        type="button"
+                        onClick={() => {
+                          onTriggerGeoCapture?.(p.identity);
+                          setShowGeoDropdown(false);
+                        }}
+                        className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-bold transition-all text-stone-600 hover:bg-stone-50 hover:text-stone-900 cursor-pointer truncate"
+                      >
+                        {p.name || p.identity}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}

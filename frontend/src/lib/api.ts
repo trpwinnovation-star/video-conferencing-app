@@ -593,7 +593,7 @@ export async function apiMarkAllNotificationsAsRead(): Promise<{ message: string
   return data;
 }
 
-export async function apiUploadSharedFile(file: File): Promise<{
+export async function apiUploadSharedFile(file: File, roomId: string): Promise<{
   fileUrl: string;
   fileName: string;
   fileSize: number;
@@ -601,7 +601,7 @@ export async function apiUploadSharedFile(file: File): Promise<{
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${ROOMS_URL}/upload-file`, {
+  const res = await fetch(`${ROOMS_URL}/upload-file?roomId=${encodeURIComponent(roomId)}`, {
     method: 'POST',
     headers: getAuthHeaders(),
     credentials: 'include',

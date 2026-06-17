@@ -254,8 +254,8 @@ export default function EditMeetingPage() {
               type="button"
               onClick={() => setActiveTab('details')}
               className={`px-4 py-2.5 font-bold transition-all border-b-2 text-sm ${activeTab === 'details'
-                  ? 'border-[#c16d18] text-[#c16d18]'
-                  : 'border-transparent text-stone-500 hover:text-stone-900'
+                ? 'border-[#c16d18] text-[#c16d18]'
+                : 'border-transparent text-stone-500 hover:text-stone-900'
                 }`}
             >
               Edit Details
@@ -264,8 +264,8 @@ export default function EditMeetingPage() {
               type="button"
               onClick={() => setActiveTab('recordings')}
               className={`px-4 py-2.5 font-bold transition-all border-b-2 text-sm ${activeTab === 'recordings'
-                  ? 'border-[#c16d18] text-[#c16d18]'
-                  : 'border-transparent text-stone-500 hover:text-stone-900'
+                ? 'border-[#c16d18] text-[#c16d18]'
+                : 'border-transparent text-stone-500 hover:text-stone-900'
                 }`}
             >
               Recordings ({recordings.length})
@@ -443,8 +443,8 @@ export default function EditMeetingPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${rec.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
-                                rec.status === 'failed' ? 'bg-red-50 text-red-500' :
-                                  'bg-stone-100 text-stone-500'
+                              rec.status === 'failed' ? 'bg-red-50 text-red-500' :
+                                'bg-stone-100 text-stone-500'
                               }`}>
                               {rec.status}
                             </span>
@@ -474,10 +474,10 @@ export default function EditMeetingPage() {
                                 onClick={() => handleDownload(rec)}
                                 disabled={dlState === 'loading'}
                                 className={`py-2 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border ${dlState === 'done'
-                                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
-                                    : dlState === 'loading'
-                                      ? 'bg-stone-100 text-stone-400 border-stone-200 cursor-wait'
-                                      : 'bg-[#c16d18]/10 hover:bg-[#c16d18] text-[#c16d18] hover:text-white border-[#c16d18]/20 hover:border-[#c16d18] active:scale-95 cursor-pointer'
+                                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
+                                  : dlState === 'loading'
+                                    ? 'bg-stone-100 text-stone-400 border-stone-200 cursor-wait'
+                                    : 'bg-[#c16d18]/10 hover:bg-[#c16d18] text-[#c16d18] hover:text-white border-[#c16d18]/20 hover:border-[#c16d18] active:scale-95 cursor-pointer'
                                   }`}
                               >
                                 {dlState === 'loading' ? (

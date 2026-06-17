@@ -43,6 +43,7 @@ export function VideoTile({ trackRef, isPinned = false }: VideoTileProps) {
 
   return (
     <div
+      data-participant-identity={participant.identity}
       className={cn(
         "relative overflow-hidden bg-white transition-all duration-500 h-full w-full rounded-2xl group",
         !isScreenShare && "border border-stone-200/80 shadow-md",

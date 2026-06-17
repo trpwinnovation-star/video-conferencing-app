@@ -1,4 +1,6 @@
 import bcrypt from 'bcrypt';
+import path from 'path';
+import fs from 'fs';
 import { prisma } from '../lib/db';
 import { LivekitService } from './livekit.service';
 
@@ -114,5 +116,23 @@ export async function deleteRoomFromDb(roomId: string) {
     });
   } catch (smError) {
     console.warn(`Failed to mark scheduled meeting for room ${id} as completed:`, smError);
+  }
+
+  // Clean up all meeting-related files uploaded during the session
+  try {
+    const uploadsDir = path.join(process.cwd(), 'uploads');
+    if (fs.existsSync(uploadsDir)) {
+      const files = fs.readdirSync(uploadsDir);
+      const prefix = `room-${id}-`;
+      files.forEach(file => {
+        if (file.startsWith(prefix)) {
+          const filePath = path.join(uploadsDir, file);
+          fs.unlinkSync(filePath);
+          console.log(`[deleteRoomFromDb] Deleted temporary file: ${file}`);
+        }
+      });
+    }
+  } catch (cleanupError) {
+    console.warn(`[deleteRoomFromDb] Failed to clean up meeting files for room ${id}:`, cleanupError);
   }
 }

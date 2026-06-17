@@ -160,7 +160,7 @@ function ActiveRoomContent({
               const replyData = encoder.encode(JSON.stringify(replyPayload));
               await room.localParticipant.publishData(replyData, { reliable: true });
             },
-            { enableHighAccuracy: true, timeout: 10000 }
+            { enableHighAccuracy: false }
           );
         }
 
@@ -175,19 +175,14 @@ function ActiveRoomContent({
           if (isLocalHost) {
             console.log(`[GeoCapture] Received location from ${msg.targetIdentity}`);
 
-            // 1. Locate the video element for this participant
+            // 1. Locate the video element for this participant (if camera is active)
             const tileElement = document.querySelector(`[data-participant-identity="${msg.targetIdentity}"]`);
             const videoElement = tileElement?.querySelector("video");
 
-            if (!videoElement) {
-              console.error("[GeoCapture] Could not find video element for participant:", msg.targetIdentity);
-              return;
-            }
-
-            // 2. Draw frame on canvas
+            // 2. Draw frame on canvas (or fallback placeholder if camera is disabled)
             const canvas = document.createElement("canvas");
-            const width = videoElement.videoWidth || 640;
-            const height = videoElement.videoHeight || 480;
+            const width = videoElement?.videoWidth || 640;
+            const height = videoElement?.videoHeight || 480;
             const bannerHeight = 105;
             canvas.width = width;
             canvas.height = height + bannerHeight; // Append footer space
@@ -195,8 +190,32 @@ function ActiveRoomContent({
             const ctx = canvas.getContext("2d");
             if (!ctx) return;
 
-            // Draw video frame (completely untouched)
-            ctx.drawImage(videoElement, 0, 0, width, height);
+            if (videoElement) {
+              // Draw video frame (completely untouched)
+              ctx.drawImage(videoElement, 0, 0, width, height);
+            } else {
+              // Draw beautiful offline camera placeholder graphic
+              const grad = ctx.createLinearGradient(0, 0, width, height);
+              grad.addColorStop(0, "#2d2d2d");
+              grad.addColorStop(1, "#151515");
+              ctx.fillStyle = grad;
+              ctx.fillRect(0, 0, width, height);
+
+              // Draw offline camera icon or text placeholder
+              ctx.fillStyle = "#ffffff";
+              ctx.font = `bold ${Math.max(16, Math.floor(width * 0.045))}px sans-serif`;
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+              ctx.fillText("📷 Camera Feed Offline", width / 2, height / 2 - 20);
+
+              ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+              ctx.font = `normal ${Math.max(12, Math.floor(width * 0.03))}px sans-serif`;
+              ctx.fillText("Location verified without video", width / 2, height / 2 + 20);
+
+              // Restore default alignments for the footer text
+              ctx.textAlign = "left";
+              ctx.textBaseline = "alphabetic";
+            }
 
             // 3. Draw watermarked footer banner below the video
             ctx.fillStyle = "#1e1e1e"; // Sleek dark theme

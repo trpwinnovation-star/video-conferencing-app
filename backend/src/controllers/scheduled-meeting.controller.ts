@@ -576,3 +576,34 @@ export const updateScheduleAuditMeeting = async (req: Request, res: Response) =>
     return res.status(500).json({ error: error.message || 'Failed to schedule meeting' });
   }
 };
+
+export const getBetelUserMeetings = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body
+    console.log("Token", token)
+    
+    const { _Id, _TenantKey, _Email, _Name } = jwt.verify(token, JWT_SECRET) as { _Id: number, _TenantKey: string, _Email: string, _Name: string }
+
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email: _Email,
+        auditId: _Id.toString(),
+        auditCode: _TenantKey
+      },
+    })
+
+    if (!existingUser) {
+      console.log("User not found")
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Authorization of BetelAudit. Kindly Create Your account frist"
+      })
+    }
+
+    const meetings = await getUserScheduledMeetings(existingUser.id);
+    return res.json({ meetings });
+  } catch (error: any) {
+    console.log("Error fetching meeing for Audit", error)
+    return res.status(500).json({ error: error.message || 'Failed to fetch meetings' });
+  }
+};

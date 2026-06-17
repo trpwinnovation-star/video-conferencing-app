@@ -14,7 +14,8 @@ import {
   getAuditMeetStatus,
   updateMeeting,
   scheduleAuditMeeting,
-  updateScheduleAuditMeeting
+  updateScheduleAuditMeeting,
+  getBetelUserMeetings
 } from '../controllers/scheduled-meeting.controller';
 
 const router = express.Router();
@@ -42,5 +43,6 @@ router.post('/notifications/read-all', markAllNotificationsRead);  // POST /api/
 router.post('/auditMeetStatus', getAuditMeetStatus)
 router.post('/auditSchedule', scheduleAuditMeeting)
 router.post('/auditScheduleUpdate', updateScheduleAuditMeeting)
+router.post('/betelmeetings', getBetelUserMeetings);  
 
 export default router;

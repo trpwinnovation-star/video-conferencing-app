@@ -103,6 +103,20 @@ function ActiveRoomContent({
         // --- Geo Capture Signals ---
         if (msg.type === "REQUEST_LOCATION" && msg.targetIdentity === room.localParticipant.identity) {
           console.log("[GeoCapture] Location request received from host");
+          if (!navigator.geolocation) {
+            console.warn("[GeoCapture] Geolocation is not supported by this browser");
+            const replyPayload = {
+              type: "RESPOND_LOCATION",
+              targetIdentity: room.localParticipant.identity,
+              latitude: 0,
+              longitude: 0,
+              address: "Geolocation not supported by browser",
+            };
+            const encoder = new TextEncoder();
+            const replyData = encoder.encode(JSON.stringify(replyPayload));
+            await room.localParticipant.publishData(replyData, { reliable: true });
+            return;
+          }
           navigator.geolocation.getCurrentPosition(
             async (position) => {
               const { latitude, longitude } = position.coords;

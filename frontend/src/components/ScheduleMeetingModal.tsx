@@ -234,6 +234,21 @@ export default function ScheduleMeetingModal({
           </div>
 
 
+          {/* Attendees */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <Users size={16} /> Invitees (comma-separated emails)
+            </label>
+            <input
+              type="text"
+              value={attendeeEmails}
+              onChange={(e) => setAttendeeEmails(e.target.value)}
+              placeholder="e.g., john@example.com, jane@example.com"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isLoading}
+            />
+          </div>
+
           {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

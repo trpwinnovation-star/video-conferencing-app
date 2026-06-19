@@ -5,6 +5,7 @@ import { Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { getToken } from "@/lib/api";
 import { saveRoomPassword } from "@/lib/roomAccess";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth";
 
 interface RoomJoinGateProps {
   roomId: string;
@@ -23,6 +24,7 @@ export function RoomJoinGate({
   initialPassword = "",
   serverError = "",
 }: RoomJoinGateProps) {
+  const { user } = useAuth();
   const [password, setPassword] = useState(initialPassword);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(serverError);
@@ -32,6 +34,13 @@ export function RoomJoinGate({
   useEffect(() => {
     if (serverError) setError(serverError);
   }, [serverError]);
+
+  // Autofill name if logged in
+  useEffect(() => {
+    if (user && !participantName) {
+      onNameChange(user.name);
+    }
+  }, [user, participantName, onNameChange]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,10 +90,13 @@ export function RoomJoinGate({
             <input
               type="text"
               required
+              readOnly={!!user}
               value={participantName}
               onChange={(e) => onNameChange(e.target.value)}
               placeholder="Enter your name"
-              className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#c16d18]/15 focus:border-[#c16d18]"
+              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#c16d18]/15 focus:border-[#c16d18] ${
+                user ? "bg-stone-100 cursor-not-allowed text-stone-500 border-stone-200" : "bg-stone-50 border-stone-200"
+              }`}
             />
           </div>
 

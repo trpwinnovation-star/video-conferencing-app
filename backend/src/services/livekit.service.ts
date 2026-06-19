@@ -46,8 +46,9 @@ export class LivekitService {
     }
     // ────────────────────────────────────────────────────────────────────────
 
+    const uniqueIdentity = `${participantName}_${Math.random().toString(36).substring(2, 8)}`;
     const at = new AccessToken(config.apiKey, config.apiSecret, {
-      identity: participantName,
+      identity: uniqueIdentity,
       name: participantName,
     });
 
@@ -81,26 +82,26 @@ export class LivekitService {
   // }
 
   public async createRoom(roomName: string) {
-  try {
-    const roomService = getRoomService();
+    try {
+      const roomService = getRoomService();
 
-    console.log("LIVEKIT_URL:", process.env.LIVEKIT_URL);
-    console.log("Creating room:", roomName);
+      console.log("LIVEKIT_URL:", process.env.LIVEKIT_URL);
+      console.log("Creating room:", roomName);
 
-    const room = await roomService.createRoom({
-      name: roomName,
-      emptyTimeout: 600,
-      maxParticipants: 5,
-    });
+      const room = await roomService.createRoom({
+        name: roomName,
+        emptyTimeout: 600,
+        maxParticipants: 5,
+      });
 
-    console.log("Room response:", room);
+      console.log("Room response:", room);
 
-    return room;
-  } catch (error) {
-    console.error("LiveKit createRoom error:", error);
-    throw error;
+      return room;
+    } catch (error) {
+      console.error("LiveKit createRoom error:", error);
+      throw error;
+    }
   }
-}
 
   /**
    * List rooms

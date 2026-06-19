@@ -17,52 +17,52 @@ const authCookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-export const register = async (req: Request, res: Response) => {
-  try {
-    const { email, password, name } = req.body;
+// export const register = async (req: Request, res: Response) => {
+//   try {
+//     const { email, password, name } = req.body;
 
-    if (!email || !password || !name) {
-      return res.status(400).json({ error: 'Email, password, and name are required' });
-    }
+//     if (!email || !password || !name) {
+//       return res.status(400).json({ error: 'Email, password, and name are required' });
+//     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
+//     const existingUser = await prisma.user.findUnique({ where: { email } });
+//     if (existingUser) {
+//       return res.status(400).json({ error: 'User already exists' });
+//     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+//     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // const auditId = uuidv4();
-    // const auditCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+//     // const auditId = uuidv4();
+//     // const auditCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name,
-        // auditId,
-        // auditCode,
-      },
-    });
+//     const user = await prisma.user.create({
+//       data: {
+//         email,
+//         password: hashedPassword,
+//         name,
+//         // auditId,
+//         // auditCode,
+//       },
+//     });
 
-    const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
+//     const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.cookie('token', token, authCookieOptions);
+//     res.cookie('token', token, authCookieOptions);
 
-    return res.json({
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        meetingDefaultPassword: user.meetingDefaultPassword,
-      },
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
-    return res.status(500).json({ error: 'Failed to register' });
-  }
-};
+//     return res.json({
+//       token,
+//       user: {
+//         id: user.id,
+//         email: user.email,
+//         name: user.name,
+//         meetingDefaultPassword: user.meetingDefaultPassword,
+//       },
+//     });
+//   } catch (error) {
+//     console.error('Registration error:', error);
+//     return res.status(500).json({ error: 'Failed to register' });
+//   }
+// };
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -82,7 +82,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, email: user.email, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
     res.cookie('token', token, authCookieOptions);
 
@@ -92,6 +92,7 @@ export const login = async (req: Request, res: Response) => {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role,
         meetingDefaultPassword: user.meetingDefaultPassword,
       },
     });
@@ -135,7 +136,7 @@ export const authRegister = async (req: Request, res: Response) => {
     });
   }
 
-  const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '1d' });
+  const token = jwt.sign({ id: user.id, email: user.email, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
   res.cookie('token', token, authCookieOptions);
 
   return res.json({
@@ -144,6 +145,7 @@ export const authRegister = async (req: Request, res: Response) => {
       id: user.id,
       email: user.email,
       name: user.name,
+      role: user.role,
       meetingDefaultPassword: user.meetingDefaultPassword,
     },
   });
@@ -160,12 +162,13 @@ export const authStatus = async (req: Request, res: Response) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string, email: string, name: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string, email: string, name: string, role: string };
     return res.json({
       user: {
         id: decoded.id,
         email: decoded.email,
         name: decoded.name,
+        role: decoded.role,
       },
     });
   } catch (error) {
@@ -189,7 +192,7 @@ export const getMe = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string, email: string, name: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string, email: string, name: string, role: string };
 
     // Optional: verify user still exists in DB
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
@@ -203,6 +206,7 @@ export const getMe = async (req: Request, res: Response) => {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role,
         meetingDefaultPassword: user.meetingDefaultPassword,
       },
     });

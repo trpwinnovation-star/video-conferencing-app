@@ -10,6 +10,7 @@ import { startRecordingAutoCompleter } from "./src/services/recording.service";
 import { startScheduledMeetingAutoCompleter } from "./src/services/scheduled-meeting.service";
 import egressRoutes from "./src/routes/egress.routes";
 import scheduledMeetingRoutes from "./src/routes/scheduled-meeting.routes";
+import adminRoutes from "./src/routes/admin.routes";
 import path from "path";
 
 // ── Guard: fail fast if critical secrets are missing in production ───────────
@@ -119,6 +120,7 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/recording", recordingRoutes);
 app.use("/api/egress", egressRoutes);
 app.use("/api/scheduled-meetings", scheduledMeetingRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Static files for recordings
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));

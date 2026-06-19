@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
 import { LivekitService } from './livekit.service';
 import { createProtectedRoom, deleteRoomFromDb } from './room.service';
+import { sendMeetingInviteEmail } from './email.service';
 
 const livekitService = new LivekitService();
 
@@ -56,12 +57,60 @@ export async function createScheduledMeeting(
     });
   }
 
-  // TODO: Send email invitations to attendees
+  // Send email invitations to attendees
+  if (attendeeEmails.length > 0) {
+    const host = await prisma.user.findUnique({ where: { id: hostId } });
+    const hostName = host ? host.name : 'A member';
+
+    for (const email of attendeeEmails) {
+      // Send asynchronously so we don't block the API response
+      sendMeetingInviteEmail(
+        email,
+        hostName,
+        title,
+        description || '',
+        roomPassword,
+        scheduledTime,
+        shareableLink
+      ).catch(console.error);
+    }
+  }
 
   return scheduledMeeting;
 }
 
+export async function autoExpireMeetings() {
+  const now = new Date();
+  try {
+    const expiredScheduled = await prisma.scheduledMeeting.findMany({
+      where: {
+        status: { in: ['scheduled', 'in_progress'] },
+      }
+    });
+
+    for (const meeting of expiredScheduled) {
+      const start = new Date(meeting.scheduledTime);
+      const end = new Date(start.getTime() + meeting.durationMinutes * 60000);
+      if (now > end) {
+        await prisma.scheduledMeeting.update({
+          where: { id: meeting.id },
+          data: { status: 'completed', actualEndTime: end }
+        });
+        try {
+          await livekitService.deleteRoom(meeting.roomId);
+        } catch {}
+        try {
+          await deleteRoomFromDb(meeting.roomId);
+        } catch {}
+      }
+    }
+  } catch (error) {
+    console.error('Error auto-expiring meetings:', error);
+  }
+}
+
 export async function getScheduledMeeting(meetingId: string) {
+  await autoExpireMeetings();
   return await prisma.scheduledMeeting.findUnique({
     where: { id: meetingId },
     include: {
@@ -74,6 +123,7 @@ export async function getScheduledMeeting(meetingId: string) {
 }
 
 export async function getScheduledMeetingByRoomId(roomId: string) {
+  await autoExpireMeetings();
   return await prisma.scheduledMeeting.findUnique({
     where: { roomId },
     include: {
@@ -86,6 +136,7 @@ export async function getScheduledMeetingByRoomId(roomId: string) {
 }
 
 export async function getUserScheduledMeetings(userId: string) {
+  await autoExpireMeetings();
   return await prisma.scheduledMeeting.findMany({
     where: {
       hostId: userId,
@@ -103,6 +154,7 @@ export async function getUserScheduledMeetings(userId: string) {
 }
 
 export async function getUpcomingMeetings(userId: string) {
+  await autoExpireMeetings();
   const now = new Date();
   return await prisma.scheduledMeeting.findMany({
     where: {
@@ -389,16 +441,18 @@ export async function updateScheduledMeeting(
   return updatedMeeting;
 }
 
+// In-memory map to track when hosts disconnect from in-progress meetings
+const hostDisconnectionTimes = new Map<string, number>();
+
 /**
  * Background worker to auto-complete expired or abandoned meetings
  */
 export function startScheduledMeetingAutoCompleter() {
-  console.log('[Auto-Completer] Starting Scheduled Meeting Auto-Completer loop (every 5 minutes)...');
+  console.log('[Auto-Completer] Starting Scheduled Meeting Auto-Completer loop (every 1 minute)...');
 
   setInterval(async () => {
     try {
       const now = new Date();
-      const gracePeriodMs = 30 * 60 * 1000; // 30 minutes grace period
 
       // Fetch all scheduled or in-progress meetings
       const activeMeetings = await prisma.scheduledMeeting.findMany({
@@ -411,64 +465,66 @@ export function startScheduledMeetingAutoCompleter() {
         const scheduledStart = new Date(meeting.scheduledTime);
         const scheduledEnd = new Date(scheduledStart.getTime() + (meeting.durationMinutes * 60 * 1000));
 
-        // If we are past scheduled end time + grace period
-        if (now.getTime() > (scheduledEnd.getTime() + gracePeriodMs)) {
-          console.log(`[Auto-Completer] Checking expired meeting: ${meeting.title} (${meeting.id})`);
+        let shouldEnd = false;
+        let reason = '';
 
-          let shouldEnd = false;
-          let reason = '';
+        // Condition 1: If we are past scheduled end time (the duration has expired)
+        if (now.getTime() > scheduledEnd.getTime()) {
+          shouldEnd = true;
+          reason = 'Meeting expired (scheduled duration ended)';
+        }
 
-          if (meeting.status === 'scheduled') {
-            // Host never joined to transition it to in_progress, and the meeting is long past its end time.
-            shouldEnd = true;
-            reason = 'Meeting expired (host never joined)';
-          } else if (meeting.status === 'in_progress') {
-            // Meeting is in progress but past scheduled end time + grace period.
-            // Check LiveKit participant list to see if the host is still there or if the room is empty.
-            try {
-              const participants = await livekitService.listParticipants(meeting.roomId);
-
-              if (participants.length === 0) {
-                shouldEnd = true;
-                reason = 'Meeting expired (no participants remaining)';
-              } else {
-                // Check if host is present in the participant list
-                const hasHost = participants.some(p => {
-                  try {
-                    const meta = JSON.parse(p.metadata || '{}');
-                    return meta.isHost === true;
-                  } catch {
-                    return false;
-                  }
-                });
-
-                if (!hasHost) {
-                  shouldEnd = true;
-                  reason = 'Meeting expired (host left the meeting)';
-                }
+        // Condition 2: If the meeting is in progress, check if the host has left
+        if (!shouldEnd && meeting.status === 'in_progress') {
+          try {
+            const participants = await livekitService.listParticipants(meeting.roomId);
+            const hostPresent = participants.some((p: any) => {
+              try {
+                const meta = JSON.parse(p.metadata || '{}');
+                return meta.isHost === true;
+              } catch {
+                return false;
               }
-            } catch (err: any) {
-              console.error(`[Auto-Completer] Error checking room ${meeting.roomId}:`, err.message);
-              // If the room doesn't exist on LiveKit at all, we should complete it
-              shouldEnd = true;
-              reason = 'Meeting expired (room does not exist on LiveKit)';
-            }
-          }
+            });
 
-          if (shouldEnd) {
-            console.log(`[Auto-Completer] Ending meeting "${meeting.title}": ${reason}`);
-            try {
-              await livekitService.deleteRoom(meeting.roomId);
-            } catch (lkErr: any) {
-              // Ignore if room already deleted or not found
+            if (!hostPresent) {
+              const disconnectedSince = hostDisconnectionTimes.get(meeting.id);
+              if (disconnectedSince) {
+                // If the host has been disconnected for more than 1 minute (grace period)
+                if (now.getTime() - disconnectedSince > 60000) {
+                  shouldEnd = true;
+                  reason = 'Meeting expired (host disconnected for more than 1 minute)';
+                }
+              } else {
+                // Mark the host as disconnected now
+                hostDisconnectionTimes.set(meeting.id, now.getTime());
+              }
+            } else {
+              // Host is present, reset their disconnection timer if they had one
+              hostDisconnectionTimes.delete(meeting.id);
             }
-            await deleteRoomFromDb(meeting.roomId);
-            // deleteRoomFromDb already marks the ScheduledMeeting as completed in the database.
+          } catch (lkErr: any) {
+            // Room not found or connection issue - assume abandoned
+            shouldEnd = true;
+            reason = 'Meeting expired (LiveKit room not found or empty)';
           }
+        }
+
+        if (shouldEnd) {
+          console.log(`[Auto-Completer] Ending meeting "${meeting.title}": ${reason}`);
+          try {
+            await livekitService.deleteRoom(meeting.roomId);
+          } catch (lkErr: any) {
+            // Ignore if room already deleted or not found
+          }
+          await deleteRoomFromDb(meeting.roomId);
+          // deleteRoomFromDb already marks the ScheduledMeeting as completed in the database.
+          hostDisconnectionTimes.delete(meeting.id);
         }
       }
     } catch (error: any) {
       console.error('[Auto-Completer] Error in background worker loop:', error.message);
     }
-  }, 5 * 60 * 1000); // Check every 5 minutes
+  }, 1 * 60 * 1000); // Check every 1 minute
 }
+

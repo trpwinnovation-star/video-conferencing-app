@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { prisma } from '../lib/db';
 import { LivekitService } from '../services/livekit.service';
 import {
@@ -27,7 +28,7 @@ export const createProtectedRoomHandler = async (req: Request, res: Response) =>
     if (!token && req.headers.authorization?.startsWith('Bearer ')) {
       token = req.headers.authorization.substring(7);
     }
-    
+
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecret') as { id: string };
@@ -82,15 +83,30 @@ export const generateToken = async (req: Request, res: Response) => {
   try {
     const { roomName, participantName, password } = req.body;
 
-    if (!roomName || !participantName) {
-      return res.status(400).json({ error: 'roomName and participantName are required' });
-    }
-    if (!password) {
-      return res.status(400).json({ error: 'Room password is required' });
+    if (!roomName) {
+      return res.status(400).json({ error: 'roomName is required' });
     }
 
-    // Validate participantName: max 50 chars, alphanumeric + spaces + common punctuation only
-    const trimmedName = String(participantName).trim();
+    // Determine if the requesting user is authenticated
+    let decodedUser: { id: string; name: string } | null = null;
+    let jwtToken = req.cookies?.token;
+    if (!jwtToken && req.headers.authorization?.startsWith('Bearer ')) {
+      jwtToken = req.headers.authorization.substring(7);
+    }
+    if (jwtToken) {
+      try {
+        decodedUser = jwt.verify(jwtToken, process.env.JWT_SECRET || 'supersecret') as { id: string; name: string };
+      } catch {
+        // Invalid or expired token
+      }
+    }
+
+    // Determine participantName: default to user name if authenticated
+    let trimmedName = String(participantName || '').trim();
+    if (!trimmedName && decodedUser) {
+      trimmedName = decodedUser.name.trim();
+    }
+
     if (trimmedName.length === 0 || trimmedName.length > 50) {
       return res.status(400).json({ error: 'Participant name must be 1–50 characters.' });
     }
@@ -104,41 +120,54 @@ export const generateToken = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid room ID' });
     }
 
-    // Single DB query: fetch room + verify password (was 2 separate queries before)
-    const room = await getRoomAndVerifyPassword(roomId, password);
-
-    // Determine if the requesting user is the room host
-    let isHost = false;
-    let jwtToken = req.cookies?.token;
-    if (!jwtToken && req.headers.authorization?.startsWith('Bearer ')) {
-      jwtToken = req.headers.authorization.substring(7);
+    // Fetch the room details from DB
+    const room = await prisma.room.findUnique({ where: { roomId } });
+    if (!room) {
+      const scheduledMeeting = await prisma.scheduledMeeting.findUnique({
+        where: { roomId }
+      });
+      if (scheduledMeeting && scheduledMeeting.status === 'completed') {
+        return res.status(403).json({ error: 'This meeting has ended because the scheduled duration has expired.' });
+      }
+      return res.status(404).json({ error: 'Room not found. Check the code or create a new meeting.' });
     }
-    if (jwtToken) {
-      try {
-        const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET || 'supersecret') as { id: string };
-        isHost = room.createdBy === decoded.id;
 
-        if (isHost) {
-          // If it's a scheduled meeting, transition status to in_progress
-          const scheduledMeeting = await prisma.scheduledMeeting.findUnique({
-            where: { roomId }
-          });
-          if (scheduledMeeting && scheduledMeeting.status === 'scheduled') {
-            await prisma.scheduledMeeting.update({
-              where: { id: scheduledMeeting.id },
-              data: {
-                status: 'in_progress',
-                hostJoinedAt: new Date(),
-                actualStartTime: new Date(),
-              }
-            });
-            console.log(`[Token] Updated scheduled meeting ${scheduledMeeting.id} to in_progress because host joined`);
-          }
-        }
-      } catch {
-        // Invalid or expired auth token — participant joins as non-host
+    // Check if user is host (room creator)
+    let isHost = false;
+    if (decodedUser && room.createdBy === decodedUser.id) {
+      isHost = true;
+    }
+
+    // If not the host, password is required and verified
+    if (!isHost) {
+      if (!password) {
+        return res.status(400).json({ error: 'Room password is required' });
+      }
+      const valid = await bcrypt.compare(password, room.passwordHash);
+      if (!valid) {
+        return res.status(401).json({ error: 'Incorrect password' });
       }
     }
+
+    if (isHost) {
+      // If it's a scheduled meeting, transition status to in_progress
+      const scheduledMeeting = await prisma.scheduledMeeting.findUnique({
+        where: { roomId }
+      });
+      if (scheduledMeeting && scheduledMeeting.status === 'scheduled') {
+        await prisma.scheduledMeeting.update({
+          where: { id: scheduledMeeting.id },
+          data: {
+            status: 'in_progress',
+            hostJoinedAt: new Date(),
+            actualStartTime: new Date(),
+          }
+        });
+        console.log(`[Token] Updated scheduled meeting ${scheduledMeeting.id} to in_progress because host joined`);
+      }
+    }
+
+    await ensureLivekitRoom(roomId);
 
     const token = await livekitService.generateToken(roomId, trimmedName, isHost);
     return res.json({ token });
@@ -148,10 +177,10 @@ export const generateToken = async (req: Request, res: Response) => {
       console.error('[Token] Error generating token:', error);
     }
     const message = error instanceof Error ? error.message : 'Failed to generate token';
-    const status = message.includes('not found')      ? 404
-                 : message.includes('Incorrect')      ? 401
-                 : message.includes('Room is full')   ? 403
-                 : 500;
+    const status = message.includes('not found') ? 404
+      : message.includes('Incorrect') ? 401
+        : message.includes('Room is full') ? 403
+          : 500;
     return res.status(status).json({ error: message });
   }
 };
@@ -221,10 +250,10 @@ export const endMeeting = async (req: Request, res: Response) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecret') as { id: string };
-    
+
     const roomId = normalizeRoomId(roomName);
     const room = await getRoomOrThrow(roomId);
-    
+
     if (room.createdBy !== decoded.id) {
       return res.status(403).json({ error: 'Only the host can end the meeting' });
     }
@@ -234,10 +263,10 @@ export const endMeeting = async (req: Request, res: Response) => {
     } catch (livekitError: any) {
       console.warn('LiveKit room delete warning (maybe already deleted):', livekitError.message);
     }
-    
+
     // Completely destroy the room so participants are fully kicked and can't rejoin
     await deleteRoomFromDb(roomId);
-    
+
     return res.json({ message: 'Meeting ended successfully' });
   } catch (error: any) {
     console.error('Error ending meeting:', error);
@@ -253,19 +282,19 @@ export const checkRoomStatus = async (req: Request, res: Response) => {
     }
 
     const roomId = normalizeRoomId(roomName);
-    
+
     try {
       // Check if room exists in LiveKit
       const rooms = await livekitService.listRooms();
       const roomExists = rooms.some(r => r.name === roomId);
-      
-      return res.json({ 
+
+      return res.json({
         exists: roomExists,
         status: roomExists ? 'active' : 'deleted'
       });
     } catch (error) {
       console.warn('Error checking room status:', error);
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Failed to check room status',
         status: 'unknown'
       });
@@ -283,7 +312,7 @@ export const uploadSharedFileHandler = async (req: Request, res: Response) => {
     }
 
     const fileUrl = `/uploads/${req.file.filename}`;
-    
+
     return res.status(200).json({
       message: 'File uploaded successfully',
       fileUrl,

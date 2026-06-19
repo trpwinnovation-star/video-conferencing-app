@@ -74,6 +74,62 @@ export const sendPasswordResetEmail = async (toEmail: string, resetLink: string)
   }
 };
 
+export const sendMeetingInviteEmail = async (
+  toEmail: string,
+  hostName: string,
+  title: string,
+  description: string,
+  password: string,
+  scheduledTime: Date,
+  meetingLink: string
+) => {
+  try {
+    const formattedTime = new Date(scheduledTime).toLocaleString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+    });
+
+    const response = await resend.emails.send({
+      from: "Video Conference <onboarding@resend.dev>",
+      to: toEmail,
+      subject: `Meeting Invite: ${title}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #c16d18;">You've been invited to a meeting!</h2>
+          <p><strong>${hostName}</strong> has invited you to join a scheduled video meeting.</p>
+          
+          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0 0 10px 0; font-size: 18px;"><strong>${title}</strong></p>
+            ${description ? `<p style="margin: 0 0 15px 0; color: #666;">${description}</p>` : ''}
+            
+            <p style="margin: 5px 0;"><strong>Time:</strong> ${formattedTime}</p>
+            <p style="margin: 5px 0;"><strong>Password:</strong> ${password}</p>
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a
+              href="${meetingLink}"
+              style="display: inline-block; padding: 12px 24px; background-color: #c16d18; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;"
+            >
+              Join Meeting
+            </a>
+          </div>
+
+          <p style="font-size: 14px; color: #777;">
+            If the button doesn't work, you can copy and paste this link into your browser:<br/>
+            <a href="${meetingLink}" style="color: #c16d18;">${meetingLink}</a>
+          </p>
+        </div>
+      `,
+    });
+    console.log("Meeting invite email sent to:", toEmail, response);
+    return true;
+  } catch (error) {
+    console.error("Error sending meeting invite email:", error);
+    return false;
+  }
+};
+
 
 // import nodemailer from "nodemailer";
 

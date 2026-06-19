@@ -17,7 +17,7 @@ import {
   updateScheduledMeeting,
 } from '../services/scheduled-meeting.service';
 import { LivekitService } from '../services/livekit.service';
-import { createProtectedRoom, deleteRoomFromDb } from '../services/room.service';
+import { createProtectedRoom, deleteRoomFromDb, ensureLivekitRoom } from '../services/room.service';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 const livekitService = new LivekitService();
@@ -155,6 +155,8 @@ export const joinScheduledMeeting = async (req: Request, res: Response) => {
     await hostJoinedMeeting(meetingId);
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    await ensureLivekitRoom(meeting.roomId);
 
     const livekitToken = await livekitService.generateToken(
       meeting.roomId,

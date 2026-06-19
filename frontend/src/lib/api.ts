@@ -262,7 +262,44 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  role?: 'USER' | 'ADMIN';
   meetingDefaultPassword?: string;
+}
+
+// ---- Admin APIs ----
+const ADMIN_URL = `${API_BASE}/admin`;
+
+export async function apiListUsers(): Promise<{ users: User[] }> {
+  const res = await fetch(`${ADMIN_URL}/users`, {
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to list users');
+  return data;
+}
+
+export async function apiCreateUser(payload: { name: string; email: string; role: 'USER' | 'ADMIN'; password?: string }): Promise<User> {
+  const res = await fetch(`${ADMIN_URL}/users`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to create user');
+  return data.user;
+}
+
+export async function apiDeleteUser(userId: string): Promise<{ message: string }> {
+  const res = await fetch(`${ADMIN_URL}/users/${userId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to delete user');
+  return data;
 }
 
 export async function apiRegister(name: string, email: string, password: string): Promise<User> {

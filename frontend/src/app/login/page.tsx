@@ -145,12 +145,12 @@ export default function LoginPage() {
             )}
           </form>
 
-          <p className="text-center text-stone-500 text-sm mt-6">
+          {/* <p className="text-center text-stone-500 text-sm mt-6">
             Don&apos;t have an account?{" "}
             <Link href="/signup" className="text-[#c16d18] hover:text-[#965310] font-bold">
               Sign up
             </Link>
-          </p>
+          </p> */}
         </div>
 
         <p className="text-center text-stone-500 text-sm mt-6">

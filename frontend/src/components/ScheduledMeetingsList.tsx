@@ -94,9 +94,11 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
   const canJoinMeeting = (meeting: ScheduledMeeting) => {
     const now = new Date();
     const meetingStart = new Date(meeting.scheduledTime);
+    const meetingEnd = new Date(meetingStart.getTime() + meeting.durationMinutes * 60000);
     const isStatusValid = meeting.status === 'scheduled' || meeting.status === 'in_progress';
     const isTimeValid = now >= new Date(meetingStart.getTime() - 15 * 60000);
-    return isStatusValid && isTimeValid;
+    const isNotExpired = meeting.status === 'in_progress' || now < meetingEnd;
+    return isStatusValid && isTimeValid && isNotExpired;
   };
 
   if (isLoading) {
@@ -170,9 +172,9 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
 
               {/* Dropdown Menu */}
               <div className="ml-4">
-                <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600">
+                {/* <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600">
                   <MoreVertical size={20} />
-                </button>
+                </button> */}
               </div>
             </div>
 

@@ -81,6 +81,14 @@ export default function HomePage() {
         <div className="flex items-center gap-2 sm:gap-4">
           {user ? (
             <div className="flex items-center gap-2 sm:gap-3">
+              {user.role === 'ADMIN' && (
+                <Link
+                  href="/admin"
+                  className="text-[#c16d18] hover:text-[#965310] font-bold text-xs sm:text-sm transition-colors mr-1 sm:mr-2"
+                >
+                  Admin Portal
+                </Link>
+              )}
               <Link
                 href="/meetings"
                 className="text-stone-600 hover:text-stone-900 font-semibold text-xs sm:text-sm transition-colors hidden sm:block"
@@ -114,12 +122,12 @@ export default function HomePage() {
               <Link href="/login" className="text-stone-600 hover:text-stone-900 font-semibold text-xs sm:text-sm transition-colors">
                 Sign in
               </Link>
-              <Link
+              {/* <Link
                 href="/signup"
                 className="bg-[#c16d18] hover:bg-[#a0560e] text-white text-xs sm:text-sm px-3 py-2 sm:px-4.5 sm:py-2.5 rounded-lg sm:rounded-xl font-bold shadow-md shadow-[#c16d18]/15 transition-all active:scale-95"
               >
                 Sign up
-              </Link>
+              </Link> */}
             </>
           )}
         </div>

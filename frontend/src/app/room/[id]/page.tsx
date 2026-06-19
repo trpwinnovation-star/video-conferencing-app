@@ -11,6 +11,7 @@ import { RoomEvent } from "livekit-client";
 import "@livekit/components-styles";
 import { getToken, apiUploadSharedFile } from "@/lib/api";
 import { getStoredRoomPassword, clearRoomPassword } from "@/lib/roomAccess";
+import { useAuth } from "@/lib/auth";
 import { RoomHeader } from "@/components/RoomHeader";
 import { ParticipantGrid } from "@/components/ParticipantGrid";
 import { MeetingControls } from "@/components/MeetingControls";
@@ -471,6 +472,8 @@ export default function RoomPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const { user, loading: authLoading } = useAuth();
+
   const nameFromQuery = searchParams.get("name") || "";
   const [participantName, setParticipantName] = useState(nameFromQuery);
 
@@ -495,10 +498,19 @@ export default function RoomPage() {
   // where participants joining a live meeting saw "meeting ended by host".
   const meetingEndedRef = useRef(false);
 
+  const [attemptedPasswordless, setAttemptedPasswordless] = useState(false);
+
   const handleRecordingStateChange = (rec: boolean, dur: number) => {
     setIsRecording(rec);
     setRecordingDuration(dur);
   };
+
+  // Autofill participantName from authenticated user
+  useEffect(() => {
+    if (user && !nameFromQuery && !participantName) {
+      setParticipantName(user.name);
+    }
+  }, [user, nameFromQuery, participantName]);
 
   // ── 1. Restore password from localStorage on first page load ─────────────
   useEffect(() => {
@@ -517,10 +529,40 @@ export default function RoomPage() {
     setStorageChecked(true);
   }, [roomName]);
 
+  // Attempt a password-less token fetch if logged in (in case the user is the host)
+  useEffect(() => {
+    if (token || accessPassword !== null || !storageChecked || authLoading || !user || attemptedPasswordless) return;
+
+    let cancelled = false;
+    const checkHostJoin = async () => {
+      setAttemptedPasswordless(true);
+      try {
+        const nameToUse = participantName.trim() || user.name.trim();
+        const t = await getToken(roomName, nameToUse, "");
+        if (!cancelled) {
+          setToken(t);
+          setAccessPassword("");
+          passwordRef.current = "";
+          if (!participantName) {
+            setParticipantName(nameToUse);
+          }
+          const url = new URL(window.location.href);
+          url.searchParams.set("name", nameToUse);
+          router.replace(url.pathname + url.search, { scroll: false });
+        }
+      } catch (err) {
+        console.log("[Room] Password-less join not available (requires password).");
+      }
+    };
+
+    checkHostJoin();
+    return () => { cancelled = true; };
+  }, [user, authLoading, token, accessPassword, storageChecked, attemptedPasswordless, roomName, participantName, router]);
+
   // ── 2. Fetch a LiveKit token whenever we have a password but no token ─────
   // Also fires during silent reconnects triggered by onDisconnected Case 3.
   useEffect(() => {
-    if (!accessPassword || token) return;
+    if (accessPassword === null || token) return;
     if (!participantName.trim()) return;
 
     let cancelled = false;
@@ -578,8 +620,8 @@ export default function RoomPage() {
 
   // ── Render guards (in order) ──────────────────────────────────────────────
 
-  // Still loading from localStorage
-  if (!storageChecked) {
+  // Still loading from localStorage or waiting for auth status
+  if (!storageChecked || authLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#FBF9FA]">
         <Loader2 className="animate-spin text-[#c16d18]" size={32} />
@@ -614,7 +656,7 @@ export default function RoomPage() {
   }
 
   // No credentials → show join gate
-  if (!accessPassword && !token) {
+  if (accessPassword === null && !token) {
     return (
       <RoomJoinGate
         roomId={roomName}
@@ -736,7 +778,7 @@ export default function RoomPage() {
           console.warn("[Room] Unexpected disconnect — reconnecting silently...");
           const pwd = passwordRef.current;
           setToken("");
-          if (pwd) setAccessPassword(pwd);
+          if (pwd !== null) setAccessPassword(pwd);
         }}
       >
         <RoomPinProvider>

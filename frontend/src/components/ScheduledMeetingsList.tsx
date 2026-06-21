@@ -209,7 +209,7 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
                 )}
 
                 {/* Join Button */}
-                {canJoinMeeting(meeting) && (
+                {canJoinMeeting(meeting) ? (
                   <button
                     onClick={() => handleJoinMeeting(meeting)}
                     className="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer text-sm"
@@ -217,6 +217,13 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
                     <Play size={15} />
                     <span>Join Now</span>
                   </button>
+                ) : (
+                  meeting.status === 'scheduled' && new Date() < new Date(new Date(meeting.scheduledTime).getTime() - 15 * 60000) && (
+                    <div className="flex items-center justify-center bg-stone-50/50 border border-dashed border-stone-300 text-stone-500 text-xs px-4 py-2.5 rounded-xl font-medium select-none">
+                      <Clock size={13} className="mr-1.5 opacity-60" />
+                      <span>Join unlocks 15 mins before start</span>
+                    </div>
+                  )
                 )}
 
                 {/* Future Starts */}

@@ -53,14 +53,19 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center mb-12">
-          <Image
-            src="/logo_betel.png"
-            alt="BetelMeet Logo"
-            width={200}
-            height={50}
-            className="object-contain mix-blend-multiply"
-            priority
-          />
+          <div className="relative inline-flex flex-col items-start w-[160px] sm:w-[200px]">
+            <Image
+              src="/logo_betel.png"
+              alt="BetelMeet Logo"
+              width={200}
+              height={50}
+              className="object-contain mix-blend-multiply w-full"
+              priority
+            />
+            <span style={{ fontSize: '14px', fontFamily: 'serif' }} className="absolute bottom-[-2px] sm:bottom-[2px] left-[34px] sm:left-[44px] text-[#c16d18] font-bold tracking-wider leading-none whitespace-nowrap">
+              by TRPW Partners
+            </span>
+          </div>
         </div>
 
         <div className="bg-white border border-stone-200/80 rounded-2xl p-8 shadow-xl">

@@ -3,13 +3,14 @@
 import React from "react";
 import { useRoomContext, useLocalParticipant } from "@livekit/components-react";
 import { ParticipantEvent } from "livekit-client";
-import { PhoneOff, X, MessageSquare } from "lucide-react";
+import { PhoneOff, X, MessageSquare, Settings } from "lucide-react";
 import { AudioToggleButton } from "./AudioToggleButton";
 import { VideoToggleButton } from "./VideoToggleButton";
 import { CameraFlipButton } from "./CameraFlipButton";
 import { ScreenShareButton } from "./ScreenShareButton";
 import { RecordingControls } from "./RecordingControls";
 import { SaveRecordingModal } from "./SaveRecordingModal";
+import { DeviceSettingsModal } from "./DeviceSettingsModal";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -70,6 +71,7 @@ export function MeetingControls({
 
   const [showRecordPopup, setShowRecordPopup] = React.useState(false);
   const [hasShownPopup, setHasShownPopup] = React.useState(false);
+  const [showSettingsModal, setShowSettingsModal] = React.useState(false);
 
   React.useEffect(() => {
     if (isHost && !hasShownPopup) {
@@ -202,6 +204,16 @@ export function MeetingControls({
 
         <div className="flex flex-col items-center gap-1 group">
           <button
+            onClick={() => setShowSettingsModal(true)}
+            className="h-10 w-14 md:h-12 md:w-20 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer relative border bg-white border-stone-200 text-stone-700 hover:text-stone-900 hover:bg-stone-50"
+          >
+            <Settings size={20} className="md:w-[22px] md:h-[22px]" />
+          </button>
+          <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Settings</span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1 group">
+          <button
             onClick={onToggleChat}
             className={cn(
               "h-10 w-14 md:h-12 md:w-20 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer relative border",
@@ -280,6 +292,11 @@ export function MeetingControls({
           duration={recordingDuration}
         />
       )}
+      
+      <DeviceSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
     </>
   );
 }

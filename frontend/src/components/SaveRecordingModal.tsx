@@ -14,7 +14,7 @@ interface SaveRecordingModalProps {
 export function SaveRecordingModal({ isOpen, onClose, blob, roomName, duration }: SaveRecordingModalProps) {
   const [fileName, setFileName] = useState(() => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    return `Recording-${roomName}-${timestamp}`;
+    return `RoomId-${roomName}-${timestamp}`;
   });
   const [downloaded, setDownloaded] = useState(false);
 
@@ -75,7 +75,7 @@ export function SaveRecordingModal({ isOpen, onClose, blob, roomName, duration }
             <div>
               <p className="font-bold text-stone-900 text-sm">{roomName}</p>
               <p className="text-xs text-stone-500 mt-0.5">
-                Duration: {formatDuration(duration)} • Size: {formatFileSize(blob.size)}
+                • Size: {formatFileSize(blob.size)}
               </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-[#c16d18]/10 flex items-center justify-center">
@@ -132,11 +132,18 @@ export function SaveRecordingModal({ isOpen, onClose, blob, roomName, duration }
             </div> */}
           {/* </div> */}
 
-          {/* Server download limit info */}
-          {/* <p className="text-stone-400 text-sm mb-6 text-center">
-            A raw backup of your recording is ready. <br />
-            <span className="text-[#c16d18] font-bold">Note: A highly compatible MP4 is being processed on the server and will be available in your Dashboard.</span>
-          </p> */}
+          {/* Emergency Backup Notice */}
+          <div className="p-4 bg-amber-50/80 border border-amber-200/80 rounded-2xl text-xs sm:text-sm text-stone-700 space-y-1.5 leading-relaxed">
+            <p className="font-bold text-amber-900 flex items-center gap-1.5">
+              ⚠️ Emergency Raw Backup Notice
+            </p>
+            <p>
+              The video downloaded here is a direct, raw browser stream backup. Because it is captured live in real-time, it lacks indexing metadata and <strong>will not be skippable or seekable</strong> in media players.
+            </p>
+            <p className="pt-1 border-t border-amber-200/60 text-[#c16d18] font-semibold">
+              👉 For the fully processed, skippable video, please download it from the <strong>Meetings tab</strong> under your Profile section.
+            </p>
+          </div>
         </div>
 
         {/* Footer */}

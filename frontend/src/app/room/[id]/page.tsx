@@ -211,7 +211,7 @@ function ActiveRoomContent({
 
               ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
               ctx.font = `normal ${Math.max(12, Math.floor(width * 0.03))}px sans-serif`;
-              ctx.fillText("Location verified without video", width / 2, height / 2 + 20);
+              ctx.fillText("Location without video", width / 2, height / 2 + 20);
 
               // Restore default alignments for the footer text
               ctx.textAlign = "left";
@@ -240,11 +240,11 @@ function ActiveRoomContent({
             let currentY = height + padding + 5;
 
             const targetName = participant?.name || msg.targetIdentity;
-            ctx.fillText(`TARGET IDENTITY: ${targetName}`, padding, currentY);
+            ctx.fillText(`Partcipant Name: ${targetName}`, padding, currentY);
 
             ctx.fillStyle = "#c16d18";
             currentY += lineSpacing;
-            ctx.fillText(`COORDINATES: Lat ${msg.latitude.toFixed(6)}, Lon ${msg.longitude.toFixed(6)}`, padding, currentY);
+            ctx.fillText(`COORDINATES: Lat ${msg.latitude.toFixed(6)}, Long ${msg.longitude.toFixed(6)}`, padding, currentY);
 
             ctx.fillStyle = "#ffffff";
             currentY += lineSpacing;

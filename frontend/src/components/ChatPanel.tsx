@@ -33,7 +33,7 @@ export function ChatPanel({ isOpen, onClose, messages, onSendMessage, onSendFile
   const [inputText, setInputText] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [showGeoDropdown, setShowGeoDropdown] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -172,11 +172,10 @@ export function ChatPanel({ isOpen, onClose, messages, onSendMessage, onSendFile
 
               {/* Message Bubble */}
               <div
-                className={`p-3 rounded-2xl text-sm leading-relaxed shadow-sm max-w-full overflow-hidden ${
-                  msg.isLocal
+                className={`p-3 rounded-2xl text-sm leading-relaxed shadow-sm max-w-full overflow-hidden ${msg.isLocal
                     ? "bg-[#c16d18] text-white rounded-tr-none"
                     : "bg-white border border-stone-200 text-stone-800 rounded-tl-none"
-                }`}
+                  }`}
               >
                 {msg.text && <p className="break-all">{msg.text}</p>}
 
@@ -196,11 +195,10 @@ export function ChatPanel({ isOpen, onClose, messages, onSendMessage, onSendFile
                       download={msg.file.name}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all active:scale-95 cursor-pointer ${
-                        msg.isLocal
+                      className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all active:scale-95 cursor-pointer ${msg.isLocal
                           ? "bg-white/10 hover:bg-white/20 border-white/20 text-white"
                           : "bg-[#c16d18]/15 hover:bg-[#c16d18]/25 border-[#c16d18]/20 text-[#c16d18]"
-                      }`}
+                        }`}
                     >
                       <Download size={12} />
                       Download File
@@ -246,7 +244,7 @@ export function ChatPanel({ isOpen, onClose, messages, onSendMessage, onSendFile
               {showGeoDropdown && (
                 <div className="absolute bottom-full mb-2 left-0 bg-white border border-stone-200/80 rounded-2xl p-1.5 shadow-2xl min-w-[180px] z-50 max-h-48 overflow-y-auto no-scrollbar">
                   <div className="text-[10px] font-bold text-stone-400 px-2.5 py-1 uppercase tracking-wider select-none border-b border-stone-100 mb-1">
-                    Capture Participant
+                    Geo-Tag
                   </div>
                   {otherParticipants.length === 0 ? (
                     <div className="text-[10px] text-stone-500 px-2.5 py-2">

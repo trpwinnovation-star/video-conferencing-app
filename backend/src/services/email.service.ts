@@ -84,10 +84,18 @@ export const sendMeetingInviteEmail = async (
   meetingLink: string
 ) => {
   try {
-    const formattedTime = new Date(scheduledTime).toLocaleString('en-US', {
+    const dateObj = new Date(scheduledTime);
+    const istTime = dateObj.toLocaleString('en-US', {
+      timeZone: 'Asia/Kolkata',
       weekday: 'short', month: 'short', day: 'numeric',
-      hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
-    });
+      hour: 'numeric', minute: '2-digit'
+    }) + ' IST';
+
+    const utcTime = dateObj.toLocaleString('en-US', {
+      timeZone: 'UTC',
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit'
+    }) + ' UTC';
 
     const response = await resend.emails.send({
       from: "Video Conference <onboarding@resend.dev>",
@@ -102,8 +110,9 @@ export const sendMeetingInviteEmail = async (
             <p style="margin: 0 0 10px 0; font-size: 18px;"><strong>${title}</strong></p>
             ${description ? `<p style="margin: 0 0 15px 0; color: #666;">${description}</p>` : ''}
             
-            <p style="margin: 5px 0;"><strong>Time:</strong> ${formattedTime}</p>
-            <p style="margin: 5px 0;"><strong>Password:</strong> ${password}</p>
+            <p style="margin: 5px 0;"><strong>Time (IST):</strong> ${istTime}</p>
+            <p style="margin: 5px 0; color: #666;"><strong>Time (UTC):</strong> ${utcTime}</p>
+            <p style="margin: 15px 0 5px 0;"><strong>Password:</strong> ${password}</p>
           </div>
 
           <div style="text-align: center; margin: 30px 0;">

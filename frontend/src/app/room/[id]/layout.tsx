@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 
 type Props = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
-export function generateMetadata({ params }: Props): Metadata {
-  const roomId = decodeURIComponent(params.id);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const resolvedParams = await params;
+  const roomId = decodeURIComponent(resolvedParams.id);
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://video-confrencing-frontend.onrender.com").replace(/\/$/, "");
-  const roomUrl = `${appUrl}/room/${encodeURIComponent(params.id)}`;
-  const imageUrl = `${appUrl}/betel.jpeg`;
+  const roomUrl = `${appUrl}/room/${encodeURIComponent(resolvedParams.id)}`;
+  const imageUrl = `${appUrl}/logo_betel.png`;
 
   return {
     metadataBase: new URL(appUrl),
@@ -22,8 +23,8 @@ export function generateMetadata({ params }: Props): Metadata {
       images: [
         {
           url: imageUrl,
-          width: 800,
-          height: 800,
+          width: 1200,
+          height: 630,
           alt: "BetelMeet Logo",
         },
       ],
@@ -37,9 +38,9 @@ export function generateMetadata({ params }: Props): Metadata {
       images: [imageUrl],
     },
     icons: {
-      icon: imageUrl,
-      shortcut: imageUrl,
-      apple: imageUrl,
+      icon: "/logo_betel.png",
+      shortcut: "/logo_betel.png",
+      apple: "/logo_betel.png",
     },
   };
 }

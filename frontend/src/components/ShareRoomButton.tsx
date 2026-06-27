@@ -30,15 +30,15 @@ export function ShareRoomButton({ roomId, className }: ShareRoomButtonProps) {
       onClick={handleShare}
       title="Copy invite link (password required to join)"
       className={cn(
-        "flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all border cursor-pointer",
+        "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-bold transition-all border cursor-pointer shadow-sm shrink-0",
         copied
           ? "bg-green-50 border-green-200 text-green-700"
           : "bg-[#FBF9FA] border-stone-200/80 text-stone-700 hover:border-[#c16d18]/40 hover:text-[#c16d18]",
         className
       )}
     >
-      {copied ? <Check size={16} /> : <Link2 size={16} />}
-      <span className="hidden sm:inline">{copied ? "Copied!" : "Share"}</span>
+      {copied ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Link2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+      <span>{copied ? "Copied!" : "Share"}</span>
     </button>
   );
 }

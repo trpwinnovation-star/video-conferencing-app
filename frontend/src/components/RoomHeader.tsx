@@ -21,7 +21,7 @@ export function RoomHeader({ roomName }: RoomHeaderProps) {
       <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
         <div className="bg-[#c16d18] text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs md:text-sm font-bold shadow-md shadow-[#c16d18]/20 font-mono flex items-center gap-1.5 sm:gap-2 min-w-0">
           <span className="hidden md:inline">Meeting ID :</span>
-          <span className="truncate max-w-[100px] sm:max-w-[160px] md:max-w-none">{roomName}</span>
+          <span className="truncate max-w-[90px] sm:max-w-[160px] md:max-w-none">{roomName}</span>
           <button
             onClick={() => {
               navigator.clipboard.writeText(roomName).then(() => {
@@ -35,7 +35,7 @@ export function RoomHeader({ roomName }: RoomHeaderProps) {
             {copied ? <Check size={12} className="sm:w-3.5 sm:h-3.5 text-white" /> : <Copy size={12} className="sm:w-3.5 sm:h-3.5 text-white" />}
           </button>
         </div>
-        <div className="hidden sm:block">
+        <div className="block shrink-0">
           <ShareRoomButton roomId={roomName} />
         </div>
       </div>

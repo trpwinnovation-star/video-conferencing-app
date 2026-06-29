@@ -1,75 +1,89 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import path from 'path';
 require("dotenv").config({ path: path.join(__dirname, ".env") });
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+// --- RESEND CONFIG (COMMENTED OUT) ---
+// import { Resend } from "resend";
+// const resend = new Resend(process.env.RESEND_API_KEY);
+
+const SENDER_EMAIL = process.env.SMTP_USER || "trpwinnovation@gmail.com";
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: SENDER_EMAIL,
+    pass: process.env.SMTP_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
+    servername: "smtp.gmail.com",
+  },
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
+});
 
 export const sendRecordingReadyEmail = async (
   toEmail: string,
   roomName: string,
   recordingLink: string
 ) => {
+  const mailOptions = {
+    from: `"BetelMeet" <${SENDER_EMAIL}>`,
+    to: toEmail,
+    subject: `Your recording for ${roomName} is ready`,
+    html: `
+      <h2>Your meeting recording is ready!</h2>
+      <p>The recording for room <strong>${roomName}</strong> has been processed successfully.</p>
+      <p>You can view and download it using the secure link below. This link will expire in 24 hours.</p>
+      <a href="${recordingLink}" style="display:inline-block;padding:10px 20px;background-color:#c16d18;color:#ffffff;text-decoration:none;border-radius:5px;font-weight:bold;">
+        View Recording
+      </a>
+      <p>If the button doesn't work, copy and paste this link into your browser:</p>
+      <p><a href="${recordingLink}" style="color:#c16d18;">${recordingLink}</a></p>
+      <br />
+      <p>Thanks,<br/>BetelMeet Team</p>
+    `,
+  };
+
   try {
-    const response = await resend.emails.send({
-      from: "Video Conference <onboarding@resend.dev>",
-      to: toEmail,
-      subject: `Your recording for ${roomName} is ready`,
-      html: `
-        <h2>Your meeting recording is ready!</h2>
-
-        <p>
-          The recording for room <strong>${roomName}</strong>
-          has been processed successfully.
-        </p>
-
-        <a
-          href="${recordingLink}"
-          style="
-            display:inline-block;
-            padding:10px 20px;
-            background:#007bff;
-            color:white;
-            text-decoration:none;
-            border-radius:5px;
-          "
-        >
-          View Recording
-        </a>
-
-        <p>${recordingLink}</p>
-      `,
-    });
-
-    console.log("Email sent:", response);
-
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Recording ready email sent: %s', info.messageId);
     return true;
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error('Error sending recording ready email:', error);
     return false;
   }
 };
 
 export const sendPasswordResetEmail = async (toEmail: string, resetLink: string) => {
+  const mailOptions = {
+    from: `"BetelMeet" <${SENDER_EMAIL}>`,
+    to: toEmail,
+    subject: "Password Reset Request",
+    html: `
+      <h2>Password Reset</h2>
+      <p>You requested a password reset. Click the button below to reset your password. This link expires in 15 minutes.</p>
+      <a
+        href="${resetLink}"
+        style="display:inline-block;padding:10px 20px;background:#c16d18;color:white;text-decoration:none;border-radius:5px;font-weight:bold;"
+      >
+        Reset Password
+      </a>
+      <p>If you didn't request this, you can safely ignore this email.</p>
+      <br />
+      <p>Thanks,<br/>BetelMeet Team</p>
+    `,
+  };
+
   try {
-    const response = await resend.emails.send({
-      from: "Video Conference <onboarding@resend.dev>",
-      to: toEmail,
-      subject: "Password Reset Request",
-      html: `
-        <h2>Password Reset</h2>
-        <p>You requested a password reset. Click the button below to reset your password. This link expires in 15 minutes.</p>
-        <a
-          href="${resetLink}"
-          style="display:inline-block;padding:10px 20px;background:#c16d18;color:white;text-decoration:none;border-radius:5px;font-weight:bold;"
-        >
-          Reset Password
-        </a>
-        <p>If you didn't request this, you can safely ignore this email.</p>
-      `,
-    });
-    console.log("Password reset email sent:", response);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Password reset email sent: %s', info.messageId);
     return true;
   } catch (error) {
-    console.error("Error sending password reset email:", error);
+    console.error('Error sending password reset email:', error);
     return false;
   }
 };
@@ -97,8 +111,8 @@ export const sendMeetingInviteEmail = async (
       hour: 'numeric', minute: '2-digit'
     }) + ' UTC';
 
-    const response = await resend.emails.send({
-      from: "Video Conference <onboarding@resend.dev>",
+    const mailOptions = {
+      from: `"BetelMeet" <${SENDER_EMAIL}>`,
       to: toEmail,
       subject: `Meeting Invite: ${title}`,
       html: `
@@ -130,62 +144,13 @@ export const sendMeetingInviteEmail = async (
           </p>
         </div>
       `,
-    });
-    console.log("Meeting invite email sent to:", toEmail, response);
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Meeting invite email sent to:", toEmail, info.messageId);
     return true;
   } catch (error) {
     console.error("Error sending meeting invite email:", error);
     return false;
   }
 };
-
-
-// import nodemailer from "nodemailer";
-
-// const transporter = nodemailer.createTransport({
-//   host: "74.125.69.108",
-//   port: 587,
-//   secure: false,
-
-//   auth: {
-//     user: process.env.SMTP_USER,
-//     pass: process.env.SMTP_PASS,
-//   },
-
-//   tls: {
-//     rejectUnauthorized: false,
-//     servername: "smtp.gmail.com",
-//   },
-
-//   connectionTimeout: 30000,
-//   greetingTimeout: 30000,
-//   socketTimeout: 30000,
-// });
-// export const sendRecordingReadyEmail = async (toEmail: string, roomName: string, recordingLink: string) => {
-//   const mailOptions = {
-//     from: `"Video Conference App" <${process.env.SMTP_USER || 'your-email@gmail.com'}>`,
-//     to: toEmail,
-//     subject: `Your recording for ${roomName} is ready`,
-//     html: `
-//       <h2>Your meeting recording is ready!</h2>
-//       <p>The recording for room <strong>${roomName}</strong> has been successfully processed.</p>
-//       <p>You can view and download it using the secure link below. This link will expire in 24 hours.</p>
-//       <a href="${recordingLink}" style="display:inline-block;padding:10px 20px;background-color:#007bff;color:#ffffff;text-decoration:none;border-radius:5px;">
-//         View Recording
-//       </a>
-//       <p>If the button doesn't work, copy and paste this link into your browser:</p>
-//       <p><a href="${recordingLink}">${recordingLink}</a></p>
-//       <br />
-//       <p>Thanks,<br/>Video Conference Team</p>
-//     `,
-//   };
-
-//   try {
-//     const info = await transporter.sendMail(mailOptions);
-//     console.log('Message sent: %s', info.messageId);
-//     return true;
-//   } catch (error) {
-//     console.error('Error sending email:', error);
-//     return false;
-//   }
-// };

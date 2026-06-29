@@ -9,14 +9,17 @@ require("dotenv").config({ path: path.join(__dirname, ".env") });
 const SENDER_EMAIL = process.env.SMTP_USER || "trpwinnovation@gmail.com";
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "74.125.69.108", // Explicit IPv4 address for smtp.gmail.com to completely bypass Node.js IPv6 DNS lookup bugs
   port: 465,
-  secure: true, // true for 465 (Direct SSL/TLS), bypasses cloud firewall STARTTLS blocks on port 587
+  secure: true, // Direct SSL/TLS
   auth: {
     user: SENDER_EMAIL,
     pass: process.env.SMTP_PASS,
   },
-  family: 4, // Force IPv4 to prevent ENETUNREACH in IPv6 cloud containers like Render
+  tls: {
+    servername: "smtp.gmail.com", // SNI servername required when connecting directly via IP address
+    rejectUnauthorized: false,
+  },
   connectionTimeout: 30000,
   greetingTimeout: 30000,
   socketTimeout: 30000,

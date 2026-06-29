@@ -366,6 +366,24 @@ export default function EditMeetingPage() {
                 />
               </div>
 
+              {/* Attendee Emails */}
+              <div>
+                <label className="block text-sm font-bold text-stone-700 mb-2 flex items-center gap-2">
+                  <Users size={16} className="text-[#c16d18]" /> Attendee Emails (comma separated)
+                </label>
+                <input
+                  type="text"
+                  value={attendeeEmails}
+                  onChange={(e) => setAttendeeEmails(e.target.value)}
+                  placeholder="colleague@example.com, client@company.com"
+                  className="w-full px-4 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#c16d18]/40 focus:border-[#c16d18] bg-stone-50/50"
+                  disabled={isSaving}
+                />
+                <p className="text-xs text-stone-500 mt-1.5">
+                  Separate multiple email addresses with commas.
+                </p>
+              </div>
+
 
               {/* Error Message */}
               {error && (

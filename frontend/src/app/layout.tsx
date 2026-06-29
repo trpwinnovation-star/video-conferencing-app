@@ -15,9 +15,9 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://video-confrencing-fro
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   icons: {
-    icon: "/logo_betel.png",
-    shortcut: "/logo_betel.png",
-    apple: "/logo_betel.png",
+    icon: "/betel.jpeg",
+    shortcut: "/betel.jpeg",
+    apple: "/betel.jpeg",
   },
   title: "BetelMeet",
   description: "Real-time meetings by BetelMeet. Using your browser, share your video, desktop, and presentations with teammates and customers.",
@@ -28,9 +28,9 @@ export const metadata: Metadata = {
     siteName: "BetelMeet",
     images: [
       {
-        url: "/logo_betel.png",
-        width: 1200,
-        height: 630,
+        url: "/betel.jpeg",
+        width: 800,
+        height: 800,
         alt: "BetelMeet Logo",
       },
     ],
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "BetelMeet",
     description: "Real-time meetings by BetelMeet. Using your browser, share your video, desktop, and presentations with teammates and customers.",
-    images: ["/logo_betel.png"],
+    images: ["/betel.jpeg"],
   },
 };
 

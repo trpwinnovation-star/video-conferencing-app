@@ -10,15 +10,11 @@ const SENDER_EMAIL = process.env.SMTP_USER || "trpwinnovation@gmail.com";
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // true for 465, false for other ports
+  port: 465,
+  secure: true, // true for 465 (Direct SSL/TLS), bypasses cloud firewall STARTTLS blocks on port 587
   auth: {
     user: SENDER_EMAIL,
     pass: process.env.SMTP_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false,
-    servername: "smtp.gmail.com",
   },
   family: 4, // Force IPv4 to prevent ENETUNREACH in IPv6 cloud containers like Render
   connectionTimeout: 30000,

@@ -20,6 +20,7 @@ const transporter = nodemailer.createTransport({
     rejectUnauthorized: false,
     servername: "smtp.gmail.com",
   },
+  family: 4, // Force IPv4 to prevent ENETUNREACH in IPv6 cloud containers like Render
   connectionTimeout: 30000,
   greetingTimeout: 30000,
   socketTimeout: 30000,

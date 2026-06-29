@@ -436,6 +436,25 @@ export async function updateScheduledMeeting(
         },
       });
     }
+
+    // Send updated email invitations to attendees
+    if (data.attendeeEmails.length > 0) {
+      const host = await prisma.user.findUnique({ where: { id: updatedMeeting.hostId } });
+      const hostName = host ? host.name : 'A member';
+      const roomPassword = data.password || 'Unchanged (use your original meeting password)';
+
+      for (const email of data.attendeeEmails) {
+        sendMeetingInviteEmail(
+          email,
+          hostName,
+          `[UPDATED] ${updatedMeeting.title}`,
+          updatedMeeting.description || '',
+          roomPassword,
+          updatedMeeting.scheduledTime,
+          updatedMeeting.shareableLink
+        ).catch(console.error);
+      }
+    }
   }
 
   return updatedMeeting;

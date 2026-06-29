@@ -54,21 +54,23 @@ export function ScreenShareButton() {
 
       {/* Zoom / Google Meet style warning modal */}
       {showWarningModal && otherSharingParticipant && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-xl border border-stone-200 text-stone-900 animate-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center mb-4 text-orange-500">
-              <AlertTriangle size={24} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-xs sm:max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-stone-200 text-stone-900 max-h-[85vh] overflow-y-auto flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-orange-500 shrink-0">
+                <AlertTriangle size={20} />
+              </div>
+              <h3 className="text-base sm:text-lg font-extrabold text-stone-900 leading-tight">
+                Someone is already sharing
+              </h3>
             </div>
-            <h3 className="text-xl font-extrabold text-stone-900 mb-2">
-              Someone is already sharing
-            </h3>
-            <p className="text-stone-600 mb-6 text-sm leading-relaxed">
+            <p className="text-stone-600 mb-5 text-xs sm:text-sm leading-relaxed flex-1">
               <strong>{otherSharingParticipant.name || otherSharingParticipant.identity}</strong> is currently sharing their screen. To prevent confusion, only one person can share at a time. Please wait for them to stop before sharing your screen.
             </p>
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-2 border-t border-stone-100 shrink-0">
               <button
                 onClick={() => setShowWarningModal(false)}
-                className="bg-[#c16d18] hover:bg-[#a0560e] text-white font-bold py-2.5 px-6 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                className="bg-[#c16d18] hover:bg-[#a0560e] text-white font-bold py-2 px-5 rounded-xl text-xs sm:text-sm transition-all shadow-md active:scale-95 cursor-pointer"
               >
                 Got it
               </button>

@@ -57,14 +57,24 @@ function ResetPasswordForm() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center mb-12">
-          <Image
-            src="/logo_betel.png"
-            alt="BetelMeet Logo"
-            width={200}
-            height={50}
-            className="object-contain mix-blend-multiply"
-            priority
-          />
+          <div className="flex flex-col items-end w-max">
+            <Link href="/" className="block hover:opacity-80 transition-opacity">
+              <img
+                src="/betel_meet_new.png"
+                alt="BetelMeet Logo"
+                className="w-[160px] sm:w-[200px] h-auto object-contain mix-blend-multiply block"
+              />
+            </Link>
+            <a
+              href="https://trpwpartners.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block font-serif font-semibold text-[#c16d18] mt-0 sm:-mt-[2px] mr-[2px] tracking-[0.2px] leading-none text-[11px] sm:text-[14px] hover:opacity-80 hover:underline decoration-[#c16d18] transition-all"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+            >
+              by TRPW Partners
+            </a>
+          </div>
         </div>
 
         <div className="bg-white border border-stone-200/80 rounded-2xl p-8 shadow-xl">

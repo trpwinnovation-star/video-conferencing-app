@@ -99,9 +99,24 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-[#FBF9FA] text-stone-900 pb-12">
       {/* Navbar */}
       <nav className="flex items-center justify-between h-16 px-8 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
-        <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-          <Image src="/logo_betel.png" alt="BetelMeet Logo" width={160} height={40} className="object-contain mix-blend-multiply" />
-        </Link>
+        <div className="flex flex-col items-end w-max py-1">
+          <Link href="/" className="block hover:opacity-80 transition-opacity">
+            <img
+              src="/betel_meet_new.png"
+              alt="BetelMeet Logo"
+              className="w-[120px] sm:w-[135px] h-auto object-contain mix-blend-multiply block"
+            />
+          </Link>
+          <a
+            href="https://trpwpartners.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block font-serif font-semibold text-[#c16d18] mt-0 sm:-mt-[2px] mr-[2px] tracking-[0.2px] leading-none text-[11px] sm:text-[9.5px] hover:opacity-80 hover:underline decoration-[#c16d18] transition-all"
+            style={{ fontFamily: '"Times New Roman", Times, serif' }}
+          >
+            by TRPW Partners
+          </a>
+        </div>
         <Link href="/" className="flex items-center gap-1.5 text-stone-500 hover:text-stone-900 text-sm font-semibold transition-colors">
           <ArrowLeft size={16} />
           Back to Home
@@ -117,21 +132,21 @@ export default function ProfilePage() {
             <div className="bg-white border border-stone-200/80 rounded-2xl shadow-sm overflow-hidden flex flex-col relative group">
               {/* Cover Header */}
               <div className="h-28 w-full bg-gradient-to-br from-[#c16d18]/10 via-[#e8943a]/5 to-[#c16d18]/20 border-b border-stone-100"></div>
-              
+
               <div className="px-6 pb-8 pt-0 text-center relative flex-grow flex flex-col items-center">
                 {/* Avatar */}
                 <div className="w-24 h-24 rounded-full bg-white mx-auto flex items-center justify-center text-[#c16d18] text-4xl font-extrabold shadow-md mb-4 -mt-12 border-4 border-white relative z-10 group-hover:scale-105 transition-transform duration-300">
                   {user.name[0].toUpperCase()}
                 </div>
-                
+
                 {/* Name */}
-                <h2 
-                  className="text-xl font-bold text-stone-900 w-full truncate px-2" 
+                <h2
+                  className="text-xl font-bold text-stone-900 w-full truncate px-2"
                   title={user.name}
                 >
                   {user.name}
                 </h2>
-                
+
                 {/* Email */}
                 <div className="w-full mt-3">
                   <div className="flex flex-col items-center justify-center gap-1.5 bg-stone-50 border border-stone-100 rounded-xl p-3 w-full">
@@ -144,7 +159,7 @@ export default function ProfilePage() {
                     </span>
                   </div>
                 </div>
-                
+
                 {/* Role / Status Badge (Optional aesthetic addition) */}
                 <div className="mt-6">
                   <span className="px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-xs font-bold uppercase tracking-wider">

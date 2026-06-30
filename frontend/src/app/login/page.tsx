@@ -53,18 +53,23 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center mb-12">
-          <div className="relative inline-flex flex-col items-start w-[160px] sm:w-[200px]">
-            <Image
-              src="/logo_betel.png"
-              alt="BetelMeet Logo"
-              width={200}
-              height={50}
-              className="object-contain mix-blend-multiply w-full"
-              priority
-            />
-            <span style={{ fontSize: '14px', fontFamily: 'serif' }} className="absolute bottom-[-2px] sm:bottom-[2px] left-[34px] sm:left-[44px] text-[#c16d18] font-bold tracking-wider leading-none whitespace-nowrap">
+          <div className="flex flex-col items-end w-max">
+            <Link href="/" className="block hover:opacity-80 transition-opacity">
+              <img
+                src="/betel_meet_new.png"
+                alt="BetelMeet Logo"
+                className="w-[160px] sm:w-[200px] h-auto object-contain mix-blend-multiply block"
+              />
+            </Link>
+            <a
+              href="https://trpwpartners.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block font-serif font-semibold text-[#c16d18] mt-0 sm:-mt-[2px] mr-[2px] tracking-[0.2px] leading-none text-[11px] sm:text-[14px] hover:opacity-80 hover:underline decoration-[#c16d18] transition-all"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+            >
               by TRPW Partners
-            </span>
+            </a>
           </div>
         </div>
 

@@ -233,9 +233,24 @@ export default function EditMeetingPage() {
     <div className="min-h-screen bg-[#FBF9FA] text-stone-900 pb-12">
       {/* Navbar */}
       <nav className="flex items-center justify-between h-16 px-8 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
-        <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-          <Image src="/logo_betel.png" alt="BetelMeet Logo" width={160} height={40} className="object-contain mix-blend-multiply" />
-        </Link>
+        <div className="flex flex-col items-end w-max py-1">
+          <Link href="/" className="block hover:opacity-80 transition-opacity">
+            <img
+              src="/betel_meet_new.png"
+              alt="BetelMeet Logo"
+              className="w-[120px] sm:w-[135px] h-auto object-contain mix-blend-multiply block"
+            />
+          </Link>
+          <a
+            href="https://trpwpartners.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block font-serif font-semibold text-[#c16d18] mt-0 sm:-mt-[2px] mr-[2px] tracking-[0.2px] leading-none text-[11px] sm:text-[9.5px] hover:opacity-80 hover:underline decoration-[#c16d18] transition-all"
+            style={{ fontFamily: '"Times New Roman", Times, serif' }}
+          >
+            by TRPW Partners
+          </a>
+        </div>
         <Link href="/meetings" className="flex items-center gap-1.5 text-stone-500 hover:text-stone-900 text-sm font-semibold transition-colors">
           <ArrowLeft size={16} />
           Back to Meetings

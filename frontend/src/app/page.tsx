@@ -66,21 +66,26 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen bg-[#FBF9FA] flex-col text-stone-900">
       {/* Navbar */}
-      <nav className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-6 md:px-8 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
+      <nav className="flex items-center justify-between h-14 sm:h-16 px-6 sm:px-12 md:px-24 lg:px-32 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
         <div className="flex items-center shrink-0">
-          <Link href="/" className="relative flex flex-col items-start hover:opacity-80 transition-opacity w-[75px] sm:w-[95px] md:w-[115px]">
-            <Image
-              src="/logo_betel.png"
-              alt="BetelMeet Logo"
-              width={115}
-              height={30}
-              className="object-contain mix-blend-multiply w-full"
-              priority
-            />
-            <span style={{ fontSize: '9px', fontFamily: 'serif' }} className="absolute bottom-[-6px] sm:bottom-[-2px] md:bottom-[0px] left-[16px] sm:left-[20px] md:left-[25px] text-[#c16d18] font-bold tracking-wider leading-none whitespace-nowrap">
+          <div className="flex flex-col items-end w-max">
+            <Link href="/" className="block hover:opacity-80 transition-opacity">
+              <img
+                src="/betel_meet_new.png"
+                alt="BetelMeet Logo"
+                className="w-[120px] sm:w-[135px] h-auto object-contain mix-blend-multiply block"
+              />
+            </Link>
+            <a
+              href="https://trpwpartners.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block font-serif font-semibold text-[#c16d18] mt-0 sm:-mt-[2px] mr-[2px] tracking-[0.2px] leading-none text-[11px] sm:text-[9.5px] hover:opacity-80 hover:underline decoration-[#c16d18] transition-all"
+              style={{ fontFamily: '"Times New Roman", Times, serif' }}
+            >
               by TRPW Partners
-            </span>
-          </Link>
+            </a>
+          </div>
         </div>
 
 

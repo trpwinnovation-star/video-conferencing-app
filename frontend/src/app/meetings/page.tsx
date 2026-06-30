@@ -124,9 +124,24 @@ export default function MeetingsPage() {
     <div className="min-h-screen bg-[#FBF9FA] text-stone-900 pb-12">
       {/* Navbar */}
       <nav className="flex items-center justify-between h-16 px-8 bg-white/80 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-50">
-        <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-          <Image src="/logo_betel.png" alt="BetelMeet Logo" width={160} height={40} className="object-contain mix-blend-multiply" />
-        </Link>
+        <div className="flex flex-col items-end w-max py-1">
+          <Link href="/" className="block hover:opacity-80 transition-opacity">
+            <img
+              src="/betel_meet_new.png"
+              alt="BetelMeet Logo"
+              className="w-[120px] sm:w-[135px] h-auto object-contain mix-blend-multiply block"
+            />
+          </Link>
+          <a
+            href="https://trpwpartners.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block font-serif font-semibold text-[#c16d18] mt-0 sm:-mt-[2px] mr-[2px] tracking-[0.2px] leading-none text-[11px] sm:text-[9.5px] hover:opacity-80 hover:underline decoration-[#c16d18] transition-all"
+            style={{ fontFamily: '"Times New Roman", Times, serif' }}
+          >
+            by TRPW Partners
+          </a>
+        </div>
         <Link href="/" className="flex items-center gap-1.5 text-stone-500 hover:text-stone-900 text-sm font-semibold transition-colors">
           <ArrowLeft size={16} />
           Back to Home
@@ -242,8 +257,8 @@ export default function MeetingsPage() {
                           </p>
                         </div>
                         <span className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold uppercase ${rec.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
-                            rec.status === 'failed' ? 'bg-red-50 text-red-500' :
-                              'bg-stone-100 text-stone-500'
+                          rec.status === 'failed' ? 'bg-red-50 text-red-500' :
+                            'bg-stone-100 text-stone-500'
                           }`}>
                           {rec.status}
                         </span>
@@ -274,7 +289,7 @@ export default function MeetingsPage() {
                           <div className="w-full h-1.5 bg-stone-200 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all duration-500 ${limitReached ? 'bg-red-400' :
-                                  rec.downloadCount >= 2 ? 'bg-amber-400' : 'bg-[#c16d18]'
+                                rec.downloadCount >= 2 ? 'bg-amber-400' : 'bg-[#c16d18]'
                                 }`}
                               style={{ width: `${(rec.downloadCount / 3) * 100}%` }}
                             />

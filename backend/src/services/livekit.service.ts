@@ -27,8 +27,8 @@ export class LivekitService {
 
     // ── Participant limit check ──────────────────────────────────────────────
     // Count current participants in the room (0 if room doesn't exist yet).
-    // Limit: max 5 total (host + 4 attendees).
-    const MAX_PARTICIPANTS = 5;
+    // Limit: max 10 total.
+    const MAX_PARTICIPANTS = 10;
     try {
       const roomService = getRoomService();
       const participants = await roomService.listParticipants(roomName);
@@ -75,7 +75,7 @@ export class LivekitService {
   //   const room = await roomService.createRoom({
   //     name: roomName,
   //     emptyTimeout: 10 * 60, // 10 minutes
-  //     maxParticipants: 5,    // Hard cap enforced by LiveKit as secondary guard
+  //     maxParticipants: 10,    // Hard cap enforced by LiveKit as secondary guard
   //   });
   //   console.log("LiveKit room created or already exists:", room.sid);
   //   return room;
@@ -91,7 +91,7 @@ export class LivekitService {
       const room = await roomService.createRoom({
         name: roomName,
         emptyTimeout: 600,
-        maxParticipants: 5,
+        maxParticipants: 10,
       });
 
       console.log("Room response:", room);

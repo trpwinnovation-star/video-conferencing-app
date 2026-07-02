@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Clock, Users, Share2, Play, MoreVertical, Loader } from 'lucide-react';
+import { Clock, Users, Share2, Play, MoreVertical, Loader, Link2, FileText } from 'lucide-react';
 import { apiGetUserMeetings, apiJoinScheduledMeeting, ScheduledMeeting } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -45,6 +45,27 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
     }
     navigator.clipboard.writeText(finalLink);
     setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleCopyDetails = (meeting: ScheduledMeeting) => {
+    let finalLink = meeting.shareableLink;
+    if (typeof window !== 'undefined') {
+      const currentOrigin = window.location.origin;
+      if (meeting.shareableLink.includes('localhost:3000') && !currentOrigin.includes('localhost')) {
+        finalLink = meeting.shareableLink.replace('http://localhost:3000', currentOrigin);
+      }
+    }
+
+    const details = `Meeting Invitation: ${meeting.title}
+Time: ${formatDateTime(meeting.scheduledTime)}
+Duration: ${meeting.durationMinutes} minutes
+${meeting.description ? `\nDescription: ${meeting.description}\n` : ''}
+Join Link: ${finalLink}
+Meeting Code: ${meeting.meetingCode}`;
+
+    navigator.clipboard.writeText(details);
+    setCopiedId(`details-${meeting.id}`);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -186,14 +207,24 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
                   <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Meeting Code</span>
                   <span className="font-mono text-sm font-bold text-stone-900">{meeting.meetingCode}</span>
                 </div>
-                <button
-                  onClick={() => handleCopyLink(meeting.shareableLink, meeting.id)}
-                  className="p-1.5 px-3 bg-white hover:bg-stone-100 text-stone-700 hover:text-stone-900 border border-stone-200 rounded-lg shadow-sm flex items-center justify-center transition-all cursor-pointer text-xs font-semibold gap-1.5"
-                  title="Copy meeting link"
-                >
-                  <Share2 size={13} />
-                  <span>{copiedId === meeting.id ? 'Copied!' : 'Copy'}</span>
-                </button>
+                <div className="flex items-center gap-2 ml-4">
+                  <button
+                    onClick={() => handleCopyLink(meeting.shareableLink, meeting.id)}
+                    className="p-1.5 px-2 bg-white hover:bg-stone-100 text-stone-700 hover:text-stone-900 border border-stone-200 rounded-lg shadow-sm flex items-center justify-center transition-all cursor-pointer text-xs font-semibold gap-1.5"
+                    title="Copy meeting link only"
+                  >
+                    <Link2 size={13} />
+                    <span>{copiedId === meeting.id ? 'Copied!' : 'Link'}</span>
+                  </button>
+                  <button
+                    onClick={() => handleCopyDetails(meeting)}
+                    className="p-1.5 px-2 bg-white hover:bg-stone-100 text-stone-700 hover:text-stone-900 border border-stone-200 rounded-lg shadow-sm flex items-center justify-center transition-all cursor-pointer text-xs font-semibold gap-1.5"
+                    title="Copy full meeting details (Time, Link, etc.)"
+                  >
+                    <FileText size={13} />
+                    <span>{copiedId === `details-${meeting.id}` ? 'Copied!' : 'Details'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Right Side: Primary Action Button */}
@@ -219,10 +250,14 @@ export default function ScheduledMeetingsList({ refresh }: ScheduledMeetingsList
                   </button>
                 ) : (
                   meeting.status === 'scheduled' && new Date() < new Date(new Date(meeting.scheduledTime).getTime() - 15 * 60000) && (
-                    <div className="flex items-center justify-center bg-stone-50/50 border border-dashed border-stone-300 text-stone-500 text-xs px-4 py-2.5 rounded-xl font-medium select-none">
-                      <Clock size={13} className="mr-1.5 opacity-60" />
-                      <span>Join unlocks 15 mins before start</span>
-                    </div>
+                    <button
+                      disabled
+                      title="Unlocks 15 mins before scheduled time"
+                      className="bg-stone-300 text-stone-500 font-bold py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all cursor-not-allowed text-sm select-none"
+                    >
+                      <Play size={15} className="opacity-50" />
+                      <span>Join Now</span>
+                    </button>
                   )
                 )}
 

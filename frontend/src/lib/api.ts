@@ -263,6 +263,7 @@ export interface User {
   email: string;
   name: string;
   role?: 'USER' | 'ADMIN';
+  isActive?: boolean;
   meetingDefaultPassword?: string;
 }
 
@@ -299,6 +300,28 @@ export async function apiDeleteUser(userId: string): Promise<{ message: string }
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Failed to delete user');
+  return data;
+}
+
+export async function apiApproveUser(userId: string): Promise<{ message: string }> {
+  const res = await fetch(`${ADMIN_URL}/users/${userId}/approve`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to approve user');
+  return data;
+}
+
+export async function apiRejectUser(userId: string): Promise<{ message: string }> {
+  const res = await fetch(`${ADMIN_URL}/users/${userId}/reject`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to reject user');
   return data;
 }
 

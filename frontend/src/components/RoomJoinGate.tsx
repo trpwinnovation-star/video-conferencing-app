@@ -94,9 +94,8 @@ export function RoomJoinGate({
               value={participantName}
               onChange={(e) => onNameChange(e.target.value)}
               placeholder="Enter your name"
-              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#c16d18]/15 focus:border-[#c16d18] ${
-                user ? "bg-stone-100 cursor-not-allowed text-stone-500 border-stone-200" : "bg-stone-50 border-stone-200"
-              }`}
+              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#c16d18]/15 focus:border-[#c16d18] ${user ? "bg-stone-100 cursor-not-allowed text-stone-500 border-stone-200" : "bg-stone-50 border-stone-200"
+                }`}
             />
           </div>
 

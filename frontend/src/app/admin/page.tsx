@@ -17,7 +17,7 @@ import {
   Plus
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { apiListUsers, apiCreateUser, apiDeleteUser, User } from "@/lib/api";
+import { apiListUsers, apiCreateUser, apiDeleteUser, apiApproveUser, apiRejectUser, User } from "@/lib/api";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -119,6 +119,33 @@ export default function AdminPage() {
       setTimeout(() => setSuccess(""), 4000);
     } catch (err: any) {
       setError(err.message || "Failed to delete user.");
+    }
+  };
+
+  const handleApproveUser = async (userId: string) => {
+    setError("");
+    try {
+      await apiApproveUser(userId);
+      setSuccess("User approved successfully and email sent.");
+      fetchUsers();
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err: any) {
+      setError(err.message || "Failed to approve user.");
+    }
+  };
+
+  const handleRejectUser = async (userId: string) => {
+    if (!confirm("Are you sure you want to reject and delete this user registration?")) {
+      return;
+    }
+    setError("");
+    try {
+      await apiRejectUser(userId);
+      setSuccess("User rejected successfully and email sent.");
+      fetchUsers();
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err: any) {
+      setError(err.message || "Failed to reject user.");
     }
   };
 
@@ -317,6 +344,7 @@ export default function AdminPage() {
                     <th className="px-6 py-4">User</th>
                     <th className="px-6 py-4">Email</th>
                     <th className="px-6 py-4">Role</th>
+                    <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -348,17 +376,48 @@ export default function AdminPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4.5 text-right">
+                      <td className="px-6 py-4.5">
+                        {item.isActive ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-xs font-bold uppercase tracking-wide">
+                            <CheckCircle2 size={11} /> Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 border border-orange-200 rounded-full text-xs font-bold uppercase tracking-wide">
+                            <Loader2 size={11} className="animate-spin" /> Pending
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4.5 text-right flex justify-end gap-2">
                         {item.id === user?.id ? (
                           <span className="text-xs text-stone-400 font-semibold italic pr-2">Your Account</span>
                         ) : (
-                          <button
-                            onClick={() => handleDeleteUser(item.id)}
-                            className="p-2 text-stone-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-all cursor-pointer inline-flex items-center justify-center"
-                            title="Delete User"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <>
+                            {!item.isActive && (
+                              <>
+                                <button
+                                  onClick={() => handleApproveUser(item.id)}
+                                  className="p-1.5 px-3 text-white bg-green-500 hover:bg-green-600 rounded-lg transition-all cursor-pointer inline-flex items-center justify-center text-xs font-bold shadow-sm"
+                                  title="Approve User"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleRejectUser(item.id)}
+                                  className="p-1.5 px-3 text-white bg-red-500 hover:bg-red-600 rounded-lg transition-all cursor-pointer inline-flex items-center justify-center text-xs font-bold shadow-sm"
+                                  title="Reject User"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => handleDeleteUser(item.id)}
+                              className="p-2 text-stone-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-all cursor-pointer inline-flex items-center justify-center"
+                              title="Delete User"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </>
                         )}
                       </td>
                     </tr>

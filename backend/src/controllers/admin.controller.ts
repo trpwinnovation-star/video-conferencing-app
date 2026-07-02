@@ -12,6 +12,7 @@ export const listUsers = async (req: AuthenticatedRequest, res: Response) => {
         email: true,
         name: true,
         role: true,
+        isActive: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -24,6 +25,71 @@ export const listUsers = async (req: AuthenticatedRequest, res: Response) => {
   } catch (error: any) {
     console.error('List users error:', error);
     return res.status(500).json({ error: 'Failed to fetch users list.' });
+  }
+};
+
+import { sendAccountApprovedEmail, sendAccountRejectedEmail } from '../services/email.service';
+
+// Approve user
+export const approveUser = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = String(req.params.id);
+
+    const userToApprove = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!userToApprove) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (userToApprove.isActive) {
+      return res.status(400).json({ error: 'User is already active.' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { isActive: true },
+    });
+
+    // Send email
+    await sendAccountApprovedEmail(updatedUser.email, updatedUser.name);
+
+    return res.json({ message: 'User approved and email sent successfully.', user: updatedUser });
+  } catch (error: any) {
+    console.error('Approve user error:', error);
+    return res.status(500).json({ error: 'Failed to approve user.' });
+  }
+};
+
+// Reject user
+export const rejectUser = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = String(req.params.id);
+
+    const userToReject = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!userToReject) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (userToReject.isActive) {
+      return res.status(400).json({ error: 'Cannot reject an already active user.' });
+    }
+
+    // Send email first, before deleting
+    await sendAccountRejectedEmail(userToReject.email, userToReject.name);
+
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return res.json({ message: 'User rejected and email sent successfully.' });
+  } catch (error: any) {
+    console.error('Reject user error:', error);
+    return res.status(500).json({ error: 'Failed to reject user.' });
   }
 };
 

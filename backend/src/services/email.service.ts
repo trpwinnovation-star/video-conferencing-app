@@ -1,5 +1,4 @@
-import path from 'path';
-require("dotenv").config({ path: path.join(__dirname, ".env") });
+import 'dotenv/config';
 
 const SENDER_EMAIL = process.env.SMTP_USER || "trpwinnovation@gmail.com";
 
@@ -40,6 +39,45 @@ const sendEmailViaBrevo = async (toEmail: string, subject: string, htmlContent: 
     return false;
   }
 };
+
+export const sendAccountApprovedEmail = async (toEmail: string, name: string) => {
+  const subject = "Your BetelMeet Account has been Approved!";
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; line-height: 1.6;">
+      <h2 style="color: #c16d18;">Account Approved</h2>
+      <p>Hello ${name},</p>
+      <p>Great news! Your BetelMeet account registration has been reviewed and approved by our admin team.</p>
+      <p>You can now log in using the email address and password you entered during registration.</p>
+      <div style="margin-top: 30px;">
+        <a href="https://betelmeet.com/login" style="background-color: #c16d18; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Log In Now</a>
+      </div>
+      <p style="margin-top: 30px; font-size: 14px; color: #666;">
+        Best regards,<br>
+        The BetelMeet Team
+      </p>
+    </div>
+  `;
+  return sendEmailViaBrevo(toEmail, subject, htmlContent);
+};
+
+export const sendAccountRejectedEmail = async (toEmail: string, name: string) => {
+  const subject = "Update regarding your BetelMeet Account Registration";
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; line-height: 1.6;">
+      <h2 style="color: #d9534f;">Account Registration Update</h2>
+      <p>Hello ${name},</p>
+      <p>We are writing to inform you that we could not validate your account registration at this time.</p>
+      <p>If you believe this is an error, please contact our support team.</p>
+      <p style="margin-top: 30px; font-size: 14px; color: #666;">
+        Best regards,<br>
+        The BetelMeet Team
+      </p>
+    </div>
+  `;
+  return sendEmailViaBrevo(toEmail, subject, htmlContent);
+};
+
+
 
 export const sendRecordingReadyEmail = async (
   toEmail: string,

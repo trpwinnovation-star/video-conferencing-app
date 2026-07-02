@@ -4,6 +4,10 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../lib/db';
 import 'dotenv/config';
+import dns from 'dns';
+
+// Explicitly set public DNS servers to avoid local ISP/router blocks on MX queries
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
@@ -17,52 +21,59 @@ const authCookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-// export const register = async (req: Request, res: Response) => {
-//   try {
-//     const { email, password, name } = req.body;
+export const register = async (req: Request, res: Response) => {
+  try {
+    const { email, password, name } = req.body;
 
-//     if (!email || !password || !name) {
-//       return res.status(400).json({ error: 'Email, password, and name are required' });
-//     }
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Email, password, and name are required' });
+    }
 
-//     const existingUser = await prisma.user.findUnique({ where: { email } });
-//     if (existingUser) {
-//       return res.status(400).json({ error: 'User already exists' });
-//     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
 
-//     const hashedPassword = await bcrypt.hash(password, 10);
+    const domain = email.split('@')[1];
+    try {
+      const mxRecords = await dns.promises.resolveMx(domain);
+      if (!mxRecords || mxRecords.length === 0) {
+        return res.status(400).json({ error: 'Invalid email domain. Please provide a real email address.' });
+      }
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid email domain. Please provide a real email address.' });
+    }
 
-//     // const auditId = uuidv4();
-//     // const auditCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
 
-//     const user = await prisma.user.create({
-//       data: {
-//         email,
-//         password: hashedPassword,
-//         name,
-//         // auditId,
-//         // auditCode,
-//       },
-//     });
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-//     const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        isActive: false, // Pending admin approval
+      },
+    });
 
-//     res.cookie('token', token, authCookieOptions);
-
-//     return res.json({
-//       token,
-//       user: {
-//         id: user.id,
-//         email: user.email,
-//         name: user.name,
-//         meetingDefaultPassword: user.meetingDefaultPassword,
-//       },
-//     });
-//   } catch (error) {
-//     console.error('Registration error:', error);
-//     return res.status(500).json({ error: 'Failed to register' });
-//   }
-// };
+    // Do NOT log them in automatically. Return a success message instead.
+    return res.json({
+      message: 'Registration successful. Your account is pending admin approval. You will receive an email once approved.',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    return res.status(500).json({ error: 'Failed to register' });
+  }
+};
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -75,6 +86,10 @@ export const login = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    if (!user.isActive && user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Your account is pending admin approval.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);

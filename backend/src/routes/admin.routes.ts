@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAdmin } from '../middleware/admin.middleware';
-import { listUsers, createUser, deleteUser } from '../controllers/admin.controller';
+import { listUsers, createUser, deleteUser, approveUser, rejectUser } from '../controllers/admin.controller';
 
 const router = Router();
 
@@ -11,5 +11,7 @@ router.use(requireAdmin);
 router.get('/users', listUsers);
 router.post('/users', createUser);
 router.delete('/users/:id', deleteUser);
+router.post('/users/:id/approve', approveUser);
+router.post('/users/:id/reject', rejectUser);
 
 export default router;

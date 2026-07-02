@@ -60,10 +60,14 @@ export default function ProfilePage() {
       </div>
     );
   }
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
 
   if (!user) {
-    router.push("/login");
-    return null;
+    return null; // Prevent rendering if there's no user, while useEffect handles redirect
   }
 
   const handleChangePassword = async (e: React.FormEvent) => {

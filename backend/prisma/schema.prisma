@@ -18,6 +18,7 @@ model User {
   password               String
   name                   String
   role                   Role     @default(USER)
+  isActive               Boolean  @default(false)
   meetingDefaultPassword String   @default("1234")
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt

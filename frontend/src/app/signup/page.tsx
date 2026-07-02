@@ -15,11 +15,13 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     if (password.length < 6) {
       setError("Password must be at least 6 characters");
       return;
@@ -27,8 +29,8 @@ export default function SignupPage() {
     setLoading(true);
     try {
       await apiRegister(name, email, password);
-      await refresh();
-      router.push("/");
+      // Registration is successful but pending approval.
+      setSuccess("Registration successful! Your account is pending admin approval. You will receive an email once it is verified.");
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -39,6 +41,27 @@ export default function SignupPage() {
       setLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-[#FBF9FA] flex items-center justify-center p-6 text-stone-900">
+        <div className="w-full max-w-md bg-white border border-stone-200/80 rounded-2xl p-8 shadow-xl text-center">
+          <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-stone-900 mb-4">Registration Received!</h1>
+          <p className="text-stone-600 mb-8 leading-relaxed">
+            {success}
+          </p>
+          <Link href="/login" className="inline-block w-full py-3.5 bg-[#c16d18] hover:bg-[#a0560e] text-white rounded-xl font-bold transition-all shadow-lg active:scale-95 cursor-pointer">
+            Return to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FBF9FA] flex items-center justify-center p-6 text-stone-900">

@@ -3,7 +3,7 @@
 import React from "react";
 import { useRoomContext, useLocalParticipant } from "@livekit/components-react";
 import { ParticipantEvent } from "livekit-client";
-import { PhoneOff, X, MessageSquare, Settings } from "lucide-react";
+import { PhoneOff, X, MessageSquare, Settings, Clock } from "lucide-react";
 import { AudioToggleButton } from "./AudioToggleButton";
 import { VideoToggleButton } from "./VideoToggleButton";
 import { CameraFlipButton } from "./CameraFlipButton";
@@ -21,6 +21,8 @@ interface MeetingControlsProps {
   onToggleChat?: () => void;
   isChatOpen?: boolean;
   unreadChatCount?: number;
+  meetingDetails?: any;
+  onMeetingExtended?: (additionalMinutes: number) => void;
 }
 
 export function MeetingControls({
@@ -30,6 +32,8 @@ export function MeetingControls({
   onToggleChat,
   isChatOpen = false,
   unreadChatCount = 0,
+  meetingDetails,
+  onMeetingExtended,
 }: MeetingControlsProps) {
   const room = useRoomContext();
   const router = useRouter();
@@ -101,6 +105,36 @@ export function MeetingControls({
   const [recordingBlob, setRecordingBlob] = React.useState<Blob | null>(null);
   const [recordingDuration, setRecordingDuration] = React.useState(0);
   const [showSaveModal, setShowSaveModal] = React.useState(false);
+  const [showExtendModal, setShowExtendModal] = React.useState(false);
+  const [isExtending, setIsExtending] = React.useState(false);
+
+  const handleExtend = async (additionalMinutes: number) => {
+    if (!meetingDetails || !meetingDetails.id) return;
+    setIsExtending(true);
+    try {
+      const { apiExtendScheduledMeeting } = await import("@/lib/api");
+      await apiExtendScheduledMeeting(meetingDetails.id, additionalMinutes);
+      
+      // Broadcast extension to all participants so their UI updates
+      if (room && room.localParticipant) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(JSON.stringify({ type: 'MEETING_EXTENDED', additionalMinutes }));
+        await room.localParticipant.publishData(data, { reliable: true });
+      }
+      
+      // Update our own local state because LiveKit DataChannel doesn't echo to sender
+      if (onMeetingExtended) {
+        onMeetingExtended(additionalMinutes);
+      }
+      
+      setShowExtendModal(false);
+    } catch (e) {
+      console.warn("Failed to extend meeting:", e);
+      alert("Failed to extend meeting. Please try again.");
+    } finally {
+      setIsExtending(false);
+    }
+  };
 
   const handleRecordingReady = (blob: Blob, duration: number) => {
     setRecordingBlob(blob);
@@ -160,7 +194,7 @@ export function MeetingControls({
 
   return (
     <>
-      <div className="relative flex items-center gap-1 md:gap-3 bg-white/95 backdrop-blur-xl border border-stone-200/80 p-2 md:p-3 md:px-6 rounded-2xl md:rounded-3xl shadow-xl shadow-stone-300/40">
+      <div className="relative flex flex-wrap justify-center items-center gap-1.5 md:gap-3 bg-white/95 backdrop-blur-xl border border-stone-200/80 p-2 sm:p-2.5 md:p-3 md:px-6 rounded-2xl md:rounded-3xl shadow-xl shadow-stone-300/40 max-w-[calc(100vw-1rem)] md:max-w-max mx-auto">
 
         {/* Record Reminder Popup */}
         {showRecordPopup && (
@@ -190,15 +224,57 @@ export function MeetingControls({
 
         <div className="hidden md:block w-px h-10 bg-stone-200 mx-1" />
 
-        <div className="flex flex-col items-center gap-1 group">
+        <div className="hidden md:flex flex-col items-center gap-1 group">
           <ScreenShareButton />
           <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Share</span>
         </div>
 
         {isHost && (
-          <div className="flex flex-col items-center gap-1 group">
+          <div className="hidden md:flex flex-col items-center gap-1 group">
             <RecordingControls roomName={roomName} userName={userName} onRecordStart={() => setShowRecordPopup(false)} onRecordingStateChange={onRecordingStateChange} onRecordingReady={handleRecordingReady} />
             <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Record</span>
+          </div>
+        )}
+
+        {isHost && meetingDetails && (
+          <div className="flex flex-col items-center gap-1 group relative">
+            <button
+              onClick={() => setShowExtendModal(true)}
+              className="h-10 w-14 md:h-12 md:w-20 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer border bg-white border-stone-200 text-stone-700 hover:text-stone-900 hover:bg-stone-50"
+            >
+              <Clock size={20} className="md:w-[22px] md:h-[22px]" />
+            </button>
+            <span className="hidden md:block text-[9px] font-bold text-stone-500 group-hover:text-[#c16d18] transition-colors uppercase tracking-wider">Extend</span>
+            
+            {showExtendModal && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-50 animate-in slide-in-from-bottom-2 fade-in">
+                <div className="px-4 py-3 bg-stone-50 border-b border-stone-100">
+                  <span className="text-xs font-bold text-stone-600 uppercase tracking-wider">Extend Meeting</span>
+                </div>
+                <div className="p-2 flex flex-col gap-1">
+                  <button
+                    onClick={() => handleExtend(30)}
+                    disabled={isExtending}
+                    className="px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 hover:text-stone-900 rounded-xl transition-colors text-left disabled:opacity-50 cursor-pointer"
+                  >
+                    + 30 Minutes
+                  </button>
+                  <button
+                    onClick={() => handleExtend(60)}
+                    disabled={isExtending}
+                    className="px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 hover:text-stone-900 rounded-xl transition-colors text-left disabled:opacity-50 cursor-pointer"
+                  >
+                    + 1 Hour
+                  </button>
+                  <button
+                    onClick={() => setShowExtendModal(false)}
+                    className="px-4 py-2 text-xs font-medium text-stone-500 hover:bg-stone-100 rounded-xl transition-colors text-center mt-1 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

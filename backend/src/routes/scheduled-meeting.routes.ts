@@ -15,7 +15,8 @@ import {
   updateMeeting,
   scheduleAuditMeeting,
   updateScheduleAuditMeeting,
-  getBetelUserMeetings
+  getBetelUserMeetings,
+  extendScheduledMeeting
 } from '../controllers/scheduled-meeting.controller';
 
 const router = express.Router();
@@ -28,6 +29,7 @@ router.get('/meeting/:meetingId', getScheduledMeetingDetails);     // GET /api/s
 router.put('/meeting/:meetingId', updateMeeting);                 // PUT /api/scheduled-meetings/meeting/:id
 router.post('/meeting/:meetingId/join', joinScheduledMeeting);     // POST /api/scheduled-meetings/meeting/:id/join
 router.post('/meeting/:meetingId/end', endScheduledMeeting);       // POST /api/scheduled-meetings/meeting/:id/end
+router.post('/meeting/:meetingId/extend', extendScheduledMeeting); // POST /api/scheduled-meetings/meeting/:id/extend
 
 // Meeting join by code (public)
 router.get('/code/:roomId', getMeetingByCode);                     // GET /api/scheduled-meetings/code/:roomId

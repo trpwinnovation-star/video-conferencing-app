@@ -6,10 +6,11 @@ import {
   LiveKitRoom,
   RoomAudioRenderer,
   useRoomContext,
+  useLocalParticipant,
 } from "@livekit/components-react";
-import { RoomEvent } from "livekit-client";
+import { RoomEvent, ParticipantEvent } from "livekit-client";
 import "@livekit/components-styles";
-import { getToken, apiUploadSharedFile } from "@/lib/api";
+import { getToken, apiUploadSharedFile, apiGetMeetingByCode } from "@/lib/api";
 import { getStoredRoomPassword, clearRoomPassword } from "@/lib/roomAccess";
 import { useAuth } from "@/lib/auth";
 import { RoomHeader } from "@/components/RoomHeader";
@@ -74,6 +75,45 @@ function ActiveRoomContent({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [meetingDetails, setMeetingDetails] = useState<any>(null);
+
+  const { localParticipant } = useLocalParticipant();
+
+  const [participantMeta, setParticipantMeta] = useState<string | undefined>(localParticipant?.metadata);
+
+  useEffect(() => {
+    if (!localParticipant) return;
+
+    setParticipantMeta(localParticipant.metadata);
+
+    const handleMetadataChanged = () => {
+      setParticipantMeta(localParticipant.metadata);
+    };
+
+    // Make sure we import ParticipantEvent from livekit-client at the top of the file!
+    localParticipant.on(ParticipantEvent.ParticipantMetadataChanged, handleMetadataChanged);
+    return () => {
+      localParticipant.off(ParticipantEvent.ParticipantMetadataChanged, handleMetadataChanged);
+    };
+  }, [localParticipant]);
+
+  let isHost = false;
+  try {
+    const meta = JSON.parse(participantMeta || '{}');
+    isHost = meta.isHost === true;
+  } catch { }
+
+  useEffect(() => {
+    let active = true;
+    apiGetMeetingByCode(roomName)
+      .then(data => {
+        if (active) setMeetingDetails(data);
+      })
+      .catch(err => {
+        console.warn("Not a scheduled meeting or failed to fetch", err);
+      });
+    return () => { active = false; };
+  }, [roomName]);
 
   // Listen to data channel for incoming messages or files
   useEffect(() => {
@@ -83,6 +123,18 @@ function ActiveRoomContent({
       try {
         const str = new TextDecoder().decode(payload);
         const msg = JSON.parse(str);
+
+        if (msg.type === "MEETING_EXTENDED") {
+          console.log("[Room] Meeting extended by", msg.additionalMinutes, "minutes");
+          setMeetingDetails((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              durationMinutes: prev.durationMinutes + msg.additionalMinutes
+            };
+          });
+          return;
+        }
 
         if (msg.type === "CHAT_MESSAGE" || msg.type === "FILE_SHARE") {
           const isLocal = participant?.identity === room.localParticipant.identity;
@@ -442,10 +494,25 @@ function ActiveRoomContent({
               onToggleChat={() => setIsChatOpen((prev) => !prev)}
               isChatOpen={isChatOpen}
               unreadChatCount={unreadCount}
+              meetingDetails={meetingDetails}
+              onMeetingExtended={(additionalMinutes) => {
+                setMeetingDetails((prev: any) => {
+                  if (!prev) return prev;
+                  return {
+                    ...prev,
+                    durationMinutes: prev.durationMinutes + additionalMinutes
+                  };
+                });
+              }}
             />
           </div>
 
-          <RecordingCountdown recordingDuration={recordingDuration} isRecording={isRecording} />
+          <RecordingCountdown
+            recordingDuration={recordingDuration}
+            isRecording={isRecording}
+            meetingDetails={meetingDetails}
+            isHost={isHost}
+          />
         </div>
       </div>
 

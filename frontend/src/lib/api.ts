@@ -544,11 +544,25 @@ export async function apiEndScheduledMeeting(meetingId: string): Promise<{ messa
   return data;
 }
 
+export async function apiExtendScheduledMeeting(meetingId: string, additionalMinutes: number): Promise<{ message: string, meeting: ScheduledMeeting }> {
+  const res = await fetch(`${SCHEDULED_MEETINGS_URL}/meeting/${meetingId}/extend`, {
+    method: 'POST',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include',
+    body: JSON.stringify({ additionalMinutes })
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to extend meeting');
+  return data;
+}
+
 export async function apiGetMeetingByCode(roomId: string): Promise<{
   id: string;
   title: string;
   description?: string;
   scheduledTime: string;
+  durationMinutes: number;
   host: User;
   status: string;
   hostJoinedAt?: string;

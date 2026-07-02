@@ -47,6 +47,7 @@ export class LivekitService {
     // ────────────────────────────────────────────────────────────────────────
 
     const uniqueIdentity = `${participantName}_${Math.random().toString(36).substring(2, 8)}`;
+    
     const at = new AccessToken(config.apiKey, config.apiSecret, {
       identity: uniqueIdentity,
       name: participantName,

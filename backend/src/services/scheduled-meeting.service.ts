@@ -98,10 +98,10 @@ export async function autoExpireMeetings() {
         });
         try {
           await livekitService.deleteRoom(meeting.roomId);
-        } catch {}
+        } catch { }
         try {
           await deleteRoomFromDb(meeting.roomId);
-        } catch {}
+        } catch { }
       }
     }
   } catch (error) {
@@ -541,9 +541,56 @@ export function startScheduledMeetingAutoCompleter() {
           hostDisconnectionTimes.delete(meeting.id);
         }
       }
+
+      // ── Ghost Room Cleanup ───────────────────────────────────────────────
+      // Catch edge cases where LiveKit accepted a cached valid token and 
+      // dynamically spun up a room after the meeting was already marked completed.
+      try {
+        const livekitRooms = await livekitService.listRooms();
+        for (const lkRoom of livekitRooms) {
+          const matchingMeeting = await prisma.scheduledMeeting.findUnique({
+            where: { roomId: lkRoom.name }
+          });
+          if (matchingMeeting && (matchingMeeting.status === 'completed' || matchingMeeting.status === 'cancelled')) {
+            console.log(`[Auto-Completer] Ghost room detected for ${matchingMeeting.status} meeting "${matchingMeeting.title}". Terminating LiveKit room...`);
+            try {
+              await livekitService.deleteRoom(lkRoom.name);
+            } catch (err) {
+              // Ignore
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Auto-Completer] Error during ghost room cleanup:', err);
+      }
+      // ───────────────────────────────────────────────────────────────────
+
     } catch (error: any) {
       console.error('[Auto-Completer] Error in background worker loop:', error.message);
     }
   }, 1 * 60 * 1000); // Check every 1 minute
 }
 
+
+export const extendScheduledMeetingDuration = async (meetingId: string, additionalMinutes: number) => {
+  const meeting = await prisma.scheduledMeeting.findUnique({
+    where: { id: meetingId }
+  });
+
+  if (!meeting) {
+    throw new Error('Meeting not found');
+  }
+
+  if (meeting.status === 'completed' || meeting.status === 'cancelled') {
+    throw new Error('Cannot extend a completed or cancelled meeting');
+  }
+
+  const updatedMeeting = await prisma.scheduledMeeting.update({
+    where: { id: meetingId },
+    data: {
+      durationMinutes: meeting.durationMinutes + additionalMinutes
+    }
+  });
+
+  return updatedMeeting;
+};

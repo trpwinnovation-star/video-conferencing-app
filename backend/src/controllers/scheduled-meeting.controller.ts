@@ -15,6 +15,7 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   updateScheduledMeeting,
+  extendScheduledMeetingDuration,
 } from '../services/scheduled-meeting.service';
 import { LivekitService } from '../services/livekit.service';
 import { createProtectedRoom, deleteRoomFromDb, ensureLivekitRoom } from '../services/room.service';
@@ -146,6 +147,10 @@ export const joinScheduledMeeting = async (req: Request, res: Response) => {
 
     if (!meeting) {
       return res.status(404).json({ error: 'Meeting not found' });
+    }
+
+    if (meeting.status === 'completed') {
+      return res.status(403).json({ error: 'This meeting has already ended' });
     }
 
     if (meeting.hostId !== userId) {
@@ -292,6 +297,7 @@ export const getMeetingByCode = async (req: Request, res: Response) => {
       title: meeting.title,
       description: meeting.description,
       scheduledTime: meeting.scheduledTime,
+      durationMinutes: meeting.durationMinutes,
       host: meeting.host,
       status: meeting.status,
       hostJoinedAt: meeting.hostJoinedAt,
@@ -583,7 +589,7 @@ export const getBetelUserMeetings = async (req: Request, res: Response) => {
   try {
     const { token } = req.body
     console.log("Token", token)
-    
+
     const { _Id, _TenantKey, _Email, _Name } = jwt.verify(token, JWT_SECRET) as { _Id: number, _TenantKey: string, _Email: string, _Name: string }
 
     const existingUser = await prisma.user.findFirst({
@@ -609,3 +615,44 @@ export const getBetelUserMeetings = async (req: Request, res: Response) => {
     return res.status(500).json({ error: error.message || 'Failed to fetch meetings' });
   }
 };
+
+export const extendScheduledMeeting = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromToken(req);
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const meetingId = String(req.params.meetingId);
+    const { additionalMinutes } = req.body;
+
+    if (!additionalMinutes || typeof additionalMinutes !== 'number' || additionalMinutes <= 0) {
+      return res.status(400).json({ error: 'Invalid additionalMinutes' });
+    }
+
+    // Ensure the user is the host
+    const meeting = await prisma.scheduledMeeting.findUnique({
+      where: { id: meetingId }
+    });
+
+    if (!meeting) {
+      return res.status(404).json({ error: 'Meeting not found' });
+    }
+
+    if (meeting.hostId !== userId) {
+      return res.status(403).json({ error: 'Only the host can extend the meeting' });
+    }
+
+    const updatedMeeting = await extendScheduledMeetingDuration(meetingId, additionalMinutes);
+
+    return res.json({
+      message: 'Meeting extended successfully',
+      meeting: updatedMeeting
+    });
+  } catch (error: any) {
+    console.error('Extend meeting error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to extend meeting' });
+  }
+};
+

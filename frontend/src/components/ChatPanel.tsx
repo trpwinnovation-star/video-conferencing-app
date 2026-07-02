@@ -173,8 +173,8 @@ export function ChatPanel({ isOpen, onClose, messages, onSendMessage, onSendFile
               {/* Message Bubble */}
               <div
                 className={`p-3 rounded-2xl text-sm leading-relaxed shadow-sm max-w-full overflow-hidden ${msg.isLocal
-                    ? "bg-[#c16d18] text-white rounded-tr-none"
-                    : "bg-white border border-stone-200 text-stone-800 rounded-tl-none"
+                  ? "bg-[#c16d18] text-white rounded-tr-none"
+                  : "bg-white border border-stone-200 text-stone-800 rounded-tl-none"
                   }`}
               >
                 {msg.text && <p className="break-all">{msg.text}</p>}
@@ -196,8 +196,8 @@ export function ChatPanel({ isOpen, onClose, messages, onSendMessage, onSendFile
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all active:scale-95 cursor-pointer ${msg.isLocal
-                          ? "bg-white/10 hover:bg-white/20 border-white/20 text-white"
-                          : "bg-[#c16d18]/15 hover:bg-[#c16d18]/25 border-[#c16d18]/20 text-[#c16d18]"
+                        ? "bg-white/10 hover:bg-white/20 border-white/20 text-white"
+                        : "bg-[#c16d18]/15 hover:bg-[#c16d18]/25 border-[#c16d18]/20 text-[#c16d18]"
                         }`}
                     >
                       <Download size={12} />
